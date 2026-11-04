@@ -117,6 +117,13 @@ export const mockAuthService: AuthService = {
     return { user: null, needsProfile, needsPin: false, lockAfterMinutes };
   },
 
+  async loginMethod(phone) {
+    requireOnline();
+    await delay();
+    const user = activeUserByPhone(phone); // un compte bloqué est refusé ici aussi
+    return user && !needsPin(user.id) ? 'pin' : 'otp';
+  },
+
   async sendOtp(phone) {
     requireOnline();
     await delay();

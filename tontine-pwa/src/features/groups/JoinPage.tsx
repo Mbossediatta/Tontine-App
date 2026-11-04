@@ -3,7 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { AmountText } from '@/components/domain';
 import { OnlineButton } from '@/components/layout/OnlineButton';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { AsyncContent, Card, CardTitle } from '@/components/ui';
+import { AsyncContent, Card, CardTitle, EmptyState } from '@/components/ui';
+import { ServiceError } from '@/lib/errors';
 import { frequencyLabel, groupContributionLabel } from '@/lib/format';
 import { useAction } from '@/lib/query';
 import { computePot } from '@/lib/tontine';
@@ -18,10 +19,32 @@ export default function JoinPage() {
     success: 'Demande envoyée',
   });
 
+  // Code inconnu : réessayer ne changerait rien, on propose de revenir à l'accueil.
+  // Les autres erreurs (connexion…) gardent le bouton « Réessayer » d'AsyncContent.
+  if (query.error instanceof ServiceError && query.error.code === 'not_found') {
+    return (
+      <>
+        <PageHeader title="Rejoindre un groupe" backTo="/" />
+        <EmptyState
+          title="Code d’invitation inconnu"
+          description="Ce code n’existe pas ou a expiré. Vérifiez-le auprès de l’administrateur du groupe."
+          action={
+            <Link
+              to="/"
+              className="inline-flex min-h-button w-full items-center justify-center rounded-control bg-blue-700 px-5 font-semibold text-white sm:w-auto"
+            >
+              Retour à l’accueil
+            </Link>
+          }
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <PageHeader title="Rejoindre un groupe" backTo="/" />
-      <AsyncContent query={query} errorMessage="Ce code d’invitation est inconnu ou a expiré.">
+      <AsyncContent query={query}>
         {({
           group,
           communityName,

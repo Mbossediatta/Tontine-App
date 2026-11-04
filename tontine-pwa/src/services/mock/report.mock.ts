@@ -61,7 +61,12 @@ export const mockReportService: ReportService = {
     const end = endOfDay(periodDate(to));
     if (start > end) throw new ServiceError('La date de début doit précéder la date de fin.');
     const interval = { start, end };
-    const rounds = db.rounds.filter((round) => isWithinInterval(new Date(round.dueDate), interval));
+    // Un tour compte dès que sa collecte (ouverture → date limite) croise la période :
+    // le tour en cours apparaît donc avant sa date limite (avant, « du 1er au 4 » d'un
+    // mois dont le tour finissait le 10 affichait 0 FCFA collecté).
+    const rounds = db.rounds.filter(
+      (round) => new Date(round.openDate) <= end && new Date(round.dueDate) >= start,
+    );
     const totals = rounds.reduce(
       (sum, round) => {
         const expected = roundExpected(round);

@@ -7,6 +7,7 @@ import { AsyncContent, Card, EmptyState } from '@/components/ui';
 import { groupContributionLabel, plural, searchable } from '@/lib/format';
 import type { GroupOverview, GroupStatus } from '@/types';
 import { headerLinkClass } from '../components/linkStyles';
+import { useShowMore } from '../components/useShowMore';
 import { useAdminDashboard, useCommunities } from '../queries';
 
 type Filter = 'all' | 'active' | 'draft' | 'suspended' | 'finished';
@@ -121,6 +122,8 @@ export default function AdminGroupsPage() {
         .sort((a, b) => STATUS_ORDER[a.group.status] - STATUS_ORDER[b.group.status]),
     [query.data?.groups, filter, search],
   );
+  // Cartes par 12 (4 rangées de 3 sur ordinateur), puis « Voir plus ».
+  const page = useShowMore(groups, 12, `${filter}|${search}`);
   const total = query.data?.groups.length ?? 0;
   const active = query.data?.groups.filter(({ group }) => group.status === 'active').length ?? 0;
   const communityNames = new Map(
@@ -220,22 +223,25 @@ export default function AdminGroupsPage() {
               </div>
 
               {groups.length > 0 ? (
-                <section
-                  className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
-                  aria-label="Groupes à gérer"
-                >
-                  {groups.map((overview) => (
-                    <GroupSummary
-                      key={overview.group.id}
-                      overview={overview}
-                      communityName={
-                        overview.group.communityId
-                          ? communityNames.get(overview.group.communityId)
-                          : undefined
-                      }
-                    />
-                  ))}
-                </section>
+                <>
+                  <section
+                    className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                    aria-label="Groupes à gérer"
+                  >
+                    {page.visible.map((overview) => (
+                      <GroupSummary
+                        key={overview.group.id}
+                        overview={overview}
+                        communityName={
+                          overview.group.communityId
+                            ? communityNames.get(overview.group.communityId)
+                            : undefined
+                        }
+                      />
+                    ))}
+                  </section>
+                  {page.more ? <div className="flex justify-center">{page.more}</div> : null}
+                </>
               ) : (
                 <EmptyState
                   title="Aucun groupe correspondant"

@@ -9,6 +9,7 @@ import { formatPhone, fullName, plural } from '@/lib/format';
 import type { MemberSummary } from '@/types';
 import { AccountFormDialog } from '../components/AccountFormDialog';
 import { FilterChips, SearchField } from '../components/ListToolbar';
+import { Paged } from '../components/Paged';
 import { useMembers } from '../queries';
 
 type Filter = 'all' | 'late' | 'blocked' | 'pin';
@@ -84,73 +85,77 @@ export default function MembersPage() {
             );
           }
           return (
-            <Card>
-              <div
-                className={`hidden gap-3 border-b border-line px-2 pb-2 text-small uppercase tracking-wide text-muted md:grid ${COLUMNS}`}
-                aria-hidden="true"
-              >
-                <span>Membre</span>
-                <span>Rôle</span>
-                <span>Groupes</span>
-                <span>Retards</span>
-                <span>Statut</span>
-                <span />
-              </div>
-              <ul className="divide-y divide-line">
-                {visible.map(({ user, groupCount, lateCount, pinPending }) => (
-                  <li key={user.id}>
-                    <Link
-                      to={`/admin/membres/${user.id}`}
-                      className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-control px-2 py-3 transition-colors duration-150 hover:bg-blue-50 ${COLUMNS}`}
-                    >
-                      <span className="flex min-w-0 items-center gap-3 md:order-1">
-                        <Avatar name={fullName(user)} src={user.avatarUrl} size="sm" />
-                        <span className="min-w-0">
-                          <span className="block truncate font-bold text-ink">
-                            {fullName(user)}
+            <Paged items={visible} pageSize={25} resetKey={`${filter}|${search}`}>
+              {(page) => (
+                <Card>
+                  <div
+                    className={`hidden gap-3 border-b border-line px-2 pb-2 text-small uppercase tracking-wide text-muted md:grid ${COLUMNS}`}
+                    aria-hidden="true"
+                  >
+                    <span>Membre</span>
+                    <span>Rôle</span>
+                    <span>Groupes</span>
+                    <span>Retards</span>
+                    <span>Statut</span>
+                    <span />
+                  </div>
+                  <ul className="divide-y divide-line">
+                    {page.map(({ user, groupCount, lateCount, pinPending }) => (
+                      <li key={user.id}>
+                        <Link
+                          to={`/admin/membres/${user.id}`}
+                          className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-control px-2 py-3 transition-colors duration-150 hover:bg-blue-50 ${COLUMNS}`}
+                        >
+                          <span className="flex min-w-0 items-center gap-3 md:order-1">
+                            <Avatar name={fullName(user)} src={user.avatarUrl} size="sm" />
+                            <span className="min-w-0">
+                              <span className="block truncate font-bold text-ink">
+                                {fullName(user)}
+                              </span>
+                              <span className="block text-small tabular-nums text-muted">
+                                {formatPhone(user.phone)}
+                              </span>
+                            </span>
                           </span>
-                          <span className="block text-small tabular-nums text-muted">
-                            {formatPhone(user.phone)}
+                          <span className="flex flex-wrap justify-end gap-1 md:order-5 md:justify-start">
+                            <Badge tone={user.isSuspended ? 'danger' : 'success'}>
+                              {user.isSuspended ? 'Bloqué' : 'Actif'}
+                            </Badge>
+                            {pinPending ? (
+                              <Badge
+                                tone="info"
+                                icon={<KeyRound className="h-3.5 w-3.5" aria-hidden="true" />}
+                              >
+                                PIN
+                              </Badge>
+                            ) : null}
                           </span>
-                        </span>
-                      </span>
-                      <span className="flex flex-wrap justify-end gap-1 md:order-5 md:justify-start">
-                        <Badge tone={user.isSuspended ? 'danger' : 'success'}>
-                          {user.isSuspended ? 'Bloqué' : 'Actif'}
-                        </Badge>
-                        {pinPending ? (
-                          <Badge
-                            tone="info"
-                            icon={<KeyRound className="h-3.5 w-3.5" aria-hidden="true" />}
-                          >
-                            PIN
-                          </Badge>
-                        ) : null}
-                      </span>
-                      <span className="text-label text-muted md:order-2">
-                        {user.globalRole === 'admin' ? 'Administrateur' : 'Participant'}
-                      </span>
-                      <span className="justify-self-end text-label tabular-nums text-ink md:order-3 md:justify-self-auto">
-                        {plural(groupCount, 'groupe')}
-                      </span>
-                      <span className="text-label tabular-nums md:order-4">
-                        {lateCount > 0 ? (
-                          <span className="font-bold text-warning">
-                            {plural(lateCount, 'retard')}
+                          <span className="text-label text-muted md:order-2">
+                            {user.globalRole === 'admin' ? 'Administrateur' : 'Participant'}
                           </span>
-                        ) : (
-                          <span className="text-muted">Aucun retard</span>
-                        )}
-                      </span>
-                      <ChevronRight
-                        className="hidden h-5 w-5 text-muted md:order-6 md:block"
-                        aria-hidden="true"
-                      />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </Card>
+                          <span className="justify-self-end text-label tabular-nums text-ink md:order-3 md:justify-self-auto">
+                            {plural(groupCount, 'groupe')}
+                          </span>
+                          <span className="text-label tabular-nums md:order-4">
+                            {lateCount > 0 ? (
+                              <span className="font-bold text-warning">
+                                {plural(lateCount, 'retard')}
+                              </span>
+                            ) : (
+                              <span className="text-muted">Aucun retard</span>
+                            )}
+                          </span>
+                          <ChevronRight
+                            className="hidden h-5 w-5 text-muted md:order-6 md:block"
+                            aria-hidden="true"
+                          />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              )}
+            </Paged>
           );
         }}
       </AsyncContent>

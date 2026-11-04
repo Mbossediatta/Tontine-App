@@ -76,25 +76,24 @@ export default function MemberGroupsPage() {
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[15px] font-semibold">{group.name}</span>
+                      {/* Deux lignes courtes : elles ne se coupent pas au milieu sur téléphone. */}
                       <span className="block text-[13px] text-slate-600">
                         {communityName ? `${communityName} · ` : ''}
-                        {contributionLabel(group.contributionAmount, group.frequency)} ·{' '}
-                        {plural(activeMemberCount, 'membre')}
+                        {contributionLabel(group.contributionAmount, group.frequency)}
                       </span>
-                      {currentRound ? (
-                        <span className="block text-[13px] text-slate-600">
-                          Tour {currentRound.number} sur {totalRounds}
-                        </span>
-                      ) : null}
+                      <span className="block text-[13px] text-slate-600">
+                        {plural(activeMemberCount, 'membre')}
+                        {currentRound ? ` · Tour ${currentRound.number} sur ${totalRounds}` : ''}
+                      </span>
                     </span>
                     {myMembershipStatus === 'pending' ? (
-                      <span className="text-[13px] font-semibold text-slate-600">
+                      <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold text-slate-600">
                         Demande envoyée
                       </span>
                     ) : myStatus ? (
                       <StatusPill status={myStatus} />
                     ) : (
-                      <span className="text-[13px] text-slate-600">
+                      <span className="shrink-0 whitespace-nowrap text-[13px] text-slate-600">
                         {group.status === 'draft' ? 'Pas commencé' : 'Terminé'}
                       </span>
                     )}

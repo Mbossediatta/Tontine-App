@@ -6,6 +6,7 @@ import { AsyncContent, Card, EmptyState } from '@/components/ui';
 import { fullName, plural, searchable } from '@/lib/format';
 import { AccountFormDialog } from './components/AccountFormDialog';
 import { FilterChips, SearchField } from './components/ListToolbar';
+import { Paged } from './components/Paged';
 import { useAdmins } from './queries';
 import { AdminTable } from './super/AdminsCard';
 
@@ -82,9 +83,13 @@ export default function AdministratorsPage() {
               }
             />
           ) : (
-            <Card>
-              <AdminTable admins={visible} />
-            </Card>
+            <Paged items={visible} resetKey={`${status}|${search}`}>
+              {(page) => (
+                <Card>
+                  <AdminTable admins={page} />
+                </Card>
+              )}
+            </Paged>
           );
         }}
       </AsyncContent>

@@ -5,6 +5,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/hooks/useAuth';
 import { env } from '@/lib/env';
 import { errorMessage, ServiceError } from '@/lib/errors';
+import { formatPhone } from '@/lib/format';
 import { DEMO_PIN } from '@/mocks/pins';
 import { authService } from '@/services';
 import { AuthButton, AuthError, AuthLink } from './components/AuthButton';
@@ -120,8 +121,16 @@ export default function PinLoginPage() {
 
   return (
     <AuthScreen
-      title={account.firstName ? `Bonjour ${account.firstName}` : 'Bonjour'}
-      subtitle={blocked ? undefined : 'Saisissez votre code PIN pour continuer.'}
+      // Sans prénom (connexion sur ordinateur) : on rappelle le numéro saisi. Le prénom
+      // n'est jamais révélé à quelqu'un qui n'a fait que taper un numéro.
+      title={account.firstName ? `Bonjour ${account.firstName}` : 'Votre code PIN'}
+      subtitle={
+        blocked
+          ? undefined
+          : account.firstName
+            ? 'Saisissez votre code PIN pour continuer.'
+            : `Saisissez le code PIN du ${formatPhone(account.phone)}.`
+      }
     >
       <div className="flex flex-col items-center gap-5">
         {blocked ? (
@@ -163,7 +172,7 @@ export default function PinLoginPage() {
         )}
 
         <AuthLink tone="muted" onClick={() => void switchAccount()}>
-          Ce n’est pas vous ? Changer de compte
+          {account.firstName ? 'Ce n’est pas vous ? Changer de compte' : 'Changer de numéro'}
         </AuthLink>
       </div>
     </AuthScreen>

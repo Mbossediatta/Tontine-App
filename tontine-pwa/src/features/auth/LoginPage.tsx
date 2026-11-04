@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth, useAuthStore } from '@/hooks/useAuth';
+import { isComputer } from '@/lib/device';
 import { env } from '@/lib/env';
 import { errorMessage } from '@/lib/errors';
 import { isSenegalMobile } from '@/lib/validators';
@@ -13,9 +14,12 @@ import { getRememberedAccount } from './rememberedAccount';
 import { redirectTarget, type RedirectState } from './redirect';
 
 /**
- * Écran 1 — Numéro de téléphone. Un code de vérification part par SMS.
- * Si un compte est mémorisé sur cet appareil, on passe directement au PIN
- * (sauf après « Changer de compte » ou « Modifier le numéro » : ?nouveau=1).
+ * Écran 1 — Numéro de téléphone.
+ * - Téléphone : un code de vérification part par SMS. Si un compte est mémorisé sur
+ *   l'appareil, on passe directement au PIN (sauf après « Changer de compte » ou
+ *   « Modifier le numéro » : ?nouveau=1).
+ * - Ordinateur (aucun compte mémorisé) : si le numéro a déjà un PIN, on le demande
+ *   directement ; sinon (nouveau compte, PIN à recréer), le code SMS part.
  */
 export default function LoginPage() {
   const { status, user, locked } = useAuth();
@@ -35,6 +39,7 @@ export default function LoginPage() {
   }
 
   const valid = isSenegalMobile(phone);
+  const computer = isComputer();
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -42,6 +47,11 @@ export default function LoginPage() {
     setSending(true);
     setError(undefined);
     try {
+      if (computer && (await authService.loginMethod(phone)) === 'pin') {
+        useAuthStore.getState().setPendingPhone(phone);
+        navigate('/connexion/pin', { state: location.state });
+        return;
+      }
       await authService.sendOtp(phone);
       useAuthStore.getState().setPendingPhone(phone);
       const state: RedirectState = {
@@ -76,9 +86,14 @@ export default function LoginPage() {
             setError(undefined);
           }}
           error={error}
+          hint={
+            computer
+              ? 'Si vous avez déjà un code PIN, il vous sera demandé. Sinon, vous recevrez un code par SMS.'
+              : undefined
+          }
         />
         <AuthButton type="submit" disabled={!valid} loading={sending}>
-          Recevoir le code
+          {computer ? 'Continuer' : 'Recevoir le code'}
         </AuthButton>
       </form>
     </AuthScreen>

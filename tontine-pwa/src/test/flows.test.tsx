@@ -38,12 +38,50 @@ describe('parcours', () => {
     useAuthStore.getState().setUser(null);
     renderAt('/connexion?nouveau=1');
     expect(await screen.findByRole('heading', { name: 'Connexion' }, TIMEOUT)).toBeInTheDocument();
-    expect(screen.getByAltText('Calebasse de l’Espoir')).toBeInTheDocument();
+    // Deux logos dans la page : panneau ordinateur et carte mobile (un seul visible à la fois).
+    expect(screen.getAllByAltText('Calebasse de l’Espoir').length).toBeGreaterThan(0);
     expect(
       screen.getByText('Accédez à vos groupes et suivez vos cotisations.'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText('Numéro de téléphone')).toBeInTheDocument();
   }, 10_000);
+
+  describe('sur ordinateur', () => {
+    const original = window.matchMedia;
+    beforeEach(() => {
+      // Simule un ordinateur : souris et survol disponibles.
+      window.matchMedia = (query: string) => ({ ...original(query), matches: true });
+      useAuthStore.getState().setUser(null);
+    });
+    afterEach(() => {
+      window.matchMedia = original;
+      useAuthStore.getState().setPendingPhone(null);
+    });
+
+    it('demande toujours le numéro, même si un compte a été retenu', async () => {
+      window.localStorage.setItem(
+        'calebasse.account.v1',
+        JSON.stringify({ phone: '772345678', firstName: 'Awa' }),
+      );
+      renderAt('/connexion');
+      expect(
+        await screen.findByRole('heading', { name: 'Connexion' }, TIMEOUT),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Continuer' })).toBeInTheDocument();
+      // (« Awa Fall » figure dans la liste des comptes de démo : on vérifie le titre.)
+      expect(screen.queryByRole('heading', { name: /Bonjour/ })).not.toBeInTheDocument();
+    }, 10_000);
+
+    it('le PIN rappelle le numéro saisi, sans révéler le prénom', async () => {
+      useAuthStore.getState().setPendingPhone('772345678');
+      renderAt('/connexion/pin');
+      expect(
+        await screen.findByRole('heading', { name: 'Votre code PIN' }, TIMEOUT),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/Saisissez le code PIN du \+221 77 234 56 78/)).toBeInTheDocument();
+      expect(screen.queryByText(/Awa/)).not.toBeInTheDocument();
+    }, 10_000);
+  });
 
   it('accueil participant : montants dus et prochain tour', async () => {
     await loginAs('u-p1');

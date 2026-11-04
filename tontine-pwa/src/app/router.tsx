@@ -47,25 +47,29 @@ const SuperGroupsPage = lazy(() => import('@/features/admin/groups/SuperGroupsPa
 const MembersPage = lazy(() => import('@/features/admin/members/MembersPage'));
 const MemberDetailPage = lazy(() => import('@/features/admin/members/MemberDetailPage'));
 const TransactionsPage = lazy(() =>
-  import('@/features/admin/platform/PlatformPages').then((m) => ({ default: m.TransactionsPage })),
+  import('@/features/admin/platform/TransactionsPage').then((m) => ({
+    default: m.TransactionsPage,
+  })),
 );
 const PayoutsPage = lazy(() =>
-  import('@/features/admin/platform/PlatformPages').then((m) => ({ default: m.PayoutsPage })),
+  import('@/features/admin/platform/PayoutsPage').then((m) => ({ default: m.PayoutsPage })),
 );
 const DisputesPage = lazy(() =>
-  import('@/features/admin/platform/PlatformPages').then((m) => ({ default: m.DisputesPage })),
+  import('@/features/admin/platform/DisputesPage').then((m) => ({ default: m.DisputesPage })),
 );
 const AnnouncementsPage = lazy(() =>
-  import('@/features/admin/platform/PlatformPages').then((m) => ({ default: m.AnnouncementsPage })),
+  import('@/features/admin/platform/AnnouncementsPage').then((m) => ({
+    default: m.AnnouncementsPage,
+  })),
 );
 const ReportsPage = lazy(() =>
-  import('@/features/admin/platform/PlatformPages').then((m) => ({ default: m.ReportsPage })),
+  import('@/features/admin/platform/ReportsPage').then((m) => ({ default: m.ReportsPage })),
 );
 const AuditPage = lazy(() =>
-  import('@/features/admin/platform/PlatformPages').then((m) => ({ default: m.AuditPage })),
+  import('@/features/admin/platform/AuditPage').then((m) => ({ default: m.AuditPage })),
 );
 const SettingsPage = lazy(() =>
-  import('@/features/admin/platform/PlatformPages').then((m) => ({ default: m.SettingsPage })),
+  import('@/features/admin/platform/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
 const DemoUiPage = lazy(() => import('./DemoUiPage'));
 const NotFoundPage = lazy(() => import('./NotFoundPage'));

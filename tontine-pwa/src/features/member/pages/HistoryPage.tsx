@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { format, isSameMonth, startOfMonth, subMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ArrowDownLeft, ArrowUpRight, Download } from 'lucide-react';
+import { useShowMore } from '@/features/admin/components/useShowMore';
 import { downloadPaymentReceipt } from '@/features/payments/receipts';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { cn } from '@/lib/cn';
@@ -74,11 +75,11 @@ function TransactionRow({ item, onOpen }: { item: MyTransaction; onOpen: () => v
           {payout ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[15px] font-semibold">
-            {payout ? 'Cagnotte reçue' : 'Cotisation'} · {item.groupName}
-          </span>
+          {/* Le nom du groupe en titre (il était coupé après « Cotisation · »). */}
+          <span className="block truncate text-[15px] font-semibold">{item.groupName}</span>
           <span className="block text-[13px] text-slate-600">
-            {shortDate(item.date)} · tour {item.roundNumber}
+            {payout ? 'Cagnotte reçue' : 'Cotisation'} · {shortDate(item.date)} · tour{' '}
+            {item.roundNumber}
             {item.kind === 'contribution' ? ` · ${paymentMethodLabel(item.payment.method)}` : ''}
           </span>
         </span>
@@ -188,6 +189,8 @@ export default function HistoryPage() {
     .filter((t) => t.kind === 'contribution' && t.payment.status === 'paid')
     .reduce((sum, t) => sum + (t.kind === 'contribution' ? t.payment.amount : 0), 0);
   const received = visible.reduce((sum, t) => sum + (t.kind === 'payout' ? t.amount : 0), 0);
+  // Les totaux portent sur toute la sélection ; la liste s'affiche par 30 opérations.
+  const page = useShowMore(visible, 30, `${groupId}|${period}`);
 
   return (
     <div className="flex flex-col gap-4 motion-safe:animate-fade-in">
@@ -226,7 +229,11 @@ export default function HistoryPage() {
             ))}
           </select>
         </label>
-        <div role="radiogroup" aria-label="Période" className="grid grid-cols-4 rounded-lg bg-slate-100 p-1">
+        <div
+          role="radiogroup"
+          aria-label="Période"
+          className="grid grid-cols-4 rounded-lg bg-slate-100 p-1"
+        >
           {PERIODS.map((p) => (
             <button
               key={p.id}
@@ -236,7 +243,9 @@ export default function HistoryPage() {
               onClick={() => setPeriod(p.id)}
               className={cn(
                 'min-h-[40px] rounded-md text-[13px] font-semibold transition-colors duration-150',
-                period === p.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900',
+                period === p.id
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900',
               )}
             >
               {p.label}
@@ -260,9 +269,11 @@ export default function HistoryPage() {
         />
       ) : (
         <div className="flex flex-col gap-4">
-          {byMonth(visible).map(({ month, items }) => (
+          {byMonth(page.visible).map(({ month, items }) => (
             <section key={month} aria-label={monthHeading(month)}>
-              <h2 className="mb-2 text-[13px] font-semibold text-slate-600">{monthHeading(month)}</h2>
+              <h2 className="mb-2 text-[13px] font-semibold text-slate-600">
+                {monthHeading(month)}
+              </h2>
               <Card>
                 <ul className="divide-y divide-slate-200">
                   {items.map((item) => (
@@ -272,6 +283,11 @@ export default function HistoryPage() {
               </Card>
             </section>
           ))}
+          {page.remaining > 0 ? (
+            <Button variant="secondary" block onClick={page.loadMore}>
+              Voir plus ({page.remaining} restante{page.remaining > 1 ? 's' : ''})
+            </Button>
+          ) : null}
         </div>
       )}
 

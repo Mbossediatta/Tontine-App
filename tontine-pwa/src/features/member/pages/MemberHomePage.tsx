@@ -145,7 +145,7 @@ function MonthStatusList({ groups }: { groups: GroupOverview[] }) {
                 {myStatus ? (
                   <StatusPill status={myStatus} />
                 ) : (
-                  <span className="text-[13px] text-slate-600">
+                  <span className="shrink-0 whitespace-nowrap text-[13px] text-slate-600">
                     {group.status === 'draft' ? 'Pas commencé' : 'Terminé'}
                   </span>
                 )}

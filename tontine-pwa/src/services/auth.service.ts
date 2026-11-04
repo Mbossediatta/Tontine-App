@@ -19,6 +19,12 @@ export interface OtpResult {
  */
 export interface AuthService {
   getSession(): Promise<SessionState>;
+  /**
+   * Connexion sur ordinateur : « pin » si le numéro a déjà un PIN utilisable (on le
+   * demande directement), sinon « otp » (nouveau compte, PIN oublié, bloqué ou
+   * réinitialisé : code SMS d'abord). Ne révèle ni le nom ni aucune autre donnée.
+   */
+  loginMethod(phone: string): Promise<'pin' | 'otp'>;
   sendOtp(phone: string): Promise<void>;
   /** Vérifie le code SMS : le numéro est alors prouvé pour l'étape suivante. */
   verifyOtp(phone: string, code: string): Promise<OtpResult>;

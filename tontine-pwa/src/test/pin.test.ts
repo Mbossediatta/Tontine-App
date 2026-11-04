@@ -76,4 +76,14 @@ describe('connexion par SMS puis PIN', () => {
   it('sans numéro prouvé par SMS, impossible de remplacer un PIN', async () => {
     await expect(authService.setPin('2580')).rejects.toThrow(/Session expirée/);
   }, 10_000);
+
+  it('sur ordinateur : PIN direct si le numéro en a un, sinon code SMS', async () => {
+    expect(await authService.loginMethod(AWA)).toBe('pin');
+    expect(await authService.loginMethod(NEW_NUMBER)).toBe('otp');
+    // PIN bloqué : il faut repasser par le SMS.
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      await authService.loginWithPin(AWA, '9999').catch(() => undefined);
+    }
+    expect(await authService.loginMethod(AWA)).toBe('otp');
+  }, 20_000);
 });

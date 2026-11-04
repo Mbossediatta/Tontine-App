@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { create } from 'zustand';
+import { isComputer } from '@/lib/device';
 import { authService } from '@/services';
 import type { User } from '@/types';
 
@@ -79,22 +80,30 @@ export function useCurrentUser(): User {
 }
 
 /**
- * Lit la session au démarrage de l'application. Une session existante démarre
- * verrouillée : à chaque ouverture, le PIN est redemandé (écran de déverrouillage).
+ * Lit la session au démarrage de l'application.
+ * - Téléphone : une session existante démarre verrouillée ; à chaque ouverture, le PIN
+ *   est redemandé (écran « Bonjour Awa »).
+ * - Ordinateur (souvent partagé) : rien n'est retenu d'une ouverture à l'autre ; une
+ *   session restée ouverte est fermée et l'écran du numéro s'affiche.
  */
 export function useAuthBootstrap(): void {
   useEffect(() => {
     let cancelled = false;
     authService
       .getSession()
-      .then((session) => {
+      .then(async (session) => {
         if (cancelled) return;
+        useAuthStore.setState({ lockAfterMinutes: session.lockAfterMinutes });
+        if (session.user && isComputer()) {
+          await authService.logout();
+          if (!cancelled) useAuthStore.getState().setUser(null);
+          return;
+        }
         const store = useAuthStore.getState();
         store.setUser(session.user);
         store.setNeedsProfile(session.needsProfile);
         store.setNeedsPin(session.needsPin);
         store.setLocked(session.user !== null && !session.needsPin);
-        useAuthStore.setState({ lockAfterMinutes: session.lockAfterMinutes });
       })
       .catch(() => {
         if (!cancelled) useAuthStore.getState().setUser(null);

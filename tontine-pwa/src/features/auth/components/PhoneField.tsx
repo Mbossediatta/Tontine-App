@@ -9,13 +9,21 @@ interface PhoneFieldProps {
   onChange: (digits: string) => void;
   error?: string;
   autoFocus?: boolean;
+  /** Texte d'aide sous le champ (par défaut : le code arrive par SMS). */
+  hint?: string;
 }
 
 /**
  * Champ du numéro : indicatif +221 affiché devant, clavier numérique, et espaces
  * ajoutés au fil de la frappe (« 77 123 45 67 »). Seuls les chiffres sont conservés.
  */
-export function PhoneField({ value, onChange, error, autoFocus }: PhoneFieldProps) {
+export function PhoneField({
+  value,
+  onChange,
+  error,
+  autoFocus,
+  hint = 'Vous recevrez un code de vérification par SMS.',
+}: PhoneFieldProps) {
   const id = useId();
   const hintId = `${id}-hint`;
   // Neuf chiffres saisis mais pas un mobile sénégalais : on le dit tout de suite.
@@ -61,7 +69,7 @@ export function PhoneField({ value, onChange, error, autoFocus }: PhoneFieldProp
           message ? 'font-medium text-auth-error' : 'text-auth-muted',
         )}
       >
-        {message ?? 'Vous recevrez un code de vérification par SMS.'}
+        {message ?? hint}
       </p>
     </div>
   );

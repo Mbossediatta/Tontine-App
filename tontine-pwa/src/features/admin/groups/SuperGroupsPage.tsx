@@ -8,6 +8,7 @@ import { groupContributionLabel, fullName, plural, searchable } from '@/lib/form
 import type { GroupOverview } from '@/types';
 import { headerLinkClass } from '../components/linkStyles';
 import { CollapsibleFilters, FilterChips, SearchField } from '../components/ListToolbar';
+import { Paged } from '../components/Paged';
 import { useAdmins, useAllGroups, useCommunities } from '../queries';
 
 type StatusFilter = 'all' | 'active' | 'draft' | 'suspended' | 'finished' | 'archived';
@@ -165,68 +166,80 @@ export default function SuperGroupsPage() {
             );
           }
           return (
-            <Card>
-              <div
-                className={`hidden gap-3 border-b border-line px-2 pb-2 text-small uppercase tracking-wide text-muted md:grid ${COLUMNS}`}
-                aria-hidden="true"
-              >
-                <span>Groupe</span>
-                <span>Administrateur</span>
-                <span>Personnes / parts</span>
-                <span>Tour</span>
-                <span>Statut</span>
-                <span />
-              </div>
-              <ul className="divide-y divide-line">
-                {visible.map(
-                  ({
-                    group,
-                    adminName,
-                    activeMemberCount,
-                    activeShareCount,
-                    currentRound,
-                    totalRounds,
-                  }) => (
-                    <li key={group.id}>
-                      {/* Mobile : nom + statut, puis cotisation, admin et chiffres sur 2 lignes. */}
-                      <Link
-                        to={`/admin/groupes/${group.id}`}
-                        className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-control px-2 py-3 transition-colors duration-150 hover:bg-blue-50 ${COLUMNS}`}
-                      >
-                        <span className="min-w-0 md:order-1">
-                          <span className="block truncate font-bold text-ink">{group.name}</span>
-                          <span className="block text-small text-muted">
-                            {groupContributionLabel(group)}
-                          </span>
-                        </span>
-                        <span className="flex flex-wrap justify-end gap-1 md:order-5 md:justify-start">
-                          <GroupStatusBadge status={group.status} />
-                          {group.archivedAt ? (
-                            <Badge icon={<Archive className="h-3.5 w-3.5" aria-hidden="true" />}>
-                              Archivé
-                            </Badge>
-                          ) : null}
-                        </span>
-                        <span className="col-span-2 truncate text-label text-ink md:order-2 md:col-span-1">
-                          <span className="text-muted md:hidden">Admin : </span>
-                          {adminName}
-                        </span>
-                        <span className="text-label tabular-nums text-ink md:order-3">
-                          {activeMemberCount} pers. · {activeShareCount}/{group.maxMembers} parts
-                        </span>
-                        <span className="justify-self-end text-label tabular-nums text-ink md:order-4 md:justify-self-auto">
-                          {currentRound ? `Tour ${currentRound.number} / ${totalRounds}` : '—'}
-                        </span>
-                        <ChevronRight
-                          className="hidden h-5 w-5 text-muted md:order-6 md:block"
-                          aria-hidden="true"
-                        />
-                      </Link>
-                    </li>
-                  ),
-                )}
-              </ul>
-            </Card>
+            <Paged
+              items={visible}
+              resetKey={[status, communityId, adminId, amount, size, search].join('|')}
+            >
+              {(page) => (
+                <Card>
+                  <div
+                    className={`hidden gap-3 border-b border-line px-2 pb-2 text-small uppercase tracking-wide text-muted md:grid ${COLUMNS}`}
+                    aria-hidden="true"
+                  >
+                    <span>Groupe</span>
+                    <span>Administrateur</span>
+                    <span>Personnes / parts</span>
+                    <span>Tour</span>
+                    <span>Statut</span>
+                    <span />
+                  </div>
+                  <ul className="divide-y divide-line">
+                    {page.map(
+                      ({
+                        group,
+                        adminName,
+                        activeMemberCount,
+                        activeShareCount,
+                        currentRound,
+                        totalRounds,
+                      }) => (
+                        <li key={group.id}>
+                          {/* Mobile : nom + statut, puis cotisation, admin et chiffres sur 2 lignes. */}
+                          <Link
+                            to={`/admin/groupes/${group.id}`}
+                            className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-control px-2 py-3 transition-colors duration-150 hover:bg-blue-50 ${COLUMNS}`}
+                          >
+                            <span className="min-w-0 md:order-1">
+                              <span className="block truncate font-bold text-ink">
+                                {group.name}
+                              </span>
+                              <span className="block text-small text-muted">
+                                {groupContributionLabel(group)}
+                              </span>
+                            </span>
+                            <span className="flex flex-wrap justify-end gap-1 md:order-5 md:justify-start">
+                              <GroupStatusBadge status={group.status} />
+                              {group.archivedAt ? (
+                                <Badge
+                                  icon={<Archive className="h-3.5 w-3.5" aria-hidden="true" />}
+                                >
+                                  Archivé
+                                </Badge>
+                              ) : null}
+                            </span>
+                            <span className="col-span-2 truncate text-label text-ink md:order-2 md:col-span-1">
+                              <span className="text-muted md:hidden">Admin : </span>
+                              {adminName}
+                            </span>
+                            <span className="text-label tabular-nums text-ink md:order-3">
+                              {activeMemberCount} pers. · {activeShareCount}/{group.maxMembers}{' '}
+                              parts
+                            </span>
+                            <span className="justify-self-end text-label tabular-nums text-ink md:order-4 md:justify-self-auto">
+                              {currentRound ? `Tour ${currentRound.number} / ${totalRounds}` : '—'}
+                            </span>
+                            <ChevronRight
+                              className="hidden h-5 w-5 text-muted md:order-6 md:block"
+                              aria-hidden="true"
+                            />
+                          </Link>
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                </Card>
+              )}
+            </Paged>
           );
         }}
       </AsyncContent>

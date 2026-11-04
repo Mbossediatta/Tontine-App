@@ -23,7 +23,7 @@ function readDismissed(): boolean {
 export function PushPromptCard() {
   const { state, busy, subscribe } = usePushPermission();
   const { installed } = useInstallPrompt();
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, isAdmin } = useAuth();
   const [dismissed, setDismissed] = useState(readDismissed);
 
   if (dismissed || state === 'granted' || state === 'denied') return null;
@@ -57,6 +57,15 @@ export function PushPromptCard() {
             <p className="text-label text-ink">
               Soyez prévenu sur votre téléphone des paiements échoués, des retards et des demandes
               en attente.
+            </p>
+          </>
+        ) : isAdmin ? (
+          // L'administrateur suit d'abord ses groupes.
+          <>
+            <p className="font-semibold text-ink">Recevez les alertes de vos groupes</p>
+            <p className="text-label text-ink">
+              Soyez prévenu sur votre téléphone des paiements reçus, des retards et des nouvelles
+              demandes d’adhésion.
             </p>
           </>
         ) : (

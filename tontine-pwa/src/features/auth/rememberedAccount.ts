@@ -1,6 +1,8 @@
 // Compte mémorisé sur cet appareil, pour afficher directement « Bonjour Awa » et le
-// pavé du PIN aux ouvertures suivantes. Seuls le numéro et le prénom sont gardés :
-// jamais le PIN, ni en clair ni autrement.
+// pavé du PIN aux ouvertures suivantes et après une déconnexion. Seuls le numéro et
+// le prénom sont gardés : jamais le PIN, ni en clair ni autrement.
+// Téléphone uniquement : sur ordinateur (souvent partagé), rien n'est retenu.
+import { isComputer } from '@/lib/device';
 
 const KEY = 'calebasse.account.v1';
 
@@ -9,7 +11,9 @@ export interface RememberedAccount {
   firstName: string;
 }
 
+/** Sur ordinateur, aucun compte n'est retenu : on redemande toujours le numéro. */
 export function getRememberedAccount(): RememberedAccount | null {
+  if (isComputer()) return null;
   try {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return null;
@@ -23,6 +27,7 @@ export function getRememberedAccount(): RememberedAccount | null {
 }
 
 export function rememberAccount(account: RememberedAccount): void {
+  if (isComputer()) return;
   try {
     window.localStorage.setItem(KEY, JSON.stringify(account));
   } catch {
