@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/hooks/useAuth';
-import { env } from '@/lib/env';
 import { errorMessage } from '@/lib/errors';
 import { formatPhone } from '@/lib/format';
 import { authService } from '@/services';
@@ -13,6 +12,13 @@ import type { RedirectState } from './redirect';
 const CODE_LENGTH = 6;
 /** Secondes avant de pouvoir redemander un code. */
 const RESEND_DELAY = 45;
+
+// Code affiché à l'écran : mode démonstration seulement. La condition porte sur
+// import.meta.env pour être résolue à la construction : absent du build de production.
+const DemoOtpHint =
+  import.meta.env.VITE_USE_MOCKS === 'true'
+    ? lazy(() => import('./DemoOtpHint').then((m) => ({ default: m.DemoOtpHint })))
+    : null;
 
 /** « 0:45 » */
 const formatCountdown = (seconds: number) =>
@@ -36,6 +42,8 @@ export default function OtpPage() {
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(RESEND_DELAY);
+  // Nombre de renvois du code : l'encart de démonstration relit alors le dernier code.
+  const [sentCount, setSentCount] = useState(0);
   const lastSubmitted = useRef('');
 
   // Compte à rebours avant « Renvoyer le code ».
@@ -94,6 +102,7 @@ export default function OtpPage() {
       await authService.sendOtp(phone);
       setSecondsLeft(RESEND_DELAY);
       setCode('');
+      setSentCount((count) => count + 1);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -161,11 +170,10 @@ export default function OtpPage() {
           )}
         </div>
 
-        {env.useMocks ? (
-          <p className="rounded-[12px] bg-auth-page px-4 py-3 text-center text-[13px] leading-5 text-auth-muted">
-            Mode démonstration : aucun SMS n’est envoyé. Le code est affiché dans la console du
-            navigateur (touche F12).
-          </p>
+        {DemoOtpHint ? (
+          <Suspense fallback={null}>
+            <DemoOtpHint phone={phone} sent={sentCount} onUse={setCode} />
+          </Suspense>
         ) : null}
       </form>
     </AuthScreen>
