@@ -2,7 +2,9 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Icône de l'onglet : emblème du logo officiel (voir public/icons pour l'appli installée). -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Calebasse" />
@@ -11,7 +13,7 @@
     <meta name="description" content="Gérez vos tontines : cotisations, tours et cagnottes." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="image" href="/brand/logo-mark.png" />
+    <link rel="preload" as="image" href="/brand/logo-emblem.png" />
     <title>Calebasse de l’Espoir</title>
     <!--
       Écran de démarrage : HTML et CSS seulement, affiché dès les premiers octets reçus
@@ -73,10 +75,8 @@
         animation: splash-pop 700ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
       }
       /*
-        L'emblème est cadré dans une pastille ronde de 112 px, posée dans le rond blanc :
-        l'image (carrée, emblème jusqu'aux bords, avec un morceau du téléphone du logo
-        complet à droite) est un peu agrandie et décalée pour que la calebasse soit
-        centrée et que les bords coupés restent hors du cercle.
+        Emblème rond de 112 px (public/brand/logo-emblem.png, tiré du logo officiel, déjà
+        cadré et centré, coins transparents), posé dans le rond blanc.
       */
       .splash-logo-frame {
         position: relative;
@@ -89,12 +89,9 @@
           splash-float 3.2s ease-in-out 1s infinite;
       }
       .splash-logo {
-        position: absolute;
-        left: -4px;
-        top: -6px;
-        width: 124px;
-        height: 124px;
-        max-width: none;
+        display: block;
+        width: 112px;
+        height: 112px;
       }
       /* Trois pièces qui montent doucement autour du logo. */
       .splash-coin {
@@ -205,7 +202,7 @@
         <span class="splash-coin c2"></span>
         <span class="splash-coin c3"></span>
         <span class="splash-logo-frame">
-          <img class="splash-logo" src="/brand/logo-mark.png" width="124" height="124" alt="" />
+          <img class="splash-logo" src="/brand/logo-emblem.png" width="112" height="112" alt="" />
         </span>
       </div>
       <p class="splash-title">Calebasse <span>de l’Espoir</span></p>

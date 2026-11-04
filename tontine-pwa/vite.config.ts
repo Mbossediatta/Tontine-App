@@ -15,7 +15,7 @@ export default defineConfig({
       srcDir: 'src/sw',
       filename: 'sw.ts',
       registerType: 'prompt',
-      includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
+      includeAssets: ['favicon-32.png', 'favicon-48.png', 'icons/apple-touch-icon.png'],
       manifest: {
         name: 'Calebasse de l’Espoir',
         short_name: 'Calebasse',

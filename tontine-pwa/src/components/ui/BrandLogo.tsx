@@ -1,7 +1,7 @@
 import { cn } from '@/lib/cn';
 
 interface BrandLogoProps {
-  /** full : logo complet avec le nom · mark : emblème seul (calebasse), pour les petits espaces. */
+  /** full : logo complet avec le nom · mark : emblème rond seul (calebasse), pour les petits espaces. */
   variant?: 'full' | 'mark';
   className?: string;
 }
@@ -22,10 +22,10 @@ export function BrandLogo({ variant = 'full', className }: BrandLogoProps) {
     />
   ) : (
     <img
-      src="/brand/logo-mark.png"
+      src="/brand/logo-emblem.png"
       alt="Calebasse de l’Espoir"
-      width={144}
-      height={144}
+      width={384}
+      height={384}
       className={cn('h-10 w-10', className)}
     />
   );
