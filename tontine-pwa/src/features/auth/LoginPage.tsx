@@ -2,7 +2,6 @@ import { lazy, Suspense, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth, useAuthStore } from '@/hooks/useAuth';
 import { isComputer } from '@/lib/device';
-import { env } from '@/lib/env';
 import { errorMessage } from '@/lib/errors';
 import { isSenegalMobile } from '@/lib/validators';
 import { authService } from '@/services';
@@ -12,10 +11,13 @@ import { PhoneField } from './components/PhoneField';
 import { getRememberedAccount } from './rememberedAccount';
 import { redirectTarget, type RedirectState } from './redirect';
 
-// Comptes de démonstration : chargés seulement en mode simulé, absents de la version réelle.
-const DemoAccountPicker = lazy(() =>
-  import('./DemoAccountPicker').then((m) => ({ default: m.DemoAccountPicker })),
-);
+// Comptes de démonstration : seulement en mode simulé. La condition porte directement sur
+// import.meta.env pour être résolue à la construction : en production, ce code n'est
+// même pas inclus dans l'application.
+const DemoAccountPicker =
+  import.meta.env.VITE_USE_MOCKS === 'true'
+    ? lazy(() => import('./DemoAccountPicker').then((m) => ({ default: m.DemoAccountPicker })))
+    : null;
 
 /**
  * Écran 1 — Numéro de téléphone.
@@ -75,7 +77,7 @@ export default function LoginPage() {
       title="Connexion"
       subtitle="Accédez à vos groupes et suivez vos cotisations."
       below={
-        env.useMocks ? (
+        DemoAccountPicker ? (
           <Suspense fallback={null}>
             <DemoAccountPicker
               onDone={(signedIn) => navigate(redirectTarget(location, signedIn), { replace: true })}

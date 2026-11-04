@@ -84,9 +84,11 @@ function BrandPanel() {
  * fond gris très clair, carte blanche de 420 px au plus, logo complet de l'application,
  * titre et phrase centrés. Chaque écran arrive par un court glissement.
  *
- * Sur téléphone, le contenu est collé en haut (rien n'est caché quand le clavier
- * s'ouvre) ; sur tablette, la carte est centrée dans la page ; sur ordinateur, la page
- * passe sur deux colonnes : présentation bleue à gauche, formulaire à droite.
+ * Téléphone et tablette : la carte est centrée verticalement (en production, sans les
+ * comptes de démonstration, elle laissait sinon un grand vide en bas). La hauteur suit
+ * l'écran visible (100dvh) : quand le clavier s'ouvre, la zone rétrécit et le formulaire
+ * reste visible ; si le contenu dépasse, la page défile normalement.
+ * Ordinateur : deux colonnes, présentation bleue à gauche, formulaire à droite.
  */
 export function AuthScreen({ title, subtitle, step, children, below }: AuthScreenProps) {
   return (
@@ -98,7 +100,7 @@ export function AuthScreen({ title, subtitle, step, children, below }: AuthScree
       )}
     >
       <BrandPanel />
-      <div className="flex min-h-[100dvh] flex-col items-center px-4 py-6 sm:justify-center sm:py-10">
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center px-4 py-6 sm:py-10">
         <div className="w-full max-w-[420px]">
           {step ? <Progress {...step} /> : null}
           <section className="rounded-[16px] bg-white px-5 py-7 shadow-[0_1px_2px_rgba(19,35,58,0.06)] motion-safe:animate-slide-in sm:px-8">

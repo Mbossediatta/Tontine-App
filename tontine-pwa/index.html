@@ -72,13 +72,29 @@
           0 2px 6px rgba(19, 35, 58, 0.06);
         animation: splash-pop 700ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
       }
-      .splash-logo {
+      /*
+        L'emblème est cadré dans une pastille ronde de 112 px, posée dans le rond blanc :
+        l'image (carrée, emblème jusqu'aux bords, avec un morceau du téléphone du logo
+        complet à droite) est un peu agrandie et décalée pour que la calebasse soit
+        centrée et que les bords coupés restent hors du cercle.
+      */
+      .splash-logo-frame {
         position: relative;
-        width: 104px;
-        height: 104px;
+        width: 112px;
+        height: 112px;
+        border-radius: 50%;
+        overflow: hidden;
         animation:
           splash-pop 700ms cubic-bezier(0.2, 0.9, 0.3, 1.25) 80ms both,
           splash-float 3.2s ease-in-out 1s infinite;
+      }
+      .splash-logo {
+        position: absolute;
+        left: -4px;
+        top: -6px;
+        width: 124px;
+        height: 124px;
+        max-width: none;
       }
       /* Trois pièces qui montent doucement autour du logo. */
       .splash-coin {
@@ -188,7 +204,9 @@
         <span class="splash-coin c1"></span>
         <span class="splash-coin c2"></span>
         <span class="splash-coin c3"></span>
-        <img class="splash-logo" src="/brand/logo-mark.png" width="104" height="104" alt="" />
+        <span class="splash-logo-frame">
+          <img class="splash-logo" src="/brand/logo-mark.png" width="124" height="124" alt="" />
+        </span>
       </div>
       <p class="splash-title">Calebasse <span>de l’Espoir</span></p>
       <p class="splash-tagline">Votre appli de tontine digitale</p>

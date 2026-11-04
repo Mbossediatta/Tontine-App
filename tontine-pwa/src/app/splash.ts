@@ -3,10 +3,10 @@
 
 /**
  * Durée minimale d'affichage, comptée depuis l'ouverture de la page : le logo, le nom
- * et la phrase sont en place vers 1 s ; on les laisse ensuite se voir un peu plus d'une
- * seconde avant le fondu (durée habituelle d'un écran de démarrage d'appli mobile).
+ * et la phrase sont en place vers 1 s ; on les laisse ensuite se voir environ
+ * 2,5 secondes avant le fondu (demande du 2026-11-04 : un peu plus long).
  */
-const MIN_VISIBLE_MS = 2500;
+const MIN_VISIBLE_MS = 3500;
 /** Durée du fondu de sortie (voir #splash.splash-hide dans index.html). */
 const FADE_MS = 450;
 
