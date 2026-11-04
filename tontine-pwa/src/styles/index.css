@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito+Sans:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-blue-50 font-sans text-body text-ink antialiased;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display text-blue-900;
+  }
+
+  :focus-visible {
+    outline: 3px solid theme('colors.green.300');
+    outline-offset: 2px;
+  }
+
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+/*
+ * Espace membre : une seule famille (Plus Jakarta Sans), texte ardoise foncé.
+ * Les titres reprennent la police et la couleur du texte (pas de Baloo ici).
+ */
+@layer components {
+  .theme-member {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    color: theme('colors.slate.900');
+  }
+  .theme-member h1,
+  .theme-member h2,
+  .theme-member h3 {
+    font-family: inherit;
+    color: inherit;
+  }
+  .theme-member :focus-visible {
+    outline-color: theme('colors.blue.700');
+  }
+}
+
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
