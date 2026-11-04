@@ -6,13 +6,14 @@ import { useAuthStore } from '@/hooks/useAuth';
 import { env } from '@/lib/env';
 import { errorMessage, ServiceError } from '@/lib/errors';
 import { formatPhone } from '@/lib/format';
-import { DEMO_PIN } from '@/mocks/pins';
+import { DEMO_PIN } from '@/lib/demo';
 import { authService } from '@/services';
 import { AuthButton, AuthError, AuthLink } from './components/AuthButton';
 import { AuthScreen } from './components/AuthScreen';
 import { PIN_LENGTH, PinPad } from './components/PinPad';
 import { forgetAccount, getRememberedAccount, rememberAccount } from './rememberedAccount';
 import { redirectTarget, type RedirectState } from './redirect';
+import { clearDataCache } from '@/lib/dataCache';
 
 /**
  * Écran 4 — Déverrouillage par code PIN (ouvertures suivantes, après inactivité, ou
@@ -112,6 +113,7 @@ export default function PinLoginPage() {
   const switchAccount = async () => {
     await authService.logout();
     queryClient.clear();
+    void clearDataCache();
     forgetAccount();
     const store = useAuthStore.getState();
     store.setPendingPhone(null);

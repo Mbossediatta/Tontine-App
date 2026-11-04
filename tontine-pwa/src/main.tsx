@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from '@/app/App';
+import { hideSplash } from '@/app/splash';
 import '@/styles/index.css';
 
 async function removeStaleDevelopmentWorker(): Promise<void> {
@@ -49,6 +50,10 @@ const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Élément #root introuvable');
 }
+
+// Filet de sécurité : l'écran de démarrage ne reste jamais plus de 8 secondes,
+// même si le chargement de la session n'aboutit pas.
+window.setTimeout(hideSplash, 8000);
 
 createRoot(rootElement).render(
   <StrictMode>

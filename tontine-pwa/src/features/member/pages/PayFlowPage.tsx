@@ -9,6 +9,7 @@ import { paymentService } from '@/services';
 import type { InitiatePaymentInput } from '@/types';
 import { deadlineLabel, duesOf, periodLabel, shortDate, type Due } from '../dues';
 import { AmountDisplay } from '../ui/AmountDisplay';
+import { BottomAction } from '../ui/BottomAction';
 import { Button } from '../ui/Button';
 import { Card, PageTitle } from '../ui/Card';
 import { EmptyState, ErrorBlock } from '../ui/EmptyState';
@@ -277,8 +278,8 @@ export default function PayFlowPage() {
         ) : null}
       </div>
 
-      {/* Un seul bouton principal par étape, collé en bas sur téléphone (au-dessus de la barre). */}
-      <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] -mx-page bg-blue-50/95 px-page pb-2 pt-3 lg:static lg:mx-0 lg:bg-transparent lg:px-0">
+      {/* Un seul bouton principal par étape, toujours en bas sur téléphone (au-dessus de la barre). */}
+      <BottomAction>
         {current === 3 ? (
           <Button block loading={sending} disabled={!online} onClick={() => void pay()}>
             {online ? (
@@ -294,7 +295,7 @@ export default function PayFlowPage() {
             Continuer
           </Button>
         )}
-      </div>
+      </BottomAction>
     </div>
   );
 }

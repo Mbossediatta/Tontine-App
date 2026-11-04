@@ -1,4 +1,5 @@
 import { AlertCircle, Check, Clock, RotateCcw, XCircle, type LucideIcon } from 'lucide-react';
+import { useT, type MessageKey } from '@/i18n';
 import { cn } from '@/lib/cn';
 import type { PaymentStatus } from '@/types';
 
@@ -6,12 +7,16 @@ import type { PaymentStatus } from '@/types';
  * Pastille de statut : seul élément en forme de pilule. Toujours une icône ET un mot,
  * jamais la couleur seule. Vert = payé, ambre = en retard, rouge = échec.
  */
-const PILLS: Record<PaymentStatus, { label: string; className: string; Icon: LucideIcon }> = {
-  paid: { label: 'Payé', className: 'bg-green-100 text-green-700', Icon: Check },
-  pending: { label: 'À payer', className: 'bg-slate-100 text-slate-700', Icon: Clock },
-  late: { label: 'En retard', className: 'bg-amber-100 text-amber-700', Icon: AlertCircle },
-  failed: { label: 'Échoué', className: 'bg-danger-bg text-danger', Icon: XCircle },
-  refunded: { label: 'Remboursé', className: 'bg-slate-100 text-slate-700', Icon: RotateCcw },
+const PILLS: Record<PaymentStatus, { label: MessageKey; className: string; Icon: LucideIcon }> = {
+  paid: { label: 'status.paid', className: 'bg-green-100 text-green-700', Icon: Check },
+  pending: { label: 'status.pending', className: 'bg-slate-100 text-slate-700', Icon: Clock },
+  late: { label: 'status.late', className: 'bg-amber-100 text-amber-700', Icon: AlertCircle },
+  failed: { label: 'status.failed', className: 'bg-danger-bg text-danger', Icon: XCircle },
+  refunded: {
+    label: 'status.refunded',
+    className: 'bg-slate-100 text-slate-700',
+    Icon: RotateCcw,
+  },
 };
 
 export function StatusPill({
@@ -24,7 +29,9 @@ export function StatusPill({
   label?: string;
   className?: string;
 }) {
-  const { label: defaultLabel, className: tone, Icon } = PILLS[status];
+  const { t } = useT();
+  const { label: labelKey, className: tone, Icon } = PILLS[status];
+  const defaultLabel = t(labelKey);
   return (
     <span
       className={cn(

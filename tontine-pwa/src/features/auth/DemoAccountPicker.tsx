@@ -3,7 +3,7 @@ import { FlaskConical } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 import { errorMessage } from '@/lib/errors';
 import { DEMO_ACCOUNTS } from '@/mocks';
-import { DEMO_PIN } from '@/mocks/pins';
+import { DEMO_PIN } from '@/lib/demo';
 import { authService } from '@/services';
 import { demoLogin } from '@/services/mock/auth.mock';
 import type { User } from '@/types';

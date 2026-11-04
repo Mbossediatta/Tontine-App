@@ -8,7 +8,6 @@ import { env } from '@/lib/env';
 import { formatDate, fullName, paymentMethodLabel } from '@/lib/format';
 import { useAction } from '@/lib/query';
 import { paymentService } from '@/services';
-import { simulateDeadlinePassed } from '@/services/mock/clock';
 import type { GroupOverview, PaymentStatus, RoundPaymentRow, RoundView } from '@/types';
 import { useRoundPayments } from '../queries';
 import { CashPaymentDialog } from './CashPaymentDialog';
@@ -124,7 +123,9 @@ export function PaymentsTab({ overview }: { overview: GroupOverview }) {
   });
 
   const deadline = useAction({
-    action: (id: string) => simulateDeadlinePassed(id),
+    // Démonstration seulement : la simulation n'est chargée qu'au clic.
+    action: async (id: string) =>
+      (await import('@/services/mock/clock')).simulateDeadlinePassed(id),
     success: 'Date limite dépassée : pénalités appliquées aux retardataires',
   });
 

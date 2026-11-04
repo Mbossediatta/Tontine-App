@@ -1,9 +1,11 @@
 import type {
   AppNotification,
   AuditEntry,
+  SecurityEvent,
   AdminCompensation,
   Community,
   Dispute,
+  PlatformSecrets,
   PlatformSettings,
   ProviderEntry,
   SmsRecord,
@@ -18,7 +20,8 @@ import type {
   User,
 } from '@/types';
 import { seedAudit } from './audit';
-import { seedDisputes, seedProviderLedger, seedSettings, seedSms } from './backoffice';
+import { seedSecurityEvents } from './security';
+import { seedDisputes, seedProviderLedger, seedSecrets, seedSettings, seedSms } from './backoffice';
 import { seedPins } from './pins';
 import { seedGroups } from './groups';
 import { seedNotifications } from './notifications';
@@ -56,6 +59,8 @@ export interface MockDatabase {
   pendingConfirmations: Record<string, { at: number; success: boolean }>;
   /** Journal d'audit, du plus ancien au plus récent. */
   auditLog: AuditEntry[];
+  /** Événements de sécurité (tentatives de connexion, accès refusés, saisies suspectes). */
+  securityEvents: SecurityEvent[];
   /** PIN de connexion, par identifiant d'utilisateur. */
   pins: Record<string, PinRecord>;
   /** Réclamations des membres (litiges et remboursements). */
@@ -65,6 +70,8 @@ export interface MockDatabase {
   /** SMS envoyés (codes, rappels, annonces), pour le suivi des coûts. */
   smsLog: SmsRecord[];
   settings: PlatformSettings;
+  /** Clés secrètes (paiement, SMS) : côté serveur seulement, jamais renvoyées à la page. */
+  secrets: PlatformSecrets;
 }
 
 export function createSeed(now: Date = new Date()): MockDatabase {
@@ -101,10 +108,12 @@ export function createSeed(now: Date = new Date()): MockDatabase {
     pushSubscriptions: {},
     pendingConfirmations: {},
     auditLog: seedAudit(now),
+    securityEvents: seedSecurityEvents(now),
     pins: seedPins(),
     disputes: seedDisputes(now),
     providerLedger: seedProviderLedger(groups.payments, users, now),
     smsLog: seedSms(users, now),
     settings: seedSettings(),
+    secrets: seedSecrets(),
   };
 }

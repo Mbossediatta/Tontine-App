@@ -7,6 +7,7 @@ import { contributionLabel, plural } from '@/lib/format';
 import { useAction } from '@/lib/query';
 import { groupService } from '@/services';
 import type { GroupOverview } from '@/types';
+import { BottomAction } from '../ui/BottomAction';
 import { Button } from '../ui/Button';
 import { Card, PageTitle, SectionHeader } from '../ui/Card';
 import { EmptyState, ErrorBlock } from '../ui/EmptyState';
@@ -26,21 +27,7 @@ export default function MemberGroupsPage() {
 
   return (
     <div className="flex flex-col gap-4 motion-safe:animate-fade-in">
-      <PageTitle
-        aside={
-          groups.length > 0 ? (
-            <Button
-              variant="quiet"
-              onClick={() => setJoinOpen(true)}
-              icon={<Plus className="h-5 w-5" aria-hidden="true" />}
-            >
-              Rejoindre
-            </Button>
-          ) : null
-        }
-      >
-        Mes groupes
-      </PageTitle>
+      <PageTitle>Mes groupes</PageTitle>
 
       {query.isPending ? (
         <ListSkeleton rows={3} />
@@ -112,6 +99,18 @@ export default function MemberGroupsPage() {
         joining={joinOpenGroup.isPending}
         joinedId={joinOpenGroup.variables}
       />
+      {/* « Rejoindre » en bas, à portée de pouce (l'état vide a déjà son propre bouton). */}
+      {groups.length > 0 ? (
+        <BottomAction>
+          <Button
+            block
+            onClick={() => setJoinOpen(true)}
+            icon={<Plus className="h-5 w-5" aria-hidden="true" />}
+          >
+            Rejoindre un groupe
+          </Button>
+        </BottomAction>
+      ) : null}
       <JoinGroupDialog open={joinOpen} onClose={() => setJoinOpen(false)} />
     </div>
   );

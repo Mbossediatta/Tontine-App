@@ -68,6 +68,9 @@ const ReportsPage = lazy(() =>
 const AuditPage = lazy(() =>
   import('@/features/admin/platform/AuditPage').then((m) => ({ default: m.AuditPage })),
 );
+const SecurityPage = lazy(() =>
+  import('@/features/admin/platform/SecurityPage').then((m) => ({ default: m.SecurityPage })),
+);
 const SettingsPage = lazy(() =>
   import('@/features/admin/platform/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
@@ -163,6 +166,7 @@ export const routes: RouteObject[] = [
               { path: '/admin/annonces', element: <AnnouncementsPage /> },
               { path: '/admin/rapports', element: <ReportsPage /> },
               { path: '/admin/audit', element: <AuditPage /> },
+              { path: '/admin/securite', element: <SecurityPage /> },
               { path: '/admin/parametres', element: <SettingsPage /> },
             ],
           },

@@ -6,6 +6,8 @@ import { useNotificationPreferences } from '@/features/notifications/queries';
 import { DeleteAccountCard } from '@/features/profile/DeleteAccountCard';
 import { EditProfileDialog } from '@/features/profile/EditProfileDialog';
 import { useCurrentUser } from '@/hooks/useAuth';
+import { LANGUAGES, useLanguageStore, useT } from '@/i18n';
+import { cn } from '@/lib/cn';
 import { formatPhone, fullName, initials } from '@/lib/format';
 import { useAction } from '@/lib/query';
 import { notificationService } from '@/services';
@@ -16,7 +18,11 @@ import { Button } from '../ui/Button';
 import { Card, PageTitle, SectionHeader } from '../ui/Card';
 import { Skeleton } from '../ui/Skeleton';
 
-const PREFERENCES: Array<{ key: keyof NotificationPreferences; label: string; description: string }> = [
+const PREFERENCES: Array<{
+  key: keyof NotificationPreferences;
+  label: string;
+  description: string;
+}> = [
   { key: 'reminders', label: 'Rappels de cotisation', description: 'Avant chaque date limite' },
   { key: 'payments', label: 'Paiements', description: 'Confirmation de chaque paiement' },
   { key: 'beneficiary', label: 'Bénéficiaire du mois', description: 'Qui reçoit la cagnotte' },
@@ -81,6 +87,47 @@ function NotificationPreferencesList() {
 }
 
 /** Profil : identité, sécurité (PIN), réception de la cagnotte, notifications, déconnexion. */
+/**
+ * Choix de la langue. Le titre est bilingue pour être trouvé quelle que soit la
+ * langue affichée ; le choix est mémorisé sur l'appareil.
+ */
+function LanguagePicker() {
+  const { t, language } = useT();
+  const setLanguage = useLanguageStore((state) => state.setLanguage);
+  return (
+    <section aria-labelledby="language">
+      <SectionHeader id="language" title="Langue · Làkk" />
+      <div
+        role="radiogroup"
+        aria-labelledby="language"
+        className="grid grid-cols-2 rounded-lg bg-slate-100 p-1"
+      >
+        {LANGUAGES.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={language === option.value}
+            lang={option.value}
+            onClick={() => setLanguage(option.value)}
+            className={cn(
+              'min-h-[44px] rounded-md text-[15px] font-semibold transition-colors duration-150',
+              language === option.value
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900',
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      {language === 'wo' ? (
+        <p className="mt-2 text-[13px] text-slate-600">{t('language.hint')}</p>
+      ) : null}
+    </section>
+  );
+}
+
 export default function MemberProfilePage() {
   const user = useCurrentUser();
   const logout = useLogout();
@@ -131,6 +178,8 @@ export default function MemberProfilePage() {
           </ul>
         </Card>
       </section>
+
+      <LanguagePicker />
 
       <section aria-labelledby="notifications">
         <SectionHeader id="notifications" title="Notifications" />

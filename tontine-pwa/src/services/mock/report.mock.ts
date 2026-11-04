@@ -8,7 +8,7 @@ import {
 } from 'date-fns';
 import { ServiceError } from '@/lib/errors';
 import { fullName } from '@/lib/format';
-import type { AuditView, ReportRow, Round } from '@/types';
+import type { AuditView, ReportRow, Round, SecurityEventView } from '@/types';
 import type { ReportService } from '../report.service';
 import { assertSuperAdmin } from './access';
 import { currentUser, db, delay, findUser } from './db';
@@ -164,6 +164,17 @@ export const mockReportService: ReportService = {
       .map((entry): AuditView => {
         const actor = findUser(entry.actorId);
         return { entry, actorName: actor ? fullName(actor) : 'Compte supprimé' };
+      });
+  },
+
+  async securityLog() {
+    await delay();
+    assertSuperAdmin(currentUser());
+    return [...db.securityEvents]
+      .sort((a, b) => b.at.localeCompare(a.at))
+      .map((event): SecurityEventView => {
+        const user = event.userId ? findUser(event.userId) : undefined;
+        return { event, userName: user ? fullName(user) : undefined };
       });
   },
 };

@@ -4,8 +4,8 @@ import { ServiceError } from '@/lib/errors';
 import { createSeed, type MockDatabase } from '@/mocks';
 import type { User } from '@/types';
 
-// v7 : communautés et affectation des groupes.
-const DB_KEY = 'tontine.mock.db.v7';
+// v9 : clés secrètes séparées des paramètres (jamais renvoyées à la page).
+const DB_KEY = 'tontine.mock.db.v9';
 const SESSION_KEY = 'tontine.mock.session.v1';
 const PENDING_PHONE_KEY = 'tontine.mock.pendingPhone.v1';
 

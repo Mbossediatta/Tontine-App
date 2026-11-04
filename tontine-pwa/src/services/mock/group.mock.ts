@@ -28,6 +28,7 @@ import {
 import { recordAudit } from './audit';
 import { synchronize } from './clock';
 import { createRounds, notify, notifyManagers } from './lifecycle';
+import { inspectInput } from './security';
 import { buildOverview } from './views';
 
 function findByCode(code: string): Group {
@@ -132,6 +133,8 @@ export const mockGroupService: GroupService = {
     // Administrateur : il gère son groupe et en est le premier membre (propriétaire),
     // ou bien il le confie à un autre admin, qui le gère seul.
     assertWithinLimits(input);
+    inspectInput('Nom du groupe', input.name, user.id);
+    inspectInput('Description du groupe', input.description, user.id);
     const byPlatform = isSuperAdmin(user);
     const delegated = !byPlatform && !!input.adminId && input.adminId !== user.id;
     const adminId = byPlatform || delegated ? requireActiveAdmin(input.adminId) : user.id;
@@ -200,6 +203,8 @@ export const mockGroupService: GroupService = {
     const group = requireGroup(groupId);
     assertCanManage(group, user);
     assertWithinLimits(input);
+    inspectInput('Nom du groupe', input.name, user.id);
+    inspectInput('Description du groupe', input.description, user.id);
     if (
       input.sharesPerRound !== undefined &&
       input.sharesPerRound > (input.maxMembers ?? group.maxMembers)

@@ -1,9 +1,18 @@
+import { useState } from 'react';
 import { Button, Card, CardTitle, Input, Textarea } from '@/components/ui';
 import type { PlatformSettings } from '@/types';
-import { numberUpdater, useSaveSettings, type SectionProps } from './settingsState';
+import { SecretField } from './SecretField';
+import {
+  numberUpdater,
+  useSaveSecretSettings,
+  useSaveSettings,
+  type SectionProps,
+} from './settingsState';
 
 export function SmsSection({ settings, setSettings }: SectionProps) {
-  const saveSms = useSaveSettings('sms');
+  const saveSms = useSaveSecretSettings('sms');
+  // Nouvelle clé API éventuelle : vidée une fois enregistrée.
+  const [newSecret, setNewSecret] = useState('');
   const updateNumber = numberUpdater(setSettings);
   return (
     <Card className="flex flex-col gap-4">
@@ -24,14 +33,11 @@ export function SmsSection({ settings, setSettings }: SectionProps) {
             setSettings({ ...settings, sms: { ...settings.sms, senderName: event.target.value } })
           }
         />
-        <Input
-          label="Clé API"
-          type="password"
-          autoComplete="new-password"
-          value={settings.sms.apiKey}
-          onChange={(event) =>
-            setSettings({ ...settings, sms: { ...settings.sms, apiKey: event.target.value } })
-          }
+        <SecretField
+          label="Nouvelle clé API"
+          hint={settings.sms.apiKeyHint}
+          value={newSecret}
+          onChange={setNewSecret}
         />
         <Input
           label="Coût par SMS (FCFA)"
@@ -44,7 +50,9 @@ export function SmsSection({ settings, setSettings }: SectionProps) {
       <Button
         variant="blue"
         loading={saveSms.isPending}
-        onClick={() => saveSms.mutate(settings.sms)}
+        onClick={() =>
+          saveSms.mutate({ values: settings.sms, newSecret }, { onSuccess: () => setNewSecret('') })
+        }
       >
         Enregistrer le fournisseur
       </Button>

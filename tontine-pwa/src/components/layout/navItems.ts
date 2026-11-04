@@ -10,6 +10,7 @@ import {
   PlusCircle,
   Scale,
   ScrollText,
+  ShieldAlert,
   Settings,
   ShieldCheck,
   User,
@@ -17,6 +18,7 @@ import {
   UsersRound,
   type LucideIcon,
 } from 'lucide-react';
+import type { MessageKey } from '@/i18n';
 import type { GlobalRole } from '@/types';
 
 export interface NavItem {
@@ -24,6 +26,8 @@ export interface NavItem {
   label: string;
   /** Libellé court pour la barre du bas. */
   shortLabel?: string;
+  /** Rubriques du participant : libellé traduit dans la langue choisie (remplace `label`). */
+  labelKey?: MessageKey;
   icon: LucideIcon;
   /** Affiche le point des notifications non lues. */
   showUnread?: boolean;
@@ -41,18 +45,20 @@ const DASHBOARD: NavItem = {
   icon: LayoutDashboard,
   primary: true,
 };
-const HOME: NavItem = { to: '/', label: 'Accueil', icon: Home };
-const ADMIN_HOME: NavItem = { ...HOME, label: 'Espace membre' };
-const GROUPS: NavItem = { to: '/groupes', label: 'Groupes', icon: Users };
+const HOME: NavItem = { to: '/', label: 'Accueil', labelKey: 'nav.home', icon: Home };
+const ADMIN_HOME: NavItem = { ...HOME, label: 'Espace membre', labelKey: undefined };
+const GROUPS: NavItem = { to: '/groupes', label: 'Groupes', labelKey: 'nav.groups', icon: Users };
 const MEMBER_PAY: NavItem = {
   to: '/payer',
   label: 'Payer',
+  labelKey: 'nav.pay',
   icon: CreditCard,
   primary: true,
 };
 const MEMBER_HISTORY: NavItem = {
   to: '/historique',
   label: 'Historique',
+  labelKey: 'nav.history',
   icon: History,
   primary: true,
 };
@@ -76,7 +82,7 @@ const CREATE_GROUP: NavItem = {
   icon: PlusCircle,
   primary: true,
 };
-const PROFILE: NavItem = { to: '/profil', label: 'Profil', icon: User };
+const PROFILE: NavItem = { to: '/profil', label: 'Profil', labelKey: 'nav.profile', icon: User };
 
 /**
  * Les 12 rubriques du back-office (cahier du super administrateur), dans son ordre.
@@ -120,6 +126,7 @@ const SUPER_ADMIN_ITEMS: NavItem[] = [
     icon: ChartColumn,
   },
   { to: '/admin/audit', label: 'Journal d’audit', shortLabel: 'Audit', icon: ScrollText },
+  { to: '/admin/securite', label: 'Sécurité', icon: ShieldAlert },
   { to: '/admin/parametres', label: 'Paramètres', icon: Settings },
 ];
 

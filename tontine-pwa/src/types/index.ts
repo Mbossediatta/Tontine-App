@@ -228,6 +228,33 @@ export type AuditAction =
   | 'group_community_changed';
 
 /** Entrée du journal d'audit : qui a fait quoi, quand, et sur quel groupe. */
+/**
+ * Événement de sécurité (rubrique « Sécurité » du super administrateur).
+ * En production, c'est le serveur qui les enregistre : lui seul voit toutes les
+ * requêtes (tentatives d'injection, accès refusés, essais de PIN).
+ */
+export type SecurityEventKind =
+  | 'pin_failed'
+  | 'pin_blocked'
+  | 'otp_failed'
+  | 'access_denied'
+  | 'suspicious_input'
+  | 'admin_login';
+export type SecuritySeverity = 'info' | 'warning' | 'critical';
+
+export interface SecurityEvent {
+  id: string;
+  kind: SecurityEventKind;
+  severity: SecuritySeverity;
+  /** Phrase prête à afficher (ex. « PIN incorrect (2e essai) »). */
+  detail: string;
+  /** Compte concerné, s'il est connu. */
+  userId?: string;
+  /** Numéro saisi, quand le compte n'est pas encore identifié. */
+  phone?: string;
+  at: string;
+}
+
 export interface AuditEntry {
   id: string;
   /** Auteur de l'action. */
@@ -299,11 +326,17 @@ export interface SmsRecord {
 export type TemplateKey = 'reminder' | 'late' | 'payment' | 'payout';
 
 /** Paramètres de la plateforme (rubrique « Paramètres »). */
+/**
+ * Paramètres tels que le navigateur les voit. Les clés secrètes (paiement, SMS) n'y
+ * figurent jamais : seulement un indice (« •••• 3f9a »). On peut en saisir une nouvelle
+ * (voir SettingsService.update), mais jamais relire l'ancienne.
+ */
 export interface PlatformSettings {
   payment: {
     provider: string;
     publicKey: string;
-    secretKey: string;
+    /** Fin de la clé secrète enregistrée (« •••• 3f9a »), ou null s'il n'y en a pas. */
+    secretKeyHint: string | null;
     /** Frais prélevés par le service de paiement, en %. */
     feePercent: number;
     mode: 'test' | 'live';
@@ -325,7 +358,8 @@ export interface PlatformSettings {
   sms: {
     provider: string;
     senderName: string;
-    apiKey: string;
+    /** Fin de la clé du fournisseur SMS enregistrée, ou null s'il n'y en a pas. */
+    apiKeyHint: string | null;
     costPerSms: number;
   };
   app: {
@@ -335,6 +369,12 @@ export interface PlatformSettings {
     privacyText: string;
   };
   templates: Record<TemplateKey, string>;
+}
+
+/** Clés secrètes : stockées côté serveur seulement, jamais renvoyées au navigateur. */
+export interface PlatformSecrets {
+  paymentSecretKey: string;
+  smsApiKey: string;
 }
 
 export * from './views';

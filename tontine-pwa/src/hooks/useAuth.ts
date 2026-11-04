@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { create } from 'zustand';
+import { clearDataCache } from '@/lib/dataCache';
 import { isComputer } from '@/lib/device';
 import { authService } from '@/services';
 import type { User } from '@/types';
@@ -96,6 +97,7 @@ export function useAuthBootstrap(): void {
         useAuthStore.setState({ lockAfterMinutes: session.lockAfterMinutes });
         if (session.user && isComputer()) {
           await authService.logout();
+          await clearDataCache();
           if (!cancelled) useAuthStore.getState().setUser(null);
           return;
         }

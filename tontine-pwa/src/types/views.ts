@@ -2,6 +2,7 @@
 import type {
   AttributionMode,
   AuditEntry,
+  SecurityEvent,
   AdminCompensation,
   Dispute,
   DisputeEvent,
@@ -309,6 +310,12 @@ export interface TransactionRow {
 export interface AuditView {
   entry: AuditEntry;
   actorName: string;
+}
+
+/** Événement de sécurité avec le nom du compte concerné, s'il existe. */
+export interface SecurityEventView {
+  event: SecurityEvent;
+  userName?: string;
 }
 
 /** Tableau de bord du super administrateur : toute la plateforme. */

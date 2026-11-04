@@ -17,19 +17,44 @@ function cloneSettings(settings: PlatformSettings): PlatformSettings {
   return JSON.parse(JSON.stringify(settings)) as PlatformSettings;
 }
 
+/** « •••• 3f9a » : assez pour reconnaître une clé, pas pour la reconstituer. */
+function hint(secret: string): string | null {
+  return secret ? `•••• ${secret.slice(-4)}` : null;
+}
+
+/** Sections dont une clé secrète peut être remplacée. */
+const SECRET_SECTIONS: Partial<Record<keyof PlatformSettings, string>> = {
+  payment: 'la clé secrète du service de paiement',
+  sms: 'la clé du fournisseur SMS',
+};
+
 export const mockSettingsService: SettingsService = {
   async get() {
     await delay();
     assertSuperAdmin(currentUser());
-    return cloneSettings(db.settings);
+    // Les clés restent côté serveur : la page ne reçoit que leur indice.
+    const settings = cloneSettings(db.settings);
+    settings.payment.secretKeyHint = hint(db.secrets.paymentSecretKey);
+    settings.sms.apiKeyHint = hint(db.secrets.smsApiKey);
+    return settings;
   },
 
-  async update(section, values) {
+  async update(section, values, newSecret) {
     const actor = await authorize();
     if (!values || typeof values !== 'object') {
       throw new ServiceError('Les paramètres transmis sont invalides.');
     }
     db.settings[section] = cloneSettings({ ...db.settings, [section]: values })[section];
+    const secret = newSecret?.trim();
+    if (secret) {
+      if (!SECRET_SECTIONS[section]) {
+        throw new ServiceError('Cette section n’a pas de clé secrète.');
+      }
+      if (secret.length < 8) throw new ServiceError('Cette clé paraît trop courte.');
+      if (section === 'payment') db.secrets.paymentSecretKey = secret;
+      if (section === 'sms') db.secrets.smsApiKey = secret;
+      recordAudit(actor, 'settings_updated', `a remplacé ${SECRET_SECTIONS[section]}`);
+    }
     recordAudit(actor, 'settings_updated', `a modifié les paramètres « ${section} »`);
     persist();
   },

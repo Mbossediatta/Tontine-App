@@ -4,6 +4,7 @@ import { PageSkeleton } from '@/components/ui';
 import { useUnreadCount } from '@/features/notifications/queries';
 import { useAuth } from '@/hooks/useAuth';
 import { useInactivityLock } from '@/hooks/useInactivityLock';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { BottomNav, SideNav } from './BottomNav';
 import { navItemsFor } from './navItems';
@@ -19,7 +20,11 @@ export function AppShell() {
   const { user } = useAuth();
   const unread = useUnreadCount();
   const { pathname } = useLocation();
-  const items = navItemsFor(user?.globalRole);
+  const { t } = useT();
+  // Les rubriques du participant suivent la langue choisie (français ou wolof).
+  const items = navItemsFor(user?.globalRole).map((item) =>
+    item.labelKey ? { ...item, label: t(item.labelKey), shortLabel: undefined } : item,
+  );
   // Sans activité pendant un moment, l'application se verrouille (PIN redemandé).
   useInactivityLock();
   const isAdminRole = user?.globalRole === 'admin' || user?.globalRole === 'super_admin';
@@ -32,7 +37,12 @@ export function AppShell() {
   const withTopBar = user?.globalRole === 'admin' || user?.globalRole === 'super_admin';
 
   return (
-    <div className={cn('min-h-screen bg-blue-50 lg:pl-60', user?.globalRole === 'user' && 'theme-member')}>
+    <div
+      className={cn(
+        'min-h-screen bg-blue-50 lg:pl-60',
+        user?.globalRole === 'user' && 'theme-member',
+      )}
+    >
       <SideNav items={items} unread={unread} withTopBar={withTopBar} />
       {withTopBar && user ? <TopBar user={user} unread={unread} /> : null}
       <main

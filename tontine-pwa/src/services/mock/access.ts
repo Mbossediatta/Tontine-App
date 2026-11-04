@@ -2,6 +2,13 @@
 import { ServiceError } from '@/lib/errors';
 import type { Group, Membership, Round, User } from '@/types';
 import { db } from './db';
+import { recordSecurityEvent } from './security';
+
+/** Refus d'accès : noté dans le journal de sécurité, puis l'erreur est levée. */
+function deny(user: User, message: string, detail: string): never {
+  recordSecurityEvent('access_denied', detail, { userId: user.id });
+  throw new ServiceError(message, 'forbidden');
+}
 
 export function isSuperAdmin(user: User): boolean {
   return user.globalRole === 'super_admin';
@@ -64,13 +71,21 @@ export function canView(group: Group, user: User): boolean {
 
 export function assertCanView(group: Group, user: User): void {
   if (!canView(group, user)) {
-    throw new ServiceError('Vous ne faites pas partie de ce groupe.', 'forbidden');
+    deny(
+      user,
+      'Vous ne faites pas partie de ce groupe.',
+      `Accès refusé au groupe « ${group.name} » (non membre)`,
+    );
   }
 }
 
 export function assertCanManage(group: Group, user: User): void {
   if (!canManage(group, user)) {
-    throw new ServiceError('Seuls les administrateurs du groupe peuvent faire cela.', 'forbidden');
+    deny(
+      user,
+      'Seuls les administrateurs du groupe peuvent faire cela.',
+      `Action d’administration refusée sur « ${group.name} »`,
+    );
   }
 }
 
@@ -84,7 +99,11 @@ export function assertOwner(group: Group, user: User): void {
 
 export function assertSuperAdmin(user: User): void {
   if (!isSuperAdmin(user)) {
-    throw new ServiceError('Réservé au super administrateur.', 'forbidden');
+    deny(
+      user,
+      'Réservé au super administrateur.',
+      'Accès refusé à une fonction du super administrateur',
+    );
   }
 }
 

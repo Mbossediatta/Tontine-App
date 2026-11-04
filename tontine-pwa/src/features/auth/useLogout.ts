@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/hooks/useAuth';
 import { authService } from '@/services';
+import { clearDataCache } from '@/lib/dataCache';
 
 /**
  * Déconnexion : ferme la session, vide les données en cache (pour qu'un autre
@@ -13,6 +14,7 @@ export function useLogout(): () => Promise<void> {
   return async () => {
     await authService.logout();
     queryClient.clear();
+    void clearDataCache();
     useAuthStore.getState().setUser(null);
     navigate('/connexion', { replace: true });
   };

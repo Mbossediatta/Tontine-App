@@ -8,6 +8,7 @@ import { Card, CardTitle, ConfirmDialog } from '@/components/ui';
 import { useAuthStore } from '@/hooks/useAuth';
 import { errorMessage } from '@/lib/errors';
 import { authService } from '@/services';
+import { clearDataCache } from '@/lib/dataCache';
 
 /** Suppression du compte (droit à l'effacement des données personnelles). */
 export function DeleteAccountCard() {
@@ -18,6 +19,7 @@ export function DeleteAccountCard() {
     mutationFn: () => authService.deleteAccount(),
     onSuccess: () => {
       queryClient.clear();
+      void clearDataCache();
       useAuthStore.getState().setUser(null);
       toast.success('Votre compte a été supprimé');
       navigate('/connexion', { replace: true });

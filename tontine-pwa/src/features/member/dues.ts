@@ -1,6 +1,7 @@
 // Règles d'affichage de l'espace membre : ce que je dois payer, et quand je reçois.
 import { differenceInCalendarDays, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { monthNameIn, translate, type Language } from '@/i18n';
 import type { GroupOverview, PaymentStatus, Round } from '@/types';
 
 /** Une cotisation que je dois encore payer. */
@@ -38,19 +39,24 @@ export function duesOf(groups: GroupOverview[]): Due[] {
       ];
     })
     .sort(
-      (a, b) =>
-        order[a.status] - order[b.status] || a.round.dueDate.localeCompare(b.round.dueDate),
+      (a, b) => order[a.status] - order[b.status] || a.round.dueDate.localeCompare(b.round.dueDate),
     );
 }
 
-/** « Dans 6 jours », « Demain », « Aujourd'hui », « En retard de 3 jours ». */
-export function deadlineLabel(dueDate: string, now: Date = new Date()): string {
+/** « Dans 6 jours », « Demain », « Aujourd'hui », « En retard de 3 jours » (ou en wolof). */
+export function deadlineLabel(
+  dueDate: string,
+  now: Date = new Date(),
+  language: Language = 'fr',
+): string {
   const days = differenceInCalendarDays(new Date(dueDate), now);
-  if (days > 1) return `Dans ${days} jours`;
-  if (days === 1) return 'Demain';
-  if (days === 0) return 'Aujourd’hui';
+  if (days > 1) return translate(language, 'deadline.inDays', { count: days });
+  if (days === 1) return translate(language, 'deadline.tomorrow');
+  if (days === 0) return translate(language, 'deadline.today');
   const late = -days;
-  return `En retard de ${late} jour${late > 1 ? 's' : ''}`;
+  return late > 1
+    ? translate(language, 'deadline.lateMany', { count: late })
+    : translate(language, 'deadline.lateOne');
 }
 
 /** « novembre » */
@@ -67,10 +73,14 @@ export function shortDate(iso: string): string {
  * Nom d'une période de cotisation : « Cotisation de novembre » pour une tontine
  * mensuelle, « Tour 3 » sinon (plusieurs tours peuvent tomber le même mois).
  */
-export function periodLabel(overview: GroupOverview, round: Round): string {
+export function periodLabel(
+  overview: GroupOverview,
+  round: Round,
+  language: Language = 'fr',
+): string {
   return overview.group.frequency === 'monthly' && !overview.group.dailyContribution
-    ? `Cotisation de ${monthName(round.dueDate)}`
-    : `Tour ${round.number}`;
+    ? translate(language, 'period.month', { month: monthNameIn(language, round.dueDate) })
+    : translate(language, 'period.round', { number: round.number });
 }
 
 /** Ce que je recevrai à mon tour : ma part si le tour a plusieurs bénéficiaires. */

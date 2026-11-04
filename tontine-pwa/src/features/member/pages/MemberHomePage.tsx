@@ -1,23 +1,19 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { Bell, Plus } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { JoinGroupDialog } from '@/features/groups/JoinGroupDialog';
 import { useMyGroups } from '@/features/groups/queries';
 import { useUnreadCount } from '@/features/notifications/queries';
 import { useCurrentUser } from '@/hooks/useAuth';
+import { contributionLabelIn, dayLabelIn, monthNameIn, shortDateIn, useT } from '@/i18n';
 import { cn } from '@/lib/cn';
-import { contributionLabel, plural } from '@/lib/format';
 import type { GroupOverview } from '@/types';
 import {
   activeGroups,
   deadlineLabel,
   duesOf,
-  monthName,
   myPayoutAmount,
   periodLabel,
-  shortDate,
   type Due,
 } from '../dues';
 import { AmountDisplay } from '../ui/AmountDisplay';
@@ -27,11 +23,8 @@ import { CalabashShape, EmptyState, ErrorBlock } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
 import { StatusPill } from '../ui/StatusPill';
 
-/** « Mardi 3 novembre » */
-const todayLabel = () => {
-  const text = format(new Date(), 'EEEE d MMMM', { locale: fr });
-  return text.charAt(0).toUpperCase() + text.slice(1);
-};
+// Accueil traduit en français et en wolof (voir src/i18n) : la langue se choisit
+// dans le Profil.
 
 /**
  * La cotisation la plus urgente, mise en avant : c'est l'élément principal de l'écran
@@ -39,7 +32,9 @@ const todayLabel = () => {
  */
 function NextDueCard({ due, others }: { due: Due; others: number }) {
   const navigate = useNavigate();
+  const { t, language } = useT();
   const late = due.status === 'late';
+  const deadline = deadlineLabel(due.round.dueDate, new Date(), language);
   return (
     <section
       aria-labelledby="next-due"
@@ -50,27 +45,29 @@ function NextDueCard({ due, others }: { due: Due; others: number }) {
       <div className="relative flex flex-col gap-3">
         <div>
           <p id="next-due" className="text-[13px] font-medium text-blue-200">
-            Prochaine cotisation
+            {t('home.nextDue')}
           </p>
           <p className="mt-1 text-[15px] font-semibold">
-            {due.overview.group.name} · {periodLabel(due.overview, due.round)}
+            {due.overview.group.name} · {periodLabel(due.overview, due.round, language)}
           </p>
         </div>
         <AmountDisplay value={due.amount} size="xl" />
         <div className="flex flex-wrap items-center gap-2 text-[13px]">
-          <span className="text-blue-200">Avant le {shortDate(due.round.dueDate)}</span>
+          <span className="text-blue-200">
+            {t('home.before', { date: shortDateIn(language, due.round.dueDate) })}
+          </span>
           <span aria-hidden="true" className="text-blue-300">
             ·
           </span>
           {late ? (
             <span className="rounded-full bg-amber-100 px-2.5 py-1 font-semibold text-amber-700">
-              {deadlineLabel(due.round.dueDate)}
+              {deadline}
             </span>
           ) : (
-            <span className="font-semibold">{deadlineLabel(due.round.dueDate)}</span>
+            <span className="font-semibold">{deadline}</span>
           )}
           {due.overview.myPenalty > 0 ? (
-            <span className="text-blue-200">· pénalité incluse</span>
+            <span className="text-blue-200">{t('home.penaltyIncluded')}</span>
           ) : null}
         </div>
         {/* Bouton blanc sur la carte bleue foncée : le seul bouton principal de l'écran. */}
@@ -79,14 +76,14 @@ function NextDueCard({ due, others }: { due: Due; others: number }) {
           onClick={() => navigate(`/payer?tour=${due.round.id}`)}
           className="mt-1 min-h-[48px] rounded-lg bg-white px-4 text-[15px] font-semibold text-blue-900 transition-colors duration-150 ease-out hover:bg-blue-50 active:bg-blue-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
-          Payer maintenant
+          {t('home.payNow')}
         </button>
         {others > 0 ? (
           <Link
             to="/payer"
             className="self-start text-[13px] font-semibold text-blue-100 underline underline-offset-4"
           >
-            {plural(others, 'autre cotisation', 'autres cotisations')} à payer
+            {others > 1 ? t('home.otherDueMany', { count: others }) : t('home.otherDueOne')}
           </Link>
         ) : null}
       </div>
@@ -96,6 +93,7 @@ function NextDueCard({ due, others }: { due: Due; others: number }) {
 
 /** Rien à payer : un encart calme, sans bouton. */
 function UpToDateCard({ groups }: { groups: GroupOverview[] }) {
+  const { t, language } = useT();
   // Prochaine échéance connue (tour à venir le plus proche).
   const next = groups
     .map((g) => g.currentRound)
@@ -103,11 +101,11 @@ function UpToDateCard({ groups }: { groups: GroupOverview[] }) {
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
   return (
     <section className="rounded-xl border border-green-200 bg-green-50 px-4 py-4">
-      <p className="text-[15px] font-semibold text-green-800">Tu es à jour</p>
+      <p className="text-[15px] font-semibold text-green-800">{t('home.upToDate')}</p>
       <p className="mt-1 text-[13px] text-slate-600">
         {next
-          ? `Toutes tes cotisations du moment sont payées. Prochaine échéance le ${shortDate(next.dueDate)}.`
-          : 'Aucune cotisation à payer pour le moment.'}
+          ? t('home.upToDateNext', { date: shortDateIn(language, next.dueDate) })
+          : t('home.upToDateNone')}
       </p>
     </section>
   );
@@ -115,14 +113,15 @@ function UpToDateCard({ groups }: { groups: GroupOverview[] }) {
 
 /** « Ce mois-ci » : une ligne par groupe, statut à droite. */
 function MonthStatusList({ groups }: { groups: GroupOverview[] }) {
+  const { t, language } = useT();
   return (
     <section aria-labelledby="month-status">
       <SectionHeader
         id="month-status"
-        title="Ce mois-ci"
+        title={t('home.thisMonth')}
         action={
           <Link to="/groupes" className="text-[13px] font-semibold text-blue-700">
-            Mes groupes
+            {t('home.myGroups')}
           </Link>
         }
       />
@@ -138,15 +137,17 @@ function MonthStatusList({ groups }: { groups: GroupOverview[] }) {
                   <span className="block truncate text-[15px] font-semibold">{group.name}</span>
                   <span className="block text-[13px] text-slate-600">
                     {communityName ? `${communityName} · ` : ''}
-                    {contributionLabel(group.contributionAmount, group.frequency)}
-                    {currentRound ? ` · tour ${currentRound.number}/${totalRounds}` : ''}
+                    {contributionLabelIn(language, group.contributionAmount, group.frequency)}
+                    {currentRound
+                      ? ` · ${t('home.round', { number: currentRound.number, total: totalRounds })}`
+                      : ''}
                   </span>
                 </span>
                 {myStatus ? (
                   <StatusPill status={myStatus} />
                 ) : (
                   <span className="shrink-0 whitespace-nowrap text-[13px] text-slate-600">
-                    {group.status === 'draft' ? 'Pas commencé' : 'Terminé'}
+                    {group.status === 'draft' ? t('home.notStarted') : t('home.finished')}
                   </span>
                 )}
               </Link>
@@ -160,16 +161,15 @@ function MonthStatusList({ groups }: { groups: GroupOverview[] }) {
 
 /** « Mon tour » : quand je reçois la cagnotte, en ligne de temps. */
 function MyTurns({ groups, userId }: { groups: GroupOverview[]; userId: string }) {
+  const { t, language } = useT();
   const turns = groups
     .filter((g) => g.myTurn)
     .sort((a, b) => (a.myTurn?.dueDate ?? '').localeCompare(b.myTurn?.dueDate ?? ''));
   return (
     <section aria-labelledby="my-turns">
-      <SectionHeader id="my-turns" title="Mon tour" />
+      <SectionHeader id="my-turns" title={t('home.myTurn')} />
       {turns.length === 0 ? (
-        <p className="text-[13px] text-slate-600">
-          Ton tour n’est pas encore fixé : l’ordre de passage sera décidé au démarrage du groupe.
-        </p>
+        <p className="text-[13px] text-slate-600">{t('home.turnNotSet')}</p>
       ) : (
         <ol className="flex flex-col">
           {turns.map(({ group, myTurn }, index) => {
@@ -191,10 +191,10 @@ function MyTurns({ groups, userId }: { groups: GroupOverview[]; userId: string }
                 >
                   <span className="min-w-0">
                     <span className="block text-[15px] font-semibold">
-                      Tu reçois en {monthName(myTurn.dueDate)}
+                      {t('home.youReceiveIn', { month: monthNameIn(language, myTurn.dueDate) })}
                     </span>
                     <span className="block truncate text-[13px] text-slate-600">
-                      {group.name} · tour {myTurn.number}
+                      {t('home.turnOf', { group: group.name, number: myTurn.number })}
                     </span>
                   </span>
                   <AmountDisplay
@@ -212,8 +212,9 @@ function MyTurns({ groups, userId }: { groups: GroupOverview[]; userId: string }
 }
 
 function HomeSkeleton() {
+  const { t } = useT();
   return (
-    <div role="status" aria-label="Chargement" className="flex flex-col gap-6">
+    <div role="status" aria-label={t('home.loading')} className="flex flex-col gap-6">
       <Skeleton className="h-52 rounded-xl" />
       <Skeleton className="h-36 rounded-xl" />
       <Skeleton className="h-24 rounded-xl" />
@@ -226,6 +227,7 @@ export default function MemberHomePage() {
   const user = useCurrentUser();
   const unread = useUnreadCount();
   const query = useMyGroups();
+  const { t, language } = useT();
   const [joinOpen, setJoinOpen] = useState(false);
 
   const groups = activeGroups(query.data ?? []);
@@ -235,12 +237,16 @@ export default function MemberHomePage() {
     <div className="flex flex-col gap-6 motion-safe:animate-fade-in">
       <header className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-[18px] font-bold leading-6">Bonjour {user.firstName}</h1>
-          <p className="text-[13px] text-slate-600">{todayLabel()}</p>
+          <h1 className="text-[18px] font-bold leading-6">
+            {t('home.hello', { name: user.firstName })}
+          </h1>
+          <p className="text-[13px] text-slate-600">{dayLabelIn(language, new Date())}</p>
         </div>
         <Link
           to="/notifications"
-          aria-label={unread > 0 ? `Notifications, ${unread} non lues` : 'Notifications'}
+          aria-label={
+            unread > 0 ? t('home.notificationsUnread', { count: unread }) : t('home.notifications')
+          }
           className="relative flex h-11 w-11 items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100"
         >
           <Bell className="h-6 w-6" aria-hidden="true" />
@@ -256,11 +262,11 @@ export default function MemberHomePage() {
         <ErrorBlock onRetry={() => void query.refetch()} />
       ) : groups.length === 0 ? (
         <EmptyState
-          title="Tu n’as encore rejoint aucun groupe"
-          description="Demande le code d’invitation à l’administrateur de ta tontine."
+          title={t('home.emptyTitle')}
+          description={t('home.emptyText')}
           action={
             <Button block onClick={() => setJoinOpen(true)}>
-              Rejoindre un groupe
+              {t('home.join')}
             </Button>
           }
         />
@@ -279,7 +285,7 @@ export default function MemberHomePage() {
             className="flex min-h-[44px] items-center gap-2 self-start rounded-lg px-1 text-[15px] font-semibold text-blue-700 hover:bg-blue-50"
           >
             <Plus className="h-5 w-5" aria-hidden="true" />
-            Rejoindre un autre groupe
+            {t('home.joinAnother')}
           </button>
         </>
       )}

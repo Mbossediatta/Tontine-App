@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { lazy, Suspense, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth, useAuthStore } from '@/hooks/useAuth';
 import { isComputer } from '@/lib/device';
@@ -9,9 +9,13 @@ import { authService } from '@/services';
 import { AuthButton } from './components/AuthButton';
 import { AuthScreen } from './components/AuthScreen';
 import { PhoneField } from './components/PhoneField';
-import { DemoAccountPicker } from './DemoAccountPicker';
 import { getRememberedAccount } from './rememberedAccount';
 import { redirectTarget, type RedirectState } from './redirect';
+
+// Comptes de démonstration : chargés seulement en mode simulé, absents de la version réelle.
+const DemoAccountPicker = lazy(() =>
+  import('./DemoAccountPicker').then((m) => ({ default: m.DemoAccountPicker })),
+);
 
 /**
  * Écran 1 — Numéro de téléphone.
@@ -72,9 +76,11 @@ export default function LoginPage() {
       subtitle="Accédez à vos groupes et suivez vos cotisations."
       below={
         env.useMocks ? (
-          <DemoAccountPicker
-            onDone={(signedIn) => navigate(redirectTarget(location, signedIn), { replace: true })}
-          />
+          <Suspense fallback={null}>
+            <DemoAccountPicker
+              onDone={(signedIn) => navigate(redirectTarget(location, signedIn), { replace: true })}
+            />
+          </Suspense>
         ) : null
       }
     >

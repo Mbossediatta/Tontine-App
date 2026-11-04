@@ -1,9 +1,18 @@
+import { useState } from 'react';
 import { Button, Card, CardTitle, Input, Select } from '@/components/ui';
 import type { PlatformSettings } from '@/types';
-import { numberUpdater, useSaveSettings, type SectionProps } from './settingsState';
+import { SecretField } from './SecretField';
+import {
+  numberUpdater,
+  useSaveSecretSettings,
+  useSaveSettings,
+  type SectionProps,
+} from './settingsState';
 
 export function PaymentSection({ settings, setSettings }: SectionProps) {
-  const savePayment = useSaveSettings('payment');
+  const savePayment = useSaveSecretSettings('payment');
+  // Nouvelle clé secrète éventuelle : vidée une fois enregistrée.
+  const [newSecret, setNewSecret] = useState('');
   const updateNumber = numberUpdater(setSettings);
   return (
     <Card className="flex flex-col gap-4">
@@ -48,17 +57,11 @@ export function PaymentSection({ settings, setSettings }: SectionProps) {
             })
           }
         />
-        <Input
-          label="Clé secrète"
-          type="password"
-          autoComplete="new-password"
-          value={settings.payment.secretKey}
-          onChange={(event) =>
-            setSettings({
-              ...settings,
-              payment: { ...settings.payment, secretKey: event.target.value },
-            })
-          }
+        <SecretField
+          label="Nouvelle clé secrète"
+          hint={settings.payment.secretKeyHint}
+          value={newSecret}
+          onChange={setNewSecret}
         />
         <Input
           label="Frais (%)"
@@ -72,7 +75,12 @@ export function PaymentSection({ settings, setSettings }: SectionProps) {
       <Button
         variant="blue"
         loading={savePayment.isPending}
-        onClick={() => savePayment.mutate(settings.payment)}
+        onClick={() =>
+          savePayment.mutate(
+            { values: settings.payment, newSecret },
+            { onSuccess: () => setNewSecret('') },
+          )
+        }
       >
         Enregistrer le paiement
       </Button>

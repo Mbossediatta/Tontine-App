@@ -4,6 +4,7 @@ import { subDays, subHours } from 'date-fns';
 import type {
   Dispute,
   Payment,
+  PlatformSecrets,
   PlatformSettings,
   ProviderEntry,
   SmsKind,
@@ -14,12 +15,17 @@ import type {
 /** Coût d'un SMS chez le fournisseur (FCFA), repris dans les paramètres. */
 const SMS_COST = 25;
 
+/** Clés secrètes de démonstration : gardées côté « serveur » (jamais envoyées à la page). */
+export function seedSecrets(): PlatformSecrets {
+  return { paymentSecretKey: 'sk_test_51b0e6c3a7f94d28', smsApiKey: 'osms_4d1e9b7c2a' };
+}
+
 export function seedSettings(): PlatformSettings {
   return {
     payment: {
       provider: 'PayDunya',
       publicKey: 'pk_test_9f2c7a41d8',
-      secretKey: 'sk_test_51b0e6c3a7f94d28',
+      secretKeyHint: null, // calculé à la lecture, à partir de seedSecrets()
       feePercent: 1.5,
       mode: 'test',
     },
@@ -34,7 +40,7 @@ export function seedSettings(): PlatformSettings {
     sms: {
       provider: 'Orange SMS API',
       senderName: 'CALEBASSE',
-      apiKey: 'osms_4d1e9b7c2a',
+      apiKeyHint: null, // calculé à la lecture, à partir de seedSecrets()
       costPerSms: SMS_COST,
     },
     app: {

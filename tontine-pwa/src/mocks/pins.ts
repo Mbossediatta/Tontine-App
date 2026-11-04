@@ -1,9 +1,10 @@
+import { DEMO_PIN } from '@/lib/demo';
 import { SEEDED_USER_IDS } from './users';
 import type { PinRecord } from './index';
 import { hashPin } from './pinHash';
 
-/** PIN de tous les comptes de démonstration (affiché sur l'écran de connexion en mode simulé). */
-export const DEMO_PIN = '1234';
+/** PIN de tous les comptes de démonstration (défini dans lib/demo, repris ici). */
+export { DEMO_PIN };
 
 /** Chaque compte de démonstration a déjà créé son PIN. */
 export function seedPins(): Record<string, PinRecord> {

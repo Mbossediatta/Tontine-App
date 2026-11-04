@@ -17,6 +17,7 @@ import {
 } from './db';
 import { checkOtp, issueOtp } from './otp';
 import { checkPin, needsPin, savePin } from './pin';
+import { inspectInput, recordSecurityEvent } from './security';
 
 /** Compte associé à un numéro, refusé s'il est bloqué. */
 function activeUserByPhone(phone: string): User | undefined {
@@ -31,8 +32,13 @@ function activeUserByPhone(phone: string): User | undefined {
 function openSession(user: User): void {
   setPendingPhone(null);
   setSessionUserId(user.id);
-  if (user.globalRole !== 'user') recordAudit(user, 'login', 's’est connecté');
+  if (user.globalRole !== 'user') {
+    recordAudit(user, 'login', 's’est connecté');
+    recordSecurityEvent('admin_login', 'Connexion d’un administrateur', { userId: user.id });
+  }
 }
+
+const errorText = (error: unknown) => (error instanceof Error ? error.message : 'erreur inconnue');
 
 function withoutKey<T>(record: Record<string, T>, key: string): Record<string, T> {
   return Object.fromEntries(Object.entries(record).filter(([k]) => k !== key));
@@ -135,7 +141,12 @@ export const mockAuthService: AuthService = {
   async verifyOtp(phone, code) {
     requireOnline();
     await delay();
-    checkOtp(phone, code);
+    try {
+      checkOtp(phone, code);
+    } catch (error) {
+      recordSecurityEvent('otp_failed', `Code SMS refusé · ${errorText(error)}`, { phone });
+      throw error;
+    }
     const user = activeUserByPhone(phone);
     // Le numéro est prouvé : il ouvre droit à l'étape suivante (profil ou PIN).
     setPendingPhone(phone);
@@ -155,6 +166,8 @@ export const mockAuthService: AuthService = {
     if (db.users.some((u) => u.phone === phone && !u.deletedAt)) {
       throw new ServiceError('Un compte existe déjà avec ce numéro.', 'conflict');
     }
+    inspectInput('Prénom', input.firstName);
+    inspectInput('Nom', input.lastName);
     db.users.push({
       id: newId('u'),
       firstName: input.firstName.trim(),
@@ -196,6 +209,17 @@ export const mockAuthService: AuthService = {
     if (!user) throw new ServiceError('Aucun compte avec ce numéro.', 'not_found');
     try {
       checkPin(user.id, pin);
+    } catch (error) {
+      // PIN bloqué (« forbidden ») ou simple erreur : le journal de sécurité le note.
+      const blocked = error instanceof ServiceError && error.code === 'forbidden';
+      if (error instanceof ServiceError && error.code !== 'conflict') {
+        recordSecurityEvent(
+          blocked ? 'pin_blocked' : 'pin_failed',
+          blocked ? 'PIN bloqué après trop d’essais' : `PIN incorrect · ${error.message}`,
+          { userId: user.id },
+        );
+      }
+      throw error;
     } finally {
       // Le compteur d'essais ratés doit être enregistré même en cas d'erreur.
       persist();
@@ -224,6 +248,8 @@ export const mockAuthService: AuthService = {
     requireOnline();
     await delay();
     const user = currentUser();
+    inspectInput('Prénom', input.firstName, user.id);
+    inspectInput('Nom', input.lastName, user.id);
     Object.assign(user, input);
     persist();
     return { ...user };
