@@ -1,3 +1,4 @@
+| `…260000_conditions.sql` | Conditions d’utilisation : version des textes (augmentée quand ils changent), `terms_acceptances` (preuve en ajout seul : qui, version, date, appareil), `legal_terms` (sans session), `terms_status`, `terms_accept`, `svc_terms_due` et `svc_terms_accept` (création du PIN) |
 # Backend — Calebasse de l’Espoir
 
 Backend Supabase de la PWA de tontine : base PostgreSQL (règles RLS), Edge Functions

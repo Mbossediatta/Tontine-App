@@ -375,6 +375,8 @@ export interface PlatformSettings {
     supportPhone: string;
     termsText: string;
     privacyText: string;
+    /** Version des deux textes : augmentée par le serveur quand l'un d'eux change. */
+    termsVersion: number;
   };
   templates: Record<TemplateKey, string>;
 }

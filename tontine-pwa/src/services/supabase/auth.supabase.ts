@@ -3,8 +3,9 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { ServiceError, type ServiceErrorCode } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
-import type { User } from '@/types';
+import type { LegalTerms, TermsStatus, User } from '@/types';
 import type { AuthService, OtpResult } from '../auth.service';
+import { rpc } from './rpc';
 
 /**
  * Lien avec les données encore simulées : tant que les autres services ne sont pas
@@ -175,7 +176,12 @@ export function createSupabaseAuthService(bridge: SessionBridge): AuthService {
         code,
       });
       writeProof({ phone, token: reply.proofToken, isNewAccount: reply.isNewAccount });
-      return { isNewAccount: reply.isNewAccount, firstName: reply.firstName, hasPin: reply.hasPin };
+      return {
+        isNewAccount: reply.isNewAccount,
+        firstName: reply.firstName,
+        hasPin: reply.hasPin,
+        termsVersion: reply.termsVersion,
+      };
     },
 
     async completeProfile(input) {
@@ -190,13 +196,27 @@ export function createSupabaseAuthService(bridge: SessionBridge): AuthService {
       writeProof({ ...proof, isNewAccount: false });
     },
 
-    async setPin(pin) {
+    async setPin(pin, acceptedTermsVersion) {
       const proof = readProof();
-      const reply = await call<SessionReply>(
-        'auth-pin-set',
-        proof ? { pin, proofToken: proof.token } : { pin },
-      );
+      const reply = await call<SessionReply>('auth-pin-set', {
+        pin,
+        ...(proof ? { proofToken: proof.token } : {}),
+        ...(acceptedTermsVersion === undefined ? {} : { acceptedTermsVersion }),
+      });
       return startSession(reply);
+    },
+
+    legalTerms() {
+      return rpc<LegalTerms>('legal_terms');
+    },
+
+    termsStatus() {
+      return rpc<TermsStatus>('terms_status');
+    },
+
+    async acceptTerms(version) {
+      requireOnline();
+      await rpc('terms_accept', { p_version: version, p_user_agent: navigator.userAgent });
     },
 
     async loginWithPin(phone, pin) {

@@ -35,8 +35,13 @@ serve(async (req) => {
   const hasPin = profile
     ? (check(await admin().rpc('svc_pin_usable', { p_user: profile.id })) as boolean)
     : false;
+  // Version des conditions à accepter sur l'écran du PIN (null : déjà acceptées).
+  const termsVersion = profile
+    ? (check(await admin().rpc('svc_terms_due', { p_user: profile.id })) as number | null)
+    : (check(await admin().rpc('legal_terms')) as { version: number }).version;
   return {
     isNewAccount: !profile,
+    termsVersion,
     firstName: profile?.first_name,
     hasPin,
     proofToken: await signProof(phone),

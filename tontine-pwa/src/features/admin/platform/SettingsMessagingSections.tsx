@@ -90,6 +90,11 @@ export function AppSection({ settings, setSettings }: SectionProps) {
           }
         />
       </div>
+      <p className="text-small text-muted">
+        Version actuelle des conditions : {settings.app.termsVersion}. Si vous modifiez l’un de ces
+        deux textes, tous les membres et administrateurs devront les accepter de nouveau à leur
+        prochaine ouverture de l’application.
+      </p>
       <Button
         variant="blue"
         loading={saveApp.isPending}

@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2 } from 'lucide-react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, useAuthStore } from '@/hooks/useAuth';
-import { errorMessage } from '@/lib/errors';
+import { errorMessage, ServiceError } from '@/lib/errors';
 import { isWeakPin } from '@/lib/checks';
 import { authService } from '@/services';
 import type { User } from '@/types';
 import { AuthError } from './components/AuthButton';
 import { AuthScreen } from './components/AuthScreen';
 import { PIN_LENGTH, PinPad } from './components/PinPad';
+import { TermsConsent } from './components/TermsConsent';
 import { rememberAccount } from './rememberedAccount';
 import { redirectTarget, type RedirectState } from './redirect';
 
@@ -27,6 +29,14 @@ export default function CreatePinPage() {
   const location = useLocation();
   const state = (location.state as RedirectState | null) ?? {};
   const resetting = state.purpose === 'reset';
+  // 1re connexion ou textes modifiés : la case des conditions est exigée avant le PIN.
+  const termsDue = state.termsVersion !== null;
+  const terms = useQuery({
+    queryKey: ['legal-terms'],
+    queryFn: () => authService.legalTerms(),
+    enabled: termsDue,
+  });
+  const [accepted, setAccepted] = useState(false);
 
   // 1re saisie, gardée pendant la confirmation (null : on en est au choix).
   const [first, setFirst] = useState<string | null>(null);
@@ -87,7 +97,7 @@ export default function CreatePinPage() {
   async function save(value: string) {
     setSaving(true);
     try {
-      const signedIn = await authService.setPin(value);
+      const signedIn = await authService.setPin(value, termsDue ? terms.data?.version : undefined);
       // Noté avant de mettre à jour la session, qui fait aussitôt redessiner l'écran.
       saved.current = signedIn;
       const store = useAuthStore.getState();
@@ -99,6 +109,11 @@ export default function CreatePinPage() {
       setCreated(signedIn);
     } catch (err) {
       setFirst(null);
+      // Textes modifiés entre-temps : on recharge la nouvelle version, à cocher de nouveau.
+      if (termsDue && err instanceof ServiceError && err.code === 'conflict') {
+        setAccepted(false);
+        void terms.refetch();
+      }
       fail(errorMessage(err));
     } finally {
       setSaving(false);
@@ -130,13 +145,26 @@ export default function CreatePinPage() {
       step={resetting ? undefined : { current: 3, total: 3 }}
     >
       <div className="flex flex-col gap-5">
+        {termsDue && !confirming ? (
+          <>
+            <TermsConsent terms={terms.data} checked={accepted} onChange={setAccepted} />
+            {accepted ? null : (
+              <p className="-mt-2 text-center text-[14px] text-auth-muted">
+                Cochez la case pour choisir votre code.
+              </p>
+            )}
+          </>
+        ) : null}
+        {termsDue && terms.isError ? (
+          <AuthError>Impossible de charger les conditions. Vérifiez la connexion.</AuthError>
+        ) : null}
         <PinPad
           value={pin}
           onChange={(value) => {
             setPin(value);
             if (error && value.length > 0) setError(undefined);
           }}
-          disabled={saving}
+          disabled={saving || (termsDue && !accepted)}
           shakeKey={shakeKey}
           invalid={Boolean(error) && pin.length === 0}
         />

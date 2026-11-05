@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import type { RedirectState } from './redirect';
+import { TermsGate } from './TermsGate';
 
 export function FullPageLoader() {
   return (
@@ -31,5 +32,10 @@ export function RequireAuth({ children }: { children?: ReactNode }) {
   }
   if (needsPin) return <Navigate to="/connexion/pin/nouveau" replace state={state} />;
   if (locked) return <Navigate to="/connexion/pin" replace state={state} />;
-  return <>{children ?? <Outlet />}</>;
+  return (
+    <>
+      {children ?? <Outlet />}
+      <TermsGate />
+    </>
+  );
 }

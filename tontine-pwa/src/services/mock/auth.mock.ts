@@ -1,3 +1,4 @@
+import { isWeakPin } from '@/lib/checks';
 import { ServiceError } from '@/lib/errors';
 import type { User } from '@/types';
 import type { AuthService } from '../auth.service';
@@ -11,6 +12,7 @@ import {
   getPendingPhone,
   getSessionUserId,
   newId,
+  nowIso,
   persist,
   requireOnline,
   setPendingPhone,
@@ -43,6 +45,23 @@ function activeUserByPhone(phone: string): User | undefined {
     throw new ServiceError('Ce compte est bloqué. Contactez un administrateur.', 'forbidden');
   }
   return user;
+}
+
+/** Version des conditions que la personne doit accepter ; null : déjà acceptée. */
+function termsDue(userId: string): number | null {
+  const current = db.settings.app.termsVersion;
+  const accepted = db.termsAcceptances.some((a) => a.userId === userId && a.version === current);
+  return accepted ? null : current;
+}
+
+function recordTerms(userId: string, version: number): void {
+  if (version !== db.settings.app.termsVersion) {
+    throw new ServiceError(
+      'Les conditions ont été mises à jour. Relisez-les avant de les accepter.',
+      'conflict',
+    );
+  }
+  db.termsAcceptances.push({ userId, version, acceptedAt: nowIso() });
 }
 
 /** Ouvre la session ; les connexions des administrateurs sont tracées dans le journal d'audit. */
@@ -174,6 +193,7 @@ export const mockAuthService: AuthService = {
       isNewAccount: !user,
       firstName: user?.firstName,
       hasPin: user ? !needsPin(user.id) : false,
+      termsVersion: user ? termsDue(user.id) : db.settings.app.termsVersion,
     };
   },
 
@@ -201,7 +221,7 @@ export const mockAuthService: AuthService = {
     persist();
   },
 
-  async setPin(pin) {
+  async setPin(pin, acceptedTermsVersion) {
     requireOnline();
     await delay();
     // Créer ou remplacer un PIN exige un numéro prouvé par SMS… sauf pour un compte
@@ -216,6 +236,16 @@ export const mockAuthService: AuthService = {
         : undefined;
     if (!user)
       throw new ServiceError('Session expirée, recommencez la connexion.', 'unauthenticated');
+    if (isWeakPin(pin)) {
+      throw new ServiceError('Ce PIN est trop facile à deviner. Choisissez-en un autre.');
+    }
+    const due = termsDue(user.id);
+    if (due !== null) {
+      if (acceptedTermsVersion === undefined) {
+        throw new ServiceError('Cochez la case pour accepter les conditions d’utilisation.');
+      }
+      recordTerms(user.id, acceptedTermsVersion);
+    }
     savePin(user.id, pin);
     openSession(user);
     persist();
@@ -247,6 +277,26 @@ export const mockAuthService: AuthService = {
     openSession(user);
     persist();
     return user;
+  },
+
+  async legalTerms() {
+    await delay();
+    const { termsVersion, termsText, privacyText } = db.settings.app;
+    return { version: termsVersion, termsText, privacyText };
+  },
+
+  async termsStatus() {
+    const user = currentUser();
+    const current = db.settings.app.termsVersion;
+    const versions = db.termsAcceptances.filter((a) => a.userId === user.id).map((a) => a.version);
+    return { current, accepted: versions.length ? Math.max(...versions) : null };
+  },
+
+  async acceptTerms(version) {
+    requireOnline();
+    await delay();
+    recordTerms(currentUser().id, version);
+    persist();
   },
 
   async changePin(currentPin, newPin) {

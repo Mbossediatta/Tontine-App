@@ -130,12 +130,15 @@ await step('code faux refusé et noté', async () => {
 });
 
 let proof;
+let terms;
 await step('bon code : nouveau compte, pas de PIN, jeton de preuve', async () => {
   const r = await otp(NEW_PHONE, INVITE);
   assert.equal(r.isNewAccount, true);
   assert.equal(r.hasPin, false);
+  assert.ok(Number.isInteger(r.termsVersion), 'conditions à accepter à la 1re connexion');
   assert.ok(r.proofToken);
   proof = r.proofToken;
+  terms = r.termsVersion;
 });
 
 await step('un code ne sert qu’une fois', async () => {
@@ -166,9 +169,17 @@ await step('PIN trop simple refusé', async () => {
   assert.match(r.body.error.message, /trop facile/);
 });
 
-let session;
-await step('création du PIN : la session s’ouvre', async () => {
+await step('conditions non cochées : PIN refusé', async () => {
   const r = await call('auth-pin-set', { proofToken: proof, pin: '2580' });
+  assert.equal(r.status, 400);
+  assert.match(r.body.error.message, /conditions/);
+  const old = await call('auth-pin-set', { proofToken: proof, pin: '2580', acceptedTermsVersion: terms - 1 });
+  assert.equal(old.status, 409, 'une autre version que celle en vigueur est refusée');
+});
+
+let session;
+await step('création du PIN, conditions cochées : la session s’ouvre', async () => {
+  const r = await call('auth-pin-set', { proofToken: proof, pin: '2580', acceptedTermsVersion: terms });
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.equal(r.body.user.firstName, 'Seynabou');
   assert.ok(r.body.session.access_token);
@@ -228,6 +239,7 @@ await step('5 PIN faux : PIN bloqué, seul le SMS débloque', async () => {
   assert.deepEqual(method.body, { method: 'otp' });
   const again = await otp(NEW_PHONE);
   assert.equal(again.hasPin, false);
+  assert.equal(again.termsVersion, null, 'conditions déjà acceptées : pas redemandées');
   const reset = await call('auth-pin-set', { proofToken: again.proofToken, pin: '4826' });
   assert.equal(reset.status, 200);
 });
@@ -236,7 +248,7 @@ await step('compte du seed (Awa) : SMS puis PIN, session ouverte', async () => {
   const r = await otp(AWA);
   assert.equal(r.isNewAccount, false);
   assert.equal(r.firstName, 'Awa');
-  const pin = await call('auth-pin-set', { proofToken: r.proofToken, pin: '1357' });
+  const pin = await call('auth-pin-set', { proofToken: r.proofToken, pin: '1357', acceptedTermsVersion: r.termsVersion ?? undefined });
   assert.equal(pin.status, 200, JSON.stringify(pin.body));
   session = pin.body.session.access_token;
 });
@@ -258,7 +270,7 @@ await step('un membre ne peut pas réinitialiser un PIN', async () => {
 let superSession;
 await step('super admin : connexion tracée', async () => {
   const r = await otp(SUPER);
-  const pin = await call('auth-pin-set', { proofToken: r.proofToken, pin: '8642' });
+  const pin = await call('auth-pin-set', { proofToken: r.proofToken, pin: '8642', acceptedTermsVersion: r.termsVersion ?? undefined });
   assert.equal(pin.status, 200, JSON.stringify(pin.body));
   superSession = pin.body.session.access_token;
   const events = await rest('security_events?kind=eq.admin_login&select=kind', superSession);

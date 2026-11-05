@@ -7,6 +7,11 @@ export interface RedirectState {
   purpose?: 'login' | 'reset';
   /** Prénom du compte, pour « Bonjour Awa » sur l'écran du PIN. */
   firstName?: string;
+  /**
+   * Version des conditions à accepter sur l'écran de création du PIN ; null : déjà
+   * acceptées. Absente (page rechargée…) : la case est affichée par prudence.
+   */
+  termsVersion?: number | null;
 }
 
 /**

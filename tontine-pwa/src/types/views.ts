@@ -478,6 +478,21 @@ export interface MemberProfile {
   received: Array<{ groupId: string; groupName: string; round: Round }>;
 }
 
+/** Conditions d'utilisation et politique de confidentialité en vigueur (lisibles sans session). */
+export interface LegalTerms {
+  /** Augmente à chaque modification des textes : chacun doit alors les accepter de nouveau. */
+  version: number;
+  termsText: string;
+  privacyText: string;
+}
+
+/** Pour la personne connectée : version en vigueur et dernière version acceptée. */
+export interface TermsStatus {
+  current: number;
+  /** null : jamais acceptées. */
+  accepted: number | null;
+}
+
 export interface CompleteProfileInput {
   firstName: string;
   lastName: string;

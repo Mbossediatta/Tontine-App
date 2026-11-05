@@ -44,7 +44,15 @@ export const mockSettingsService: SettingsService = {
     if (!values || typeof values !== 'object') {
       throw new ServiceError('Les paramètres transmis sont invalides.');
     }
+    const before = db.settings.app;
     db.settings[section] = cloneSettings({ ...db.settings, [section]: values })[section];
+    if (section === 'app') {
+      // Comme le serveur : la version n'est pas saisie, elle augmente si un texte change.
+      const changed =
+        db.settings.app.termsText !== before.termsText ||
+        db.settings.app.privacyText !== before.privacyText;
+      db.settings.app.termsVersion = before.termsVersion + (changed ? 1 : 0);
+    }
     const secret = newSecret?.trim();
     if (secret) {
       if (!SECRET_SECTIONS[section]) {

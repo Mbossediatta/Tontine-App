@@ -50,6 +50,7 @@ export function seedSettings(): PlatformSettings {
         'En utilisant Calebasse de l’Espoir, vous vous engagez à payer vos cotisations à temps et à respecter l’ordre de passage décidé dans votre groupe.',
       privacyText:
         'Vos données (nom, numéro, paiements) servent uniquement au fonctionnement de vos tontines. Elles ne sont jamais revendues.',
+      termsVersion: 1,
     },
     templates: {
       reminder:

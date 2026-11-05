@@ -1,6 +1,8 @@
 // Crée ou remplace le PIN, puis ouvre la session.
 // Remplacer un PIN exige un numéro prouvé par SMS (jeton de preuve) ; seul un compte
 // connecté qui n'a pas encore de PIN utilisable peut en créer un sans jeton.
+// Conditions d'utilisation pas encore acceptées (1re connexion, textes modifiés) : la case
+// cochée à l'écran (`acceptedTermsVersion`) est exigée et sa preuve enregistrée.
 import { assertPinFormat, hashPin, readProof } from '../_shared/crypto.ts';
 import { admin, caller, check, openSession, profileByPhone, type Profile } from '../_shared/db.ts';
 import { AppError, clientIp, readJson, serve, stringField } from '../_shared/http.ts';
@@ -18,6 +20,26 @@ serve(async (req) => {
     profile = await caller(req);
     const usable = check(await admin().rpc('svc_pin_usable', { p_user: profile.id })) as boolean;
     if (usable) throw new AppError('Session expirée, recommencez la connexion.', 'unauthenticated');
+  }
+
+  const due = check(await admin().rpc('svc_terms_due', { p_user: profile.id })) as number | null;
+  if (due !== null) {
+    if (body.acceptedTermsVersion === undefined) {
+      throw new AppError('Cochez la case pour accepter les conditions d’utilisation.');
+    }
+    if (body.acceptedTermsVersion !== due) {
+      throw new AppError(
+        'Les conditions ont été mises à jour. Relisez-les avant de les accepter.',
+        'conflict',
+      );
+    }
+    check(
+      await admin().rpc('svc_terms_accept', {
+        p_user: profile.id,
+        p_version: due,
+        p_user_agent: req.headers.get('user-agent'),
+      }),
+    );
   }
 
   check(await admin().rpc('svc_pin_save', { p_user: profile.id, p_pin_hash: await hashPin(profile.id, pin) }));

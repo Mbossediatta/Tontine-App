@@ -72,6 +72,8 @@ export interface MockDatabase {
   settings: PlatformSettings;
   /** Clés secrètes (paiement, SMS) : côté serveur seulement, jamais renvoyées à la page. */
   secrets: PlatformSecrets;
+  /** Acceptations des conditions (preuve : qui, quelle version, quand), en ajout seul. */
+  termsAcceptances: Array<{ userId: string; version: number; acceptedAt: string }>;
 }
 
 export function createSeed(now: Date = new Date()): MockDatabase {
@@ -115,5 +117,11 @@ export function createSeed(now: Date = new Date()): MockDatabase {
     smsLog: seedSms(users, now),
     settings: seedSettings(),
     secrets: seedSecrets(),
+    // Les comptes de démonstration ont déjà accepté la 1re version.
+    termsAcceptances: users.map((user) => ({
+      userId: user.id,
+      version: 1,
+      acceptedAt: user.createdAt ?? now.toISOString(),
+    })),
   };
 }

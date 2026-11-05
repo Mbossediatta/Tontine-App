@@ -56,15 +56,16 @@ describe('connexion par SMS puis PIN', () => {
     expect(lastOtpFor(NEW_NUMBER)).toBeUndefined();
   });
 
-  it('nouveau numéro : profil, puis PIN (pas trop simple), puis session ouverte', async () => {
-    expect(await verifyBySms(NEW_NUMBER, INVITE)).toMatchObject({
-      isNewAccount: true,
-      hasPin: false,
-    });
+  it('nouveau numéro : profil, puis PIN (pas trop simple, conditions cochées), puis session', async () => {
+    const verified = await verifyBySms(NEW_NUMBER, INVITE);
+    expect(verified).toMatchObject({ isNewAccount: true, hasPin: false, termsVersion: 1 });
     expect((await authService.getSession()).needsProfile).toBe(true);
     await authService.completeProfile({ firstName: 'Rama', lastName: 'Diouf' });
-    await expect(authService.setPin('1111')).rejects.toThrow(/facile/);
-    const user = await authService.setPin('2580');
+    await expect(authService.setPin('1111', 1)).rejects.toThrow(/facile/);
+    await expect(authService.setPin('2580')).rejects.toThrow(/conditions/);
+    await expect(authService.setPin('2580', 2)).rejects.toThrow(/mises à jour/);
+    const user = await authService.setPin('2580', 1);
+    expect(await authService.termsStatus()).toEqual({ current: 1, accepted: 1 });
     expect(user.firstName).toBe('Rama');
     await authService.logout();
     await expect(authService.loginWithPin(NEW_NUMBER, '2580')).resolves.toBeTruthy();
@@ -77,7 +78,8 @@ describe('connexion par SMS puis PIN', () => {
     await expect(authService.loginWithPin(AWA, '9999')).rejects.toThrow(/bloqué/);
     // Même le bon PIN ne suffit plus.
     await expect(authService.loginWithPin(AWA, DEMO_PIN)).rejects.toThrow();
-    expect((await verifyBySms(AWA)).hasPin).toBe(false);
+    // Conditions déjà acceptées : la case ne revient pas.
+    expect(await verifyBySms(AWA)).toMatchObject({ hasPin: false, termsVersion: null });
     await authService.setPin('2580');
     await authService.logout();
     await expect(authService.loginWithPin(AWA, '2580')).resolves.toBeTruthy();

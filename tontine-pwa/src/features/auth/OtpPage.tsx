@@ -61,11 +61,14 @@ export default function OtpPage() {
       const result = await authService.verifyOtp(phone, value);
       if (result.isNewAccount) {
         useAuthStore.getState().setNeedsProfile(true);
-        navigate('/inscription', { replace: true, state });
+        navigate('/inscription', {
+          replace: true,
+          state: { ...state, termsVersion: result.termsVersion },
+        });
       } else if (resetting || !result.hasPin) {
         navigate('/connexion/pin/nouveau', {
           replace: true,
-          state: { ...state, firstName: result.firstName },
+          state: { ...state, firstName: result.firstName, termsVersion: result.termsVersion },
         });
       } else {
         // Compte connu avec son PIN (nouvel appareil) : il suffit de le saisir.

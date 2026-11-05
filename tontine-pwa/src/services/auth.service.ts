@@ -1,4 +1,11 @@
-import type { CompleteProfileInput, SessionState, UpdateProfileInput, User } from '@/types';
+import type {
+  CompleteProfileInput,
+  LegalTerms,
+  SessionState,
+  TermsStatus,
+  UpdateProfileInput,
+  User,
+} from '@/types';
 
 /** Ce que la vérification du code SMS apprend sur le numéro. */
 export interface OtpResult {
@@ -8,6 +15,8 @@ export interface OtpResult {
   firstName?: string;
   /** Le compte a un PIN utilisable : il suffit de le saisir (sinon, il faut en créer un). */
   hasPin: boolean;
+  /** Version des conditions à accepter sur l'écran du PIN ; null : déjà acceptées. */
+  termsVersion: number | null;
 }
 
 /**
@@ -34,8 +43,17 @@ export interface AuthService {
   verifyOtp(phone: string, code: string): Promise<OtpResult>;
   /** Numéro sans compte : crée le compte (le PIN reste à créer). */
   completeProfile(input: CompleteProfileInput): Promise<void>;
-  /** Crée ou remplace le PIN du numéro prouvé par SMS, puis ouvre la session. */
-  setPin(pin: string): Promise<User>;
+  /**
+   * Crée ou remplace le PIN du numéro prouvé par SMS, puis ouvre la session.
+   * Conditions pas encore acceptées : `acceptedTermsVersion` (case cochée) est exigé.
+   */
+  setPin(pin: string, acceptedTermsVersion?: number): Promise<User>;
+  /** Textes des conditions et de la politique de confidentialité (sans session). */
+  legalTerms(): Promise<LegalTerms>;
+  /** Personne connectée : a-t-elle accepté la version en vigueur ? */
+  termsStatus(): Promise<TermsStatus>;
+  /** Personne connectée : accepte la version en vigueur des conditions. */
+  acceptTerms(version: number): Promise<void>;
   /** Connexion ou déverrouillage par PIN ; après trop d'erreurs, le PIN est bloqué. */
   loginWithPin(phone: string, pin: string): Promise<User>;
   /** Change le PIN de la personne connectée : le PIN actuel est exigé. */

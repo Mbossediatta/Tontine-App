@@ -44,6 +44,21 @@ describe('rubriques du super administrateur', () => {
     ).toBe(true);
   }, 10_000);
 
+  it('modifier les conditions crée une version à accepter de nouveau par chacun', async () => {
+    const settings = await settingsService.get();
+    await settingsService.update('app', { ...settings.app, name: 'Calebasse' });
+    expect((await authService.legalTerms()).version).toBe(1);
+    await settingsService.update('app', { ...settings.app, termsText: 'Nouvelles conditions.' });
+    expect(await authService.legalTerms()).toMatchObject({
+      version: 2,
+      termsText: 'Nouvelles conditions.',
+    });
+    expect(await authService.termsStatus()).toEqual({ current: 2, accepted: 1 });
+    await expect(authService.acceptTerms(1)).rejects.toThrow(/mises à jour/);
+    await authService.acceptTerms(2);
+    expect(await authService.termsStatus()).toEqual({ current: 2, accepted: 2 });
+  }, 10_000);
+
   it('permet de bloquer puis débloquer un versement non payé', async () => {
     const payout = (await financeService.payouts()).find((row) => row.stage !== 'paid');
     expect(payout).toBeDefined();
