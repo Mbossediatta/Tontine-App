@@ -7,6 +7,7 @@ import { Button } from '@/features/member/ui/Button';
 import { Card } from '@/features/member/ui/Card';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { cn } from '@/lib/cn';
+import { clearPaymentRedirect } from '@/lib/paymentRedirect';
 import { formatAmount, formatDateTime, fullName, paymentMethodLabel } from '@/lib/format';
 import { queryKeys } from '@/lib/query';
 import { paymentService } from '@/services';
@@ -89,13 +90,21 @@ async function shareReceipt(receipt: PaymentReceipt, user: User): Promise<void> 
 function ResultLayout({ children }: { children: ReactNode }) {
   return (
     <main className="theme-member flex min-h-[100dvh] justify-center bg-blue-50 px-4 py-8 sm:items-center">
-      <div className="flex w-full max-w-md flex-col gap-4 motion-safe:animate-fade-in">{children}</div>
+      <div className="flex w-full max-w-md flex-col gap-4 motion-safe:animate-fade-in">
+        {children}
+      </div>
     </main>
   );
 }
 
 /** Pastille ronde d'état : vert (réussi), rouge (échoué), bleu (en cours). */
-function StateIcon({ tone, children }: { tone: 'success' | 'error' | 'pending'; children: ReactNode }) {
+function StateIcon({
+  tone,
+  children,
+}: {
+  tone: 'success' | 'error' | 'pending';
+  children: ReactNode;
+}) {
   return (
     <span
       className={cn(
@@ -141,6 +150,9 @@ export function PaymentResultPage() {
   const navigate = useNavigate();
   const { query, timedOut } = useReceipt();
   const [sharing, setSharing] = useState(false);
+  // Retour de paiement arrivé : la marque de l'aller-retour n'a plus lieu d'être
+  // (la prochaine relance de l'appli redemandera bien le PIN).
+  useEffect(() => clearPaymentRedirect(), []);
 
   if (query.isPending) {
     return (
@@ -157,7 +169,9 @@ export function PaymentResultPage() {
       <ResultLayout>
         <Card className="flex flex-col gap-4 px-6 py-8 text-center">
           <p className="text-[18px] font-bold">Paiement introuvable</p>
-          <p className="text-[13px] text-slate-600">Retrouve tous tes paiements dans ton historique.</p>
+          <p className="text-[13px] text-slate-600">
+            Retrouve tous tes paiements dans ton historique.
+          </p>
           <Button block onClick={() => navigate('/historique', { replace: true })}>
             Voir mon historique
           </Button>

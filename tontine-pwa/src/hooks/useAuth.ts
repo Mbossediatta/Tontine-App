@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { create } from 'zustand';
 import { clearDataCache } from '@/lib/dataCache';
 import { isComputer } from '@/lib/device';
+import { isReturningFromPayment } from '@/lib/paymentRedirect';
 import { authService } from '@/services';
 import type { User } from '@/types';
 
@@ -86,6 +87,8 @@ export function useCurrentUser(): User {
  *   est redemandé (écran « Bonjour Awa »).
  * - Ordinateur (souvent partagé) : rien n'est retenu d'une ouverture à l'autre ; une
  *   session restée ouverte est fermée et l'écran du numéro s'affiche.
+ * - Exception : retour de la page de paiement (aller-retour qui recharge l'appli) ; ce
+ *   n'est pas une relance, la session continue sans PIN (voir lib/paymentRedirect).
  */
 export function useAuthBootstrap(): void {
   useEffect(() => {
@@ -95,7 +98,8 @@ export function useAuthBootstrap(): void {
       .then(async (session) => {
         if (cancelled) return;
         useAuthStore.setState({ lockAfterMinutes: session.lockAfterMinutes });
-        if (session.user && isComputer()) {
+        const midPayment = session.user !== null && isReturningFromPayment();
+        if (session.user && isComputer() && !midPayment) {
           await authService.logout();
           await clearDataCache();
           if (!cancelled) useAuthStore.getState().setUser(null);
@@ -105,7 +109,7 @@ export function useAuthBootstrap(): void {
         store.setUser(session.user);
         store.setNeedsProfile(session.needsProfile);
         store.setNeedsPin(session.needsPin);
-        store.setLocked(session.user !== null && !session.needsPin);
+        store.setLocked(session.user !== null && !session.needsPin && !midPayment);
       })
       .catch(() => {
         if (!cancelled) useAuthStore.getState().setUser(null);

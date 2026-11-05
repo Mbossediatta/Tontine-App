@@ -9,6 +9,7 @@ import { errorMessage } from '@/lib/errors';
 import { paymentMethodLabel } from '@/lib/format';
 import { completeSimulatedCheckout, getSimulatedCheckout } from '@/services/mock/gateway';
 import type { PaymentMethod } from '@/types';
+import { markPaymentRedirect } from '@/lib/paymentRedirect';
 
 /**
  * Page du service de paiement simulé (mode démonstration uniquement) : elle tient
@@ -30,6 +31,7 @@ export default function SimulationPage() {
     try {
       await completeSimulatedCheckout(paymentId, success);
       const target = success ? '/paiement/succes' : '/paiement/echec';
+      markPaymentRedirect(); // retour vers l'appli : toujours pas de PIN redemandé
       window.location.assign(`${target}?payment=${encodeURIComponent(paymentId)}`);
     } catch (err) {
       setError(errorMessage(err));
@@ -55,7 +57,12 @@ export default function SimulationPage() {
             </p>
             <p className="text-[13px] text-slate-600">Paiement à « {query.data.groupName} »</p>
             <AmountDisplay value={query.data.amount} size="xl" />
-            <Button block loading={busy === 'success'} disabled={busy !== null} onClick={() => void finish(true)}>
+            <Button
+              block
+              loading={busy === 'success'}
+              disabled={busy !== null}
+              onClick={() => void finish(true)}
+            >
               Valider le paiement
             </Button>
             <Button

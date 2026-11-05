@@ -14,6 +14,7 @@ import { Button } from '../ui/Button';
 import { Card, PageTitle } from '../ui/Card';
 import { EmptyState, ErrorBlock } from '../ui/EmptyState';
 import { ListSkeleton } from '../ui/Skeleton';
+import { markPaymentRedirect } from '@/lib/paymentRedirect';
 
 type Method = InitiatePaymentInput['method'];
 type Step = 1 | 2 | 3;
@@ -85,8 +86,7 @@ function ChoiceRow({
 /** Récapitulatif avant paiement, en tableau compact. */
 function Summary({ due, method }: { due: Due; method: Method }) {
   const { overview } = due;
-  const contribution =
-    overview.myAmountDue - overview.myPenalty - overview.myMembershipFeeDue;
+  const contribution = overview.myAmountDue - overview.myPenalty - overview.myMembershipFeeDue;
   const rows: Array<[string, React.ReactNode]> = [
     ['Groupe', overview.group.name],
     ['Période', periodLabel(overview, due.round)],
@@ -103,7 +103,10 @@ function Summary({ due, method }: { due: Due; method: Method }) {
     <Card>
       <dl className="divide-y divide-slate-200">
         {rows.map(([label, value]) => (
-          <div key={label} className="flex min-h-[48px] items-center justify-between gap-4 px-4 py-2">
+          <div
+            key={label}
+            className="flex min-h-[48px] items-center justify-between gap-4 px-4 py-2"
+          >
             <dt className="text-[13px] text-slate-600">{label}</dt>
             <dd className="text-right text-[15px] font-semibold">{value}</dd>
           </div>
@@ -168,7 +171,8 @@ export default function PayFlowPage() {
     );
   }
 
-  const selected = dues.find((d) => d.round.id === roundId) ?? (dues.length === 1 ? dues[0] : undefined);
+  const selected =
+    dues.find((d) => d.round.id === roundId) ?? (dues.length === 1 ? dues[0] : undefined);
   // Étape de départ : on saute le choix si la cotisation est déjà connue.
   const current: Step = step ?? (selected ? 2 : 1);
 
@@ -182,6 +186,8 @@ export default function PayFlowPage() {
         method,
       });
       // Page sécurisée du service de paiement ; il nous renverra sur la page de résultat.
+      // Cet aller-retour recharge l'appli : la marque évite qu'elle redemande le PIN.
+      markPaymentRedirect();
       window.location.assign(checkoutUrl);
     } catch (err) {
       setError(errorMessage(err));
@@ -246,12 +252,18 @@ export default function PayFlowPage() {
             <legend className="sr-only">Moyen de paiement</legend>
             {selected ? (
               <p className="mb-2 text-[13px] text-slate-600">
-                {selected.overview.group.name} · <AmountDisplay value={selected.amount} className="text-slate-900" />{' '}
-                avant le {shortDate(selected.round.dueDate)}
+                {selected.overview.group.name} ·{' '}
+                <AmountDisplay value={selected.amount} className="text-slate-900" /> avant le{' '}
+                {shortDate(selected.round.dueDate)}
               </p>
             ) : null}
             {METHODS.map((m) => (
-              <ChoiceRow key={m.id} name="method" checked={method === m.id} onChange={() => setMethod(m.id)}>
+              <ChoiceRow
+                key={m.id}
+                name="method"
+                checked={method === m.id}
+                onChange={() => setMethod(m.id)}
+              >
                 <span className="min-w-0 flex-1">
                   <span className="block text-[15px] font-semibold">{m.name}</span>
                   <span className="block text-[13px] text-slate-600">{m.detail}</span>
@@ -270,7 +282,10 @@ export default function PayFlowPage() {
               {METHODS.find((m) => m.id === method)?.name}. Aucun frais en plus.
             </p>
             {error ? (
-              <p role="alert" className="rounded-lg bg-danger-bg px-4 py-3 text-[13px] font-semibold text-danger">
+              <p
+                role="alert"
+                className="rounded-lg bg-danger-bg px-4 py-3 text-[13px] font-semibold text-danger"
+              >
                 {error}
               </p>
             ) : null}
@@ -291,7 +306,11 @@ export default function PayFlowPage() {
             )}
           </Button>
         ) : (
-          <Button block disabled={current === 1 && !selected} onClick={() => setStep(current === 1 ? 2 : 3)}>
+          <Button
+            block
+            disabled={current === 1 && !selected}
+            onClick={() => setStep(current === 1 ? 2 : 3)}
+          >
             Continuer
           </Button>
         )}

@@ -10,6 +10,7 @@ import { errorMessage } from '@/lib/errors';
 import { formatDate } from '@/lib/format';
 import { paymentService } from '@/services';
 import { PaymentMethodPicker, type OnlineMethod } from './PaymentMethodPicker';
+import { markPaymentRedirect } from '@/lib/paymentRedirect';
 
 export default function PayPage() {
   const { id = '' } = useParams();
@@ -50,6 +51,7 @@ export default function PayPage() {
                 roundId: currentRound.id,
                 method,
               });
+              markPaymentRedirect(); // pas de PIN redemandé au retour du paiement
               window.location.assign(checkoutUrl);
             } catch (error) {
               toast.error(errorMessage(error));
