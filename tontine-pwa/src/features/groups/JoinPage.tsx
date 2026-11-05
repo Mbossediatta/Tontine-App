@@ -134,6 +134,7 @@ export default function JoinPage() {
             ) : (
               <OnlineButton
                 block
+                variant="blue"
                 loading={join.isPending}
                 onClick={() => join.mutate()}
                 icon={<UserPlus className="h-5 w-5" aria-hidden="true" />}

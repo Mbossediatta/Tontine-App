@@ -46,7 +46,7 @@ export function JoinGroupDialog({ open, onClose }: JoinGroupDialogProps) {
           error={errors.code?.message}
           {...register('code')}
         />
-        <Button type="submit" className="w-full">
+        <Button type="submit" variant="blue" className="w-full">
           Voir le groupe
         </Button>
       </form>

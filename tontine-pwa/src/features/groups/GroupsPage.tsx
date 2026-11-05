@@ -17,7 +17,7 @@ export default function GroupsPage() {
         actions={
           <Button
             size="sm"
-            variant="secondary"
+            variant="blue"
             onClick={() => setJoinOpen(true)}
             icon={<Plus className="h-4 w-4" aria-hidden="true" />}
           >
@@ -32,7 +32,7 @@ export default function GroupsPage() {
               title="Vous n’avez pas encore de groupe"
               description="Demandez un code d’invitation à l’administrateur de votre tontine."
               action={
-                <Button block onClick={() => setJoinOpen(true)}>
+                <Button block variant="blue" onClick={() => setJoinOpen(true)}>
                   Rejoindre un groupe
                 </Button>
               }

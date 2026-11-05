@@ -74,7 +74,7 @@ export function EditProfileDialog({ open, onClose }: EditProfileDialogProps) {
         <div className="flex flex-col items-center gap-3">
           <Avatar name={name} src={avatarUrl} size="lg" />
           <div className="flex flex-wrap justify-center gap-2">
-            <label className="inline-flex min-h-touch cursor-pointer items-center gap-2 rounded-control border-2 border-blue-700 px-4 text-label font-bold text-blue-700 focus-within:outline focus-within:outline-[3px] focus-within:outline-green-300 hover:bg-blue-100">
+            <label className="inline-flex min-h-touch cursor-pointer items-center gap-2 rounded-control bg-blue-700 px-4 text-label font-bold text-white focus-within:outline focus-within:outline-[3px] focus-within:outline-green-300 hover:bg-blue-900">
               <Camera className="h-4 w-4" aria-hidden="true" />
               {avatarUrl ? 'Changer la photo' : 'Ajouter une photo'}
               <input
@@ -111,7 +111,7 @@ export function EditProfileDialog({ open, onClose }: EditProfileDialogProps) {
         <p className="text-small text-muted">
           Pour changer de numéro de téléphone, créez un nouveau compte avec le nouveau numéro.
         </p>
-        <OnlineButton type="submit" className="w-full" loading={save.isPending}>
+        <OnlineButton type="submit" variant="blue" className="w-full" loading={save.isPending}>
           Enregistrer
         </OnlineButton>
       </form>

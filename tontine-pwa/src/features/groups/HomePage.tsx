@@ -55,6 +55,7 @@ export default function HomePage() {
           description="Rejoignez une tontine avec le code d’invitation reçu de l’administrateur."
           action={
             <Button
+              variant="blue"
               className="w-full"
               onClick={() => setJoinOpen(true)}
               icon={<Users className="h-5 w-5" aria-hidden="true" />}
@@ -69,7 +70,7 @@ export default function HomePage() {
           <DueList groups={groups} />
           <NextTurnCard groups={groups} />
           <Button
-            variant="secondary"
+            variant="blue"
             className="w-full"
             onClick={() => setJoinOpen(true)}
             icon={<Plus className="h-5 w-5" aria-hidden="true" />}
