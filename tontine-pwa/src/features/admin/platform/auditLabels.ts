@@ -7,9 +7,10 @@ export const auditCategories: Record<AuditCategory, { label: string; dot: string
   groups: { label: 'Groupes et communautés', dot: 'bg-blue-700' },
   money: { label: 'Argent et versements', dot: 'bg-green-600' },
   admins: { label: 'Administrateurs', dot: 'bg-warning' },
-  members: { label: 'Membres', dot: 'bg-blue-900' },
+  // Rond creux : se distingue des groupes sans ajouter de couleur.
+  members: { label: 'Membres', dot: 'bg-white ring-2 ring-inset ring-blue-700' },
   platform: { label: 'Paramètres et annonces', dot: 'bg-muted' },
-  logins: { label: 'Connexions', dot: 'bg-line' },
+  logins: { label: 'Connexions', dot: 'bg-blue-300' },
 };
 
 /** Libellé français et famille de chaque action (le type garantit qu'aucune n'est oubliée). */
