@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Camera, Trash2 } from 'lucide-react';
+import { Camera, ImageIcon, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { OnlineButton } from '@/components/layout/OnlineButton';
@@ -10,6 +10,7 @@ import { compressAvatar } from '@/lib/image';
 import { useAction } from '@/lib/query';
 import { profileSchema, type ProfileValues } from '@/lib/validators';
 import { authService } from '@/services';
+import { CameraDialog } from './CameraDialog';
 
 interface EditProfileDialogProps {
   open: boolean;
@@ -20,6 +21,8 @@ interface EditProfileDialogProps {
 export function EditProfileDialog({ open, onClose }: EditProfileDialogProps) {
   const user = useCurrentUser();
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
+  // Caméra en direct ouverte (« Prendre une photo »).
+  const [shooting, setShooting] = useState(false);
   const {
     register,
     handleSubmit,
@@ -74,9 +77,17 @@ export function EditProfileDialog({ open, onClose }: EditProfileDialogProps) {
         <div className="flex flex-col items-center gap-3">
           <Avatar name={name} src={avatarUrl} size="lg" />
           <div className="flex flex-wrap justify-center gap-2">
-            <label className="inline-flex min-h-touch cursor-pointer items-center gap-2 rounded-control bg-blue-700 px-4 text-label font-bold text-white focus-within:outline focus-within:outline-[3px] focus-within:outline-green-300 hover:bg-blue-900">
-              <Camera className="h-4 w-4" aria-hidden="true" />
-              {avatarUrl ? 'Changer la photo' : 'Ajouter une photo'}
+            <Button
+              variant="blue"
+              size="sm"
+              onClick={() => setShooting(true)}
+              icon={<Camera className="h-4 w-4" aria-hidden="true" />}
+            >
+              Prendre une photo
+            </Button>
+            <label className="inline-flex min-h-touch cursor-pointer items-center gap-2 rounded-control border-2 border-blue-700 bg-white px-4 text-label font-bold text-blue-700 focus-within:outline focus-within:outline-[3px] focus-within:outline-green-300 hover:bg-blue-50">
+              <ImageIcon className="h-4 w-4" aria-hidden="true" />
+              Choisir dans la galerie
               <input
                 type="file"
                 accept="image/*"
@@ -115,6 +126,7 @@ export function EditProfileDialog({ open, onClose }: EditProfileDialogProps) {
           Enregistrer
         </OnlineButton>
       </form>
+      <CameraDialog open={shooting} onClose={() => setShooting(false)} onPhoto={setAvatarUrl} />
     </Modal>
   );
 }

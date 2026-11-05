@@ -1,5 +1,12 @@
-/** Redimensionne et compresse une photo d'avatar (carré, JPEG) pour limiter le poids. */
-export async function compressAvatar(file: File, size = 256, quality = 0.8): Promise<string> {
+/**
+ * Redimensionne et compresse une photo d'avatar (carré, JPEG) pour limiter le poids.
+ * Source : fichier de la galerie, ou image de la caméra (élément vidéo en direct).
+ */
+export async function compressAvatar(
+  file: Blob | HTMLVideoElement,
+  size = 256,
+  quality = 0.8,
+): Promise<string> {
   const bitmap = await createImageBitmap(file);
   const side = Math.min(bitmap.width, bitmap.height);
   const canvas = document.createElement('canvas');
