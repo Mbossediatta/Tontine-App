@@ -3,7 +3,7 @@ import { useAuthStore, useCurrentUser } from '@/hooks/useAuth';
 import { cn } from '@/lib/cn';
 import { formatPhoneLocal, normalizePhone } from '@/lib/format';
 import { useAction } from '@/lib/query';
-import { isSenegalMobile } from '@/lib/validators';
+import { isSenegalMobile } from '@/lib/checks';
 import { authService } from '@/services';
 import type { PayoutMethod } from '@/types';
 import { BottomSheet } from '../ui/BottomSheet';

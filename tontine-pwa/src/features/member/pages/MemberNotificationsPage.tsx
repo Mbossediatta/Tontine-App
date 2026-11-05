@@ -1,5 +1,6 @@
 import { ChevronLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useShowMore } from '@/features/admin/components/useShowMore';
 import { PushPromptCard } from '@/features/notifications/PushPromptCard';
 import { useNotifications } from '@/features/notifications/queries';
 import { cn } from '@/lib/cn';
@@ -30,7 +31,9 @@ function NotificationRow({ item, onOpen }: { item: AppNotification; onOpen: () =
             {!item.read ? <span className="sr-only"> (non lue)</span> : null}
           </span>
           <span className="mt-0.5 block text-[13px] leading-5 text-slate-600">{item.body}</span>
-          <span className="mt-1 block text-[13px] text-slate-600">{formatRelative(item.createdAt)}</span>
+          <span className="mt-1 block text-[13px] text-slate-600">
+            {formatRelative(item.createdAt)}
+          </span>
         </span>
       </button>
     </li>
@@ -50,6 +53,8 @@ export default function MemberNotificationsPage() {
   const items = query.data ?? [];
   const unread = items.filter((n) => !n.read);
   const read = items.filter((n) => n.read);
+  // Les notifications lues s'accumulent : on les affiche par tranches de 20.
+  const readPage = useShowMore(read, 20, null);
 
   const open = (item: AppNotification) => {
     if (!item.read) markOne.mutate(item.id);
@@ -108,11 +113,16 @@ export default function MemberNotificationsPage() {
               <h2 className="mb-2 text-[13px] font-semibold text-slate-600">Déjà lues</h2>
               <Card>
                 <ul className="divide-y divide-slate-200">
-                  {read.map((item) => (
+                  {readPage.visible.map((item) => (
                     <NotificationRow key={item.id} item={item} onOpen={() => open(item)} />
                   ))}
                 </ul>
               </Card>
+              {readPage.remaining > 0 ? (
+                <Button variant="secondary" block className="mt-3" onClick={readPage.loadMore}>
+                  Voir plus ({readPage.remaining} restante{readPage.remaining > 1 ? 's' : ''})
+                </Button>
+              ) : null}
             </section>
           ) : null}
         </>

@@ -4,7 +4,15 @@ import { Link, useParams } from 'react-router-dom';
 import { AmountText, GroupStatusBadge, StatusBadge } from '@/components/domain';
 import { OnlineButton } from '@/components/layout/OnlineButton';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { AsyncContent, Badge, Button, Card, CardTitle, ConfirmDialog } from '@/components/ui';
+import {
+  AsyncContent,
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  CardTitle,
+  ConfirmDialog,
+} from '@/components/ui';
 import { formatDate, formatPhone, fullName, paymentMethodLabel, plural } from '@/lib/format';
 import { useAction } from '@/lib/query';
 import { memberService } from '@/services';
@@ -106,6 +114,8 @@ export default function MemberDetailPage() {
               backTo="/admin/membres"
               subtitle={
                 <span className="flex flex-wrap items-center gap-2">
+                  {/* Photo choisie par le membre dans son profil (sinon ses initiales). */}
+                  <Avatar name={fullName(user)} src={user.avatarUrl} size="sm" />
                   <span className="tabular-nums">{formatPhone(user.phone)}</span>
                   <Badge tone={user.globalRole === 'admin' ? 'admin' : 'neutral'}>
                     {user.globalRole === 'admin' ? 'Administrateur' : 'Participant'}

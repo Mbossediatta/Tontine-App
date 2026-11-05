@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { PIN_LENGTH, PinPad } from '@/features/auth/components/PinPad';
 import { errorMessage } from '@/lib/errors';
-import { isWeakPin } from '@/lib/validators';
+import { isWeakPin } from '@/lib/checks';
 import { authService } from '@/services';
 import { BottomSheet } from '../ui/BottomSheet';
 

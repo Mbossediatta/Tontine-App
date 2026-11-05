@@ -10,9 +10,17 @@ const MIN_VISIBLE_MS = 3500;
 /** Durée du fondu de sortie (voir #splash.splash-hide dans index.html). */
 const FADE_MS = 450;
 
+/** Marque « écran déjà vu dans cet onglet » (lue par le petit script d'index.html). */
+const SEEN_KEY = 'calebasse.splashSeen.v1';
+
 export function hideSplash(): void {
   const splash = document.getElementById('splash');
   if (!splash) return;
+  try {
+    window.sessionStorage.setItem(SEEN_KEY, '1');
+  } catch {
+    // Stockage indisponible : l'écran s'affichera aussi au prochain chargement.
+  }
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
   const wait = reduced ? 0 : Math.max(0, MIN_VISIBLE_MS - performance.now());
   window.setTimeout(() => {

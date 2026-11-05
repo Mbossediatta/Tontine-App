@@ -13,7 +13,14 @@
     <meta name="description" content="Gérez vos tontines : cotisations, tours et cagnottes." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="image" href="/brand/logo-emblem.png" />
+    <!--
+      Polices chargées en parallèle et sans bloquer l'affichage (avant : @import dans le CSS,
+      qui retardait le premier écran). En attendant, les polices système s'affichent.
+    -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&amp;family=Nunito+Sans:wght@400;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&amp;family=Nunito+Sans:wght@400;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&amp;family=Nunito+Sans:wght@400;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" /></noscript>
+    <link rel="preload" as="image" href="/brand/logo-emblem.webp" type="image/webp" />
     <title>Calebasse de l’Espoir</title>
     <!--
       Écran de démarrage : HTML et CSS seulement, affiché dès les premiers octets reçus
@@ -75,7 +82,7 @@
         animation: splash-pop 700ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
       }
       /*
-        Emblème rond de 112 px (public/brand/logo-emblem.png, tiré du logo officiel, déjà
+        Emblème rond de 112 px (public/brand/logo-emblem.webp, tiré du logo officiel, déjà
         cadré et centré, coins transparents), posé dans le rond blanc.
       */
       .splash-logo-frame {
@@ -202,7 +209,7 @@
         <span class="splash-coin c2"></span>
         <span class="splash-coin c3"></span>
         <span class="splash-logo-frame">
-          <img class="splash-logo" src="/brand/logo-emblem.png" width="112" height="112" alt="" />
+          <img class="splash-logo" src="/brand/logo-emblem.webp" width="112" height="112" alt="" />
         </span>
       </div>
       <p class="splash-title">Calebasse <span>de l’Espoir</span></p>
@@ -210,6 +217,15 @@
       <div class="splash-dots" aria-hidden="true"><i></i><i></i><i></i></div>
       <p class="splash-footer">Cotisez, suivez, recevez · en FCFA</p>
     </div>
+    <script>
+      // Écran de démarrage : une fois par session (onglet). Ensuite (rechargement, retour
+      // de paiement), on le retire avant même qu'il soit dessiné. Voir src/app/splash.ts.
+      try {
+        if (sessionStorage.getItem('calebasse.splashSeen.v1')) document.getElementById('splash').remove();
+      } catch (e) {
+        /* Stockage indisponible : l'écran s'affiche normalement. */
+      }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

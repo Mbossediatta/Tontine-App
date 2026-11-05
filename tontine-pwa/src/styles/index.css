@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito+Sans:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+/* Polices : chargées par index.html, sans bloquer l'affichage. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

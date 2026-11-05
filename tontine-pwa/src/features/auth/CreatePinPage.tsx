@@ -3,7 +3,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, useAuthStore } from '@/hooks/useAuth';
 import { errorMessage } from '@/lib/errors';
-import { isWeakPin } from '@/lib/validators';
+import { isWeakPin } from '@/lib/checks';
 import { authService } from '@/services';
 import type { User } from '@/types';
 import { AuthError } from './components/AuthButton';

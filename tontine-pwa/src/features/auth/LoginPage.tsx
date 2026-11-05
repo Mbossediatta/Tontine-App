@@ -3,7 +3,7 @@ import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-route
 import { useAuth, useAuthStore } from '@/hooks/useAuth';
 import { isComputer } from '@/lib/device';
 import { errorMessage } from '@/lib/errors';
-import { isSenegalMobile } from '@/lib/validators';
+import { isSenegalMobile } from '@/lib/checks';
 import { authService } from '@/services';
 import { AuthButton } from './components/AuthButton';
 import { AuthScreen } from './components/AuthScreen';

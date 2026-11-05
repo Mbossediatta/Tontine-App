@@ -1,5 +1,10 @@
 import { z } from 'zod';
+import { isWeakPin } from './checks';
 import { maxDueDay } from './tontine';
+
+// Vérifications simples déplacées dans lib/checks (sans Zod) ; reprises ici pour
+// les formulaires et l'ancien chemin d'import.
+export { isSenegalMobile, isWeakPin } from './checks';
 
 export const PHONE_ERROR = 'Numéro invalide : 9 chiffres commençant par 7';
 
@@ -173,20 +178,6 @@ export const addByPhoneSchema = z.object({
 });
 export type AddByPhoneValues = z.infer<typeof addByPhoneSchema>;
 
-/**
- * PIN trop facile à deviner : 4 chiffres identiques (0000, 7777) ou une suite
- * (1234, 4321, 6789…).
- */
-export function isWeakPin(pin: string): boolean {
-  const digits = [...pin].map(Number);
-  const steps = digits.slice(1).map((digit, i) => digit - (digits[i] ?? 0));
-  return (
-    steps.every((step) => step === 0) ||
-    steps.every((step) => step === 1) ||
-    steps.every((step) => step === -1)
-  );
-}
-
 export const pinSchema = z.object({
   pin: z
     .string()
@@ -204,8 +195,3 @@ export const changePhoneSchema = z.object({
   code: z.string().regex(/^\d{6}$/, 'Saisissez les 6 chiffres du code'),
 });
 export type ChangePhoneValues = z.infer<typeof changePhoneSchema>;
-
-/** Numéro mobile sénégalais : 9 chiffres commençant par 7 (70, 75, 76, 77, 78). */
-export function isSenegalMobile(digits: string): boolean {
-  return /^7\d{8}$/.test(digits);
-}

@@ -57,6 +57,9 @@ function AccountMenu({ user }: { user: User }) {
         className="flex min-h-touch items-center gap-2 rounded-control px-1.5 transition-colors duration-150 hover:bg-blue-50 sm:px-2"
       >
         <Avatar name={fullName(user)} src={user.avatarUrl} size="sm" />
+        {/* Téléphone : seul l'avatar se voit ; ce texte donne un nom au bouton pour les
+            lecteurs d'écran. Ordinateur : le nom et le rôle visibles suffisent. */}
+        <span className="sr-only sm:hidden">Mon compte, {fullName(user)}</span>
         {/* Nom et rôle : masqués sur téléphone, l'avatar suffit. */}
         <span className="hidden text-left leading-tight sm:block">
           <span className="block max-w-[180px] truncate font-bold text-ink">{fullName(user)}</span>

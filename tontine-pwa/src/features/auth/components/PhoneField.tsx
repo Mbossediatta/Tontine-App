@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { cn } from '@/lib/cn';
 import { formatPhoneLocal, normalizePhone } from '@/lib/format';
-import { isSenegalMobile } from '@/lib/validators';
+import { isSenegalMobile } from '@/lib/checks';
 
 interface PhoneFieldProps {
   /** Les 9 chiffres saisis (sans espaces ni indicatif). */

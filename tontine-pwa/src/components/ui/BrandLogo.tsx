@@ -14,7 +14,7 @@ interface BrandLogoProps {
 export function BrandLogo({ variant = 'full', className }: BrandLogoProps) {
   return variant === 'full' ? (
     <img
-      src="/brand/logo.png"
+      src="/brand/logo.webp"
       alt="Calebasse de l’Espoir"
       width={480}
       height={207}
@@ -22,7 +22,7 @@ export function BrandLogo({ variant = 'full', className }: BrandLogoProps) {
     />
   ) : (
     <img
-      src="/brand/logo-emblem.png"
+      src="/brand/logo-emblem.webp"
       alt="Calebasse de l’Espoir"
       width={384}
       height={384}

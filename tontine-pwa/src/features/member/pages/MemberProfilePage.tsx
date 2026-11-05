@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { ChevronRight, KeyRound, LogOut, Wallet } from 'lucide-react';
+import { Camera, ChevronRight, KeyRound, LogOut, Wallet } from 'lucide-react';
 import { Toggle } from '@/components/ui';
 import { useLogout } from '@/features/auth/useLogout';
 import { useNotificationPreferences } from '@/features/notifications/queries';
@@ -144,12 +144,28 @@ export default function MemberProfilePage() {
       <PageTitle>Profil</PageTitle>
 
       <section className="flex items-center gap-3">
-        <span
-          aria-hidden="true"
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-green-100 text-[15px] font-bold text-green-800"
+        {/* Photo du compte (sinon les initiales) ; un appui ouvre l'ajout de photo. Elle
+            apparaît aussi côté administration (liste et fiche des membres). */}
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          aria-label={user.avatarUrl ? 'Changer ma photo' : 'Ajouter une photo'}
+          className="relative h-12 w-12 shrink-0 rounded-full"
         >
-          {initials(user)}
-        </span>
+          {user.avatarUrl ? (
+            <img src={user.avatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
+          ) : (
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-[15px] font-bold text-green-800">
+              {initials(user)}
+            </span>
+          )}
+          <span
+            aria-hidden="true"
+            className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-blue-700 text-white ring-2 ring-blue-50"
+          >
+            <Camera className="h-3 w-3" />
+          </span>
+        </button>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[18px] font-bold leading-6">{fullName(user)}</p>
           <p className="text-[13px] tabular-nums text-slate-600">{formatPhone(user.phone)}</p>

@@ -40,7 +40,9 @@ export default defineConfig({
       },
       injectManifest: {
         // Fichiers de l'application en précache (les stratégies de cache sont dans sw.ts).
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2}'],
+        // PNG du logo : sources des icônes, non utilisées par l'appli (elle affiche le WebP).
+        globIgnores: ['brand/*.png'],
       },
     }),
   ],

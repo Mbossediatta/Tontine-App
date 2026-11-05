@@ -1,6 +1,6 @@
 // Règles du PIN de connexion (simulées ; le backend appliquera les mêmes).
 import { ServiceError } from '@/lib/errors';
-import { isWeakPin } from '@/lib/validators';
+import { isWeakPin } from '@/lib/checks';
 import { hashPin } from '@/mocks/pinHash';
 import { db } from './db';
 

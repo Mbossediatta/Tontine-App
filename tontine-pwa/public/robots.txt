@@ -1,0 +1,6 @@
+# Calebasse de l'Espoir : application privée (comptes, cotisations).
+# Seules l'accueil et la connexion peuvent apparaître dans les moteurs de recherche.
+User-agent: *
+Allow: /$
+Allow: /connexion
+Disallow: /
