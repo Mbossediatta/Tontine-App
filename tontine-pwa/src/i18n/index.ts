@@ -119,6 +119,7 @@ export function dayLabelIn(language: Language, iso: string | Date): string {
 }
 
 const FREQUENCY_KEY: Record<Frequency, MessageKey> = {
+  daily: 'freq.daily',
   monthly: 'freq.monthly',
   biweekly: 'freq.biweekly',
   weekly: 'freq.weekly',
@@ -129,9 +130,8 @@ export function contributionLabelIn(
   language: Language,
   amount: number,
   frequency: Frequency,
-  daily = false,
 ): string {
-  return translate(language, daily ? 'freq.daily' : FREQUENCY_KEY[frequency], {
+  return translate(language, FREQUENCY_KEY[frequency], {
     amount: formatAmount(amount),
   });
 }

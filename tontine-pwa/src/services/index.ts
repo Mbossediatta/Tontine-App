@@ -1,6 +1,5 @@
 // Point d'entrée unique de la couche de données.
-// Aujourd'hui toutes les implémentations sont simulées ; les versions Supabase
-// implémenteront les mêmes interfaces et seront choisies ici selon VITE_USE_MOCKS.
+import { env } from '@/lib/env';
 import type { AdminService } from './admin.service';
 import type { AuthService } from './auth.service';
 import type { CommunicationService } from './communication.service';
@@ -30,26 +29,79 @@ import { mockRoundService } from './mock/round.mock';
 import { mockSettingsService } from './mock/settings.mock';
 import { mockSwapService } from './mock/swap.mock';
 import { createSupabaseAuthService } from './supabase/auth.supabase';
+import { createSupabaseAdminService } from './supabase/admin.supabase';
+import { completeSimulatedCheckout, getSimulatedCheckout } from './mock/gateway';
+import {
+  createSupabasePaymentService,
+  createSupabaseRoundService,
+  createSupabaseSwapService,
+  supabaseSimulatedCheckout,
+} from './supabase/cycle.supabase';
+import {
+  createSupabaseGroupService,
+  createSupabaseMembershipService,
+} from './supabase/group.supabase';
+import {
+  createSupabaseCommunicationService,
+  createSupabaseDisputeService,
+  createSupabaseFinanceService,
+} from './supabase/finance.supabase';
+import { createSupabaseMemberService } from './supabase/member.supabase';
+import {
+  createSupabaseNotificationService,
+  createSupabaseReportService,
+  createSupabaseSettingsService,
+} from './supabase/platform.supabase';
 
-// VITE_AUTH_MODE=supabase : connexion réelle (code SMS et PIN par le backend), données
-// encore simulées en attendant les autres services.
+// VITE_AUTH_MODE=supabase : tous les services passent par Supabase (base, fonctions SQL et
+// Edge Functions). Sinon : la simulation locale (démonstration et tests unitaires).
 export const authService: AuthService =
   import.meta.env.VITE_AUTH_MODE === 'supabase'
     ? createSupabaseAuthService(mockSessionBridge)
     : mockAuthService;
-export const communicationService: CommunicationService = mockCommunicationService;
-export const disputeService: DisputeService = mockDisputeService;
-export const financeService: FinanceService = mockFinanceService;
-export const groupService: GroupService = mockGroupService;
-export const membershipService: MembershipService = mockMembershipService;
-export const roundService: RoundService = mockRoundService;
-export const paymentService: PaymentService = mockPaymentService;
-export const reportService: ReportService = mockReportService;
-export const settingsService: SettingsService = mockSettingsService;
-export const notificationService: NotificationService = mockNotificationService;
-export const adminService: AdminService = mockAdminService;
-export const swapService: SwapService = mockSwapService;
-export const memberService: MemberService = mockMemberService;
+export const communicationService: CommunicationService = env.realAuth
+  ? createSupabaseCommunicationService()
+  : mockCommunicationService;
+export const disputeService: DisputeService = env.realAuth
+  ? createSupabaseDisputeService()
+  : mockDisputeService;
+export const financeService: FinanceService = env.realAuth
+  ? createSupabaseFinanceService()
+  : mockFinanceService;
+export const groupService: GroupService = env.realAuth
+  ? createSupabaseGroupService()
+  : mockGroupService;
+export const membershipService: MembershipService = env.realAuth
+  ? createSupabaseMembershipService()
+  : mockMembershipService;
+export const roundService: RoundService = env.realAuth
+  ? createSupabaseRoundService()
+  : mockRoundService;
+export const paymentService: PaymentService = env.realAuth
+  ? createSupabasePaymentService()
+  : mockPaymentService;
+export const reportService: ReportService = env.realAuth
+  ? createSupabaseReportService()
+  : mockReportService;
+export const settingsService: SettingsService = env.realAuth
+  ? createSupabaseSettingsService()
+  : mockSettingsService;
+export const notificationService: NotificationService = env.realAuth
+  ? createSupabaseNotificationService()
+  : mockNotificationService;
+export const adminService: AdminService = env.realAuth
+  ? createSupabaseAdminService()
+  : mockAdminService;
+export const swapService: SwapService = env.realAuth
+  ? createSupabaseSwapService()
+  : mockSwapService;
+/** Page de paiement simulée : simulation locale, ou serveur sans clés PayTech (local). */
+export const simulatedCheckout = env.realAuth
+  ? supabaseSimulatedCheckout
+  : { get: getSimulatedCheckout, complete: completeSimulatedCheckout };
+export const memberService: MemberService = env.realAuth
+  ? createSupabaseMemberService()
+  : mockMemberService;
 
 export type {
   AdminService,

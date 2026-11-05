@@ -1,6 +1,6 @@
 // Accès à la base depuis les Edge Functions (clé service_role, jamais envoyée au navigateur).
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.45.4';
-import { AppError } from './http.ts';
+import { AppError, clientIp, type ErrorCode } from './http.ts';
 import { internalPassword, requireEnv, technicalEmail } from './crypto.ts';
 
 let adminClient: SupabaseClient | null = null;
@@ -174,4 +174,41 @@ export async function createAuthUser(): Promise<string> {
   });
   if (error) throw new Error(`Création du compte impossible : ${error.message}`);
   return id;
+}
+
+/** Super admin connecté ; sinon refus noté au journal de sécurité. */
+export async function superAdminCaller(req: Request, refusal: string): Promise<Profile> {
+  const actor = await caller(req);
+  if (actor.global_role !== 'super_admin') {
+    await recordSecurityEvent({
+      kind: 'access_denied',
+      severity: 'warning',
+      detail: refusal,
+      userId: actor.id,
+      ip: clientIp(req),
+    });
+    throw new AppError('Action réservée au super administrateur.', 'forbidden');
+  }
+  return actor;
+}
+
+const DB_CODES: Record<string, ErrorCode> = {
+  '22023': 'invalid',
+  '23505': 'conflict',
+  '42501': 'forbidden',
+  P0002: 'not_found',
+};
+
+/**
+ * Résultat d'une fonction SQL dont les erreurs métier ont un message affichable
+ * (codes 22023, 23505, 42501, P0002) : elles deviennent des AppError ; les autres restent
+ * des erreurs internes.
+ */
+export function checkBusiness<T>(result: {
+  data: T;
+  error: { code?: string; message: string } | null;
+}): T {
+  const code = result.error?.code ? DB_CODES[result.error.code] : undefined;
+  if (result.error && code) throw new AppError(result.error.message, code);
+  return check(result);
 }

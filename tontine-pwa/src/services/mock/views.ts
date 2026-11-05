@@ -1,5 +1,5 @@
 // Construction des vues renvoyées par les services simulés.
-import { computePot, serviceFee } from '@/lib/tontine';
+import { computePot, contributionPerTurn, serviceFee } from '@/lib/tontine';
 import type { Group, GroupOverview, MemberView, PublicUser, User } from '@/types';
 import { activeMemberships, canManage, membershipOf } from './access';
 import { db, requireUser } from './db';
@@ -84,9 +84,7 @@ export function buildOverview(group: Group, viewer: User): GroupOverview {
           ).values(),
         ]
       : [];
-  const nextPot = group.dailyContribution
-    ? group.contributionAmount * (group.turnDurationDays ?? 10) * group.maxMembers
-    : computePot(group.contributionAmount, group.maxMembers);
+  const nextPot = computePot(contributionPerTurn(group), group.maxMembers);
 
   const admin = db.users.find((u) => u.id === group.adminId);
   const community = db.communities.find((item) => item.id === group.communityId);

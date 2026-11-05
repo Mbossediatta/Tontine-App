@@ -53,13 +53,23 @@ backend/
 
 ## Schéma (étape 2)
 
-Trois migrations dans `supabase/migrations/` :
+Les migrations versionnées dans `supabase/migrations/` :
 
 | Fichier | Contenu |
 |---|---|
 | `…130000_schema_comptes_groupes.sql` | `profiles`, `communities`, `community_admins`, `groups`, `memberships` (une ligne par part ; une demande d’adhésion = ligne `pending`) |
 | `…130100_schema_tours_paiements.sql` | `rounds`, `round_beneficiaries`, `payments` (avec `service_fee_amount`), `penalties`, `platform_earnings`, `admin_compensations`, `swap_requests` |
 | `…130200_schema_backoffice.sql` | `notifications`, `push_subscriptions`, `audit_log` et `security_events` (ajout seul), `disputes`, `dispute_events`, `provider_ledger`, `sms_log`, `platform_settings` (une ligne, modèles en `fr` et `wo`) ; schéma `private` : `auth_otps`, `auth_pins` |
+| `…160000_admin_pin_status.sql` | RPC `admin_pin_pending`, qui expose uniquement le statut de création du PIN au super admin, jamais son empreinte |
+| `…170000_admin_create.sql` | RPC transactionnelle appelée par `admin-create` pour promouvoir un membre existant ou enregistrer un nouvel administrateur |
+| `…180000_communautes.sql` | RPC `community_save` (super admin) : nom, description, admins affectés, notification et audit |
+| `…190000_groupes.sql` | Étape 5 : RPC des groupes (`group_create`, `group_update`, `group_remove`, `group_regenerate_invite`, `group_join_preview`, `group_request_join`, `group_request_join_open`, `groups_discoverable`, `group_announce`), des adhésions (`membership_accept`, `_reject`, `_remove`, `_set_role`, `_add_by_phone`), de la supervision (`group_suspend`, `_reactivate`, `_close`, `_archive`, `_change_admin`, `_transfer`), `admin_choices` et `log_refusal` ; journaux : seul le passage à vide d’une référence (suppression d’un groupe ou d’un compte) est permis |
+| `…210000_membres_admins.sql` | RPC du super admin : `member_block`, `member_unblock`, `admin_update`, `admin_suspend`, `admin_reactivate`, `admin_revoke`, `admin_reassign_groups` ; pour les Edge Functions : `svc_member_create`, `svc_phone_change` |
+| `…220000_cycle.sql` | Étape 6 : ordre (`order_draw`, `order_set`), démarrage et calendrier des tours (`group_start`, selon rythme et durée de tour), statuts calculés par le serveur (`group_round_statuses`), paiement en espèces (`payment_record_cash`), versement et tour suivant (`round_payout`, période réservée versée par le super admin), nouveau cycle (`group_restart_cycle`) |
+| `…230000_paiement_en_ligne.sql` | Étape 9 : `svc_payment_prepare` (montant + frais PayTech payés en plus), `svc_payment_set_token`, `svc_payment_confirm` (montant exact, idempotent, revenus, tour prêt), `svc_payment_fail`, `payment_receipt` |
+| `…240000_parametres.sql` | `settings_get`, `settings_update` (validations ; clé secrète PayTech dans le coffre-fort Vault, seul l’indice reste lisible), `svc_paytech_keys` (Edge Functions) |
+| `…250000_finances_litiges_annonces.sql` | `payout_block`, `payout_unblock`, `admin_compensate`, litiges (`dispute_take`, `_record_payment`, `_refund`, `_reject`, ouverture automatique sur notification PayTech anormale), `svc_announcement` |
+| `…200000_rythme_journalier.sql`, `…200100_duree_tour.sql` | Rythme de cotisation `daily`/`weekly`/`biweekly`/`monthly` et `turn_length` (durée d’un tour en périodes du rythme, choisie par l’admin ; un an au plus, deux ans en mensuel) |
 
 - RLS est activé sur toutes les tables (règles : étape 3 ci-dessous).
 - Le schéma `private` n’est pas exposé par l’API (accès `service_role` seulement).
@@ -82,22 +92,34 @@ Migration `…140000_rls.sql`, testée par `supabase/tests/database/rls.test.sql
 - **Paramètres** : complets pour le super admin ; `public_settings()` donne aux autres les
   frais, limites et textes, sans aucun indice de clé.
 - Journal de sécurité, revenus, relevé PayTech, SMS : super admin seulement.
+- Le tableau de bord super admin du frontend lit ses indicateurs depuis Supabase avec la session
+  authentifiée ; `admin_pin_pending` vérifie le rôle côté base avant de renvoyer le statut des PIN.
+- La fonction `admin-create` vérifie le super admin côté serveur, crée un compte Auth avec son
+  identifiant interne si nécessaire, enregistre/promouvoit son profil et trace l’action. Le nouvel
+  administrateur se connecte ensuite par code SMS et choisit son PIN.
 
 ## Connexion (étape 4)
 
 Migration `…150000_connexion.sql` (opérations atomiques, appelables par `service_role`
-seulement) et 8 Edge Functions :
+seulement) et 9 Edge Functions :
 
 | Fonction | Entrée → sortie |
 |---|---|
 | `auth-login-method` | `{ phone }` → `{ method: 'pin' \| 'otp' }` |
-| `auth-otp-send` | `{ phone }` → `{ ok }` (5 codes par numéro et par heure, 20 par adresse IP) |
+| `auth-otp-send` | `{ phone, inviteCode? }` → `{ ok }` (5 codes par numéro et par heure, 20 par adresse IP). Numéro sans compte : refusé (404, « Contactez votre administrateur ») sauf avec le code d’invitation d’un groupe pas encore démarré, ou à la demande du super admin connecté (changement de numéro) |
 | `auth-otp-verify` | `{ phone, code }` → `{ isNewAccount, firstName, hasPin, proofToken }` |
 | `auth-profile-create` | `{ proofToken, firstName, lastName }` → `{ ok }` |
 | `auth-pin-set` | `{ proofToken, pin }` (ou session sans PIN) → `{ session, user }` |
 | `auth-pin-login` | `{ phone, pin }` → `{ session, user }` |
 | `auth-pin-change` | session + `{ currentPin, newPin }` → `{ ok }` |
-| `admin-pin-reset` | session super admin + `{ userId }` → `{ ok }` (ferme ses sessions) |
+| `admin-pin-reset` | session super admin + `{ userId }` → `{ ok }` (ferme ses sessions et le prévient) |
+| `payments-initiate` | session + `{ roundId, method }` → `{ paymentId, checkoutUrl }` (page PayTech ; sans clés et en local : page simulée) |
+| `payments-ipn` | notification PayTech (sans session) : signature HMAC-SHA256 ou empreintes SHA-256 des clés, montant exact, idempotente |
+| `payments-simulate` | session + `{ paymentId, success }` : en local et sans clés PayTech seulement |
+| `announcement-send` | session super admin + `{ target, title, message }` → `{ count, smsFailed }` (notifications + un SMS par destinataire) |
+| `member-create` | session super admin + `{ firstName, lastName, phone }` → `{ id }` (compte participant ; 1re connexion : code SMS puis PIN) |
+| `member-phone-change` | session super admin + `{ userId, phone, code }` → `{ ok }` (le code SMS a été envoyé au nouveau numéro par `auth-otp-send`, appelé par le super admin) |
+| `admin-create` | session super admin + `{ firstName, lastName, phone }` → `{ ok }` (nomme un compte existant ou prépare un compte neuf) |
 
 Erreurs : `{ error: { code, message } }`, avec les codes du frontend (`invalid`, `conflict`…)
 et un message en français à afficher tel quel. Côté frontend, `verifyOtp` garde le
@@ -139,13 +161,13 @@ Comptes du seed : ceux de la simulation (super admin 770100101, admin 771234567,
 | 2 | Schéma : types, tables, index, triggers ; types TypeScript générés | ✅ |
 | 3 | RLS : fonctions d’aide, politiques, vues, tests pgTAP | ✅ |
 | 4 | Connexion : code SMS (Orange) et PIN, profil, seed | ✅ côté serveur (branchement du frontend : avec les autres services) |
-| 5 | Groupes, communautés, adhésions, parts, tirage et ordre | à faire |
-| 6 | Cycle : démarrage, tours, verrouillage, échanges de tour | à faire |
+| 5 | Groupes, communautés, adhésions, parts, tirage et ordre | ✅ groupes, communautés, adhésions, supervision (testés : `groupes.test.sql`, `communautes.test.sql`, et `npm run test:integration` côté frontend) ; tirage et ordre : avec l’étape 6 |
+| 6 | Cycle : démarrage, tours, verrouillage, échanges de tour | ✅ ordre, démarrage, tours, espèces, versement, période réservée, nouveau cycle (`cycle.test.sql` et `npm run test:integration`) ; échanges de tour : à faire |
 | 7 | Notifications : `notify`, `push-send`, abonnements | à faire |
 | 8 | Tâche quotidienne `cron-daily` | à faire |
-| 9 | Paiements PayTech (frais payés par le membre), espèces, pénalités | à faire |
+| 9 | Paiements PayTech (frais payés par le membre), espèces, pénalités | ✅ circuit PayTech complet, testé sans clés (page simulée) ; espèces ✅ ; à faire : test avec les clés PayTech (env test), pénalités automatiques (étape 8) |
 | 10 | Versements (transfert PayTech ou manuel), revenus, rémunérations | à faire |
-| 11 | Back-office : litiges, annonces, rapports, journaux, paramètres | à faire |
+| 11 | Back-office : litiges, annonces, rapports, journaux, paramètres | ✅ (`super_admin.test.sql`, `npm run test:integration`) ; à faire : écran de réclamation côté membre |
 | 12 | Déploiement : projet de test, secrets, GitHub Actions | à faire |
 
 Chaque étape se termine par un parcours qui fonctionne à l’écran avec le frontend.

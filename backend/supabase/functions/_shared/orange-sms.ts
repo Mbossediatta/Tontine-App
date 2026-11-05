@@ -21,7 +21,8 @@ async function hmacSha1Hex(secret: string, message: string): Promise<string> {
   return [...new Uint8Array(signature)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-function isLocal(): boolean {
+/** Supabase local (développement) : jamais un projet distant. */
+export function isLocal(): boolean {
   const host = new URL(requireEnv('SUPABASE_URL')).hostname;
   return ['kong', 'localhost', '127.0.0.1', 'host.docker.internal'].includes(host);
 }

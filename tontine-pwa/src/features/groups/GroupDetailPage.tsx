@@ -5,7 +5,7 @@ import { AmountText } from '@/components/domain';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { AsyncContent, Tabs, type TabItem } from '@/components/ui';
 import { groupContributionLabel } from '@/lib/format';
-import { formatCycleDuration } from '@/lib/tontine';
+import { formatCycleDuration, formatPeriods } from '@/lib/tontine';
 import { useGroup } from './queries';
 import { CalendarTab } from './tabs/CalendarTab';
 import { CurrentRoundTab } from './tabs/CurrentRoundTab';
@@ -36,9 +36,7 @@ export default function GroupDetailPage() {
             <PageHeader
               title={group.name}
               backTo="/groupes"
-              subtitle={`${overview.communityName ? `${overview.communityName} · ` : ''}${groupContributionLabel(group)}${
-                group.dailyContribution ? ` · tour de ${group.turnDurationDays ?? 10} jours` : ''
-              }`}
+              subtitle={`${overview.communityName ? `${overview.communityName} · ` : ''}${groupContributionLabel(group)} · tour de ${formatPeriods(group.frequency, group.turnLength)}`}
               actions={
                 isManager ? (
                   <Link
@@ -60,9 +58,7 @@ export default function GroupDetailPage() {
                   </>
                 )}
                 {' · '}
-                {group.turnDurationDays
-                  ? `${totalRounds} périodes de ${group.turnDurationDays} jours`
-                  : formatCycleDuration(group.frequency, totalRounds)}
+                {`${totalRounds} tours, soit ${formatCycleDuration(group.frequency, totalRounds, group.turnLength)}`}
               </p>
             </PageHeader>
             <Tabs items={TABS} value={tab} onChange={setTab} label="Sections du groupe" />

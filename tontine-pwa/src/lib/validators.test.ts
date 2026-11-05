@@ -11,13 +11,12 @@ const validGroup: CreateGroupValues = {
   name: 'Tontine Famille',
   description: '',
   contributionAmount: 4500,
-  dailyContribution: true,
-  turnDurationDays: 10,
+  turnLength: 10,
   sharesPerRound: 1,
   membershipFeeAmount: 0,
   collectMembershipFee: false,
   reserveFinalTurn: true,
-  frequency: 'monthly',
+  frequency: 'daily',
   maxMembers: 10,
   paymentDueDay: 10,
   startDate: '2026-12-01',
@@ -91,12 +90,24 @@ describe('createGroupSchema', () => {
     expect(createGroupSchema.safeParse({ ...validGroup, maxMembers: 2 }).success).toBe(true);
   });
 
-  it('adapte le jour limite à la fréquence', () => {
-    expect(createGroupSchema.safeParse({ ...validGroup, paymentDueDay: 28 }).success).toBe(true);
-    expect(createGroupSchema.safeParse({ ...validGroup, paymentDueDay: 29 }).success).toBe(false);
+  it('adapte le jour limite au rythme', () => {
+    const monthly = { ...validGroup, frequency: 'monthly' as const, turnLength: 1 };
+    expect(createGroupSchema.safeParse({ ...monthly, paymentDueDay: 28 }).success).toBe(true);
+    expect(createGroupSchema.safeParse({ ...monthly, paymentDueDay: 29 }).success).toBe(false);
+    // Journalier : la date limite est le dernier jour du tour, le jour limite ne sert pas.
+    expect(createGroupSchema.safeParse({ ...validGroup, paymentDueDay: 1 }).success).toBe(true);
     const weekly = { ...validGroup, frequency: 'weekly' as const };
     expect(createGroupSchema.safeParse({ ...weekly, paymentDueDay: 7 }).success).toBe(true);
     expect(createGroupSchema.safeParse({ ...weekly, paymentDueDay: 8 }).success).toBe(false);
+  });
+
+  it('limite la durée d’un tour selon le rythme', () => {
+    expect(createGroupSchema.safeParse({ ...validGroup, turnLength: 365 }).success).toBe(true);
+    expect(createGroupSchema.safeParse({ ...validGroup, turnLength: 366 }).success).toBe(false);
+    const monthly = { ...validGroup, frequency: 'monthly' as const, paymentDueDay: 5 };
+    expect(createGroupSchema.safeParse({ ...monthly, turnLength: 12 }).success).toBe(true);
+    expect(createGroupSchema.safeParse({ ...monthly, turnLength: 25 }).success).toBe(false);
+    expect(createGroupSchema.safeParse({ ...validGroup, turnLength: 0 }).success).toBe(false);
   });
 
   it('refuse une pénalité négative', () => {

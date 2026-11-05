@@ -35,6 +35,7 @@ describe('journal de sécurité', () => {
         name: "Tontine'; DROP TABLE groups; --",
         contributionAmount: 2500,
         frequency: 'monthly',
+        turnLength: 1,
         maxMembers: 4,
         paymentDueDay: 5,
         startDate: new Date(Date.now() + 2 * 86_400_000).toISOString(),

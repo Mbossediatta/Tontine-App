@@ -2,14 +2,15 @@ import { lazy, Suspense, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth, useAuthStore } from '@/hooks/useAuth';
 import { isComputer } from '@/lib/device';
-import { errorMessage } from '@/lib/errors';
+import { errorMessage, ServiceError } from '@/lib/errors';
 import { isSenegalMobile } from '@/lib/checks';
 import { authService } from '@/services';
 import { AuthButton } from './components/AuthButton';
 import { AuthScreen } from './components/AuthScreen';
 import { PhoneField } from './components/PhoneField';
+import { TextField } from './components/TextField';
 import { getRememberedAccount } from './rememberedAccount';
-import { redirectTarget, type RedirectState } from './redirect';
+import { inviteCodeOf, redirectTarget, type RedirectState } from './redirect';
 
 // Comptes de démonstration : seulement en mode simulé. La condition porte directement sur
 // import.meta.env pour être résolue à la construction : en production, ce code n'est
@@ -26,6 +27,8 @@ const DemoAccountPicker =
  *   « Modifier le numéro » : ?nouveau=1).
  * - Ordinateur (aucun compte mémorisé) : si le numéro a déjà un PIN, on le demande
  *   directement ; sinon (nouveau compte, PIN à recréer), le code SMS part.
+ * - Numéro inconnu : inscription sur invitation seulement. Venu d'un lien /rejoindre/CODE,
+ *   le code est repris ; sinon le serveur refuse et l'on propose de saisir le code reçu.
  */
 export default function LoginPage() {
   const { status, user, locked } = useAuth();
@@ -35,6 +38,9 @@ export default function LoginPage() {
   const [phone, setPhone] = useState(useAuthStore.getState().pendingPhone ?? '');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string>();
+  /** Numéro inconnu sans invitation : champ du code d'invitation affiché. */
+  const [askInvite, setAskInvite] = useState(false);
+  const [typedInvite, setTypedInvite] = useState('');
 
   if (status === 'authenticated' && !locked) {
     return <Navigate to={redirectTarget(location, user)} replace />;
@@ -44,7 +50,10 @@ export default function LoginPage() {
     return <Navigate to="/connexion/pin" replace state={location.state} />;
   }
 
-  const valid = isSenegalMobile(phone);
+  const linkInvite = inviteCodeOf(location.state as RedirectState | null);
+  const typed = typedInvite.trim().toUpperCase();
+  const inviteCode = linkInvite ?? (askInvite && typed ? typed : undefined);
+  const valid = isSenegalMobile(phone) && (!askInvite || /^[A-Z0-9]{4,12}$/.test(typed));
   const computer = isComputer();
 
   const submit = async (event: FormEvent) => {
@@ -58,14 +67,19 @@ export default function LoginPage() {
         navigate('/connexion/pin', { state: location.state });
         return;
       }
-      await authService.sendOtp(phone);
+      await authService.sendOtp(phone, inviteCode);
       useAuthStore.getState().setPendingPhone(phone);
       const state: RedirectState = {
         ...(location.state as RedirectState | null),
+        // Code saisi : après l'inscription, la demande d'adhésion s'ouvre directement.
+        ...(inviteCode && !linkInvite ? { from: `/rejoindre/${inviteCode}` } : {}),
         purpose: 'login',
       };
       navigate('/connexion/code', { state });
     } catch (err) {
+      if (err instanceof ServiceError && err.code === 'not_found' && !linkInvite) {
+        setAskInvite(true);
+      }
       setError(errorMessage(err));
     } finally {
       setSending(false);
@@ -100,6 +114,20 @@ export default function LoginPage() {
               : undefined
           }
         />
+        {askInvite ? (
+          <TextField
+            label="Code d’invitation de votre groupe"
+            placeholder="Ex. BUR92X"
+            value={typedInvite}
+            onChange={(event) => {
+              setTypedInvite(event.target.value);
+              setError(undefined);
+            }}
+            autoCapitalize="characters"
+            autoComplete="off"
+            maxLength={12}
+          />
+        ) : null}
         <AuthButton type="submit" disabled={!valid} loading={sending}>
           {computer ? 'Continuer' : 'Recevoir le code'}
         </AuthButton>

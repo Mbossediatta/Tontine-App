@@ -20,6 +20,22 @@ import { checkOtp, issueOtp } from './otp';
 import { checkPin, needsPin, savePin } from './pin';
 import { inspectInput, recordSecurityEvent } from './security';
 
+/** Même message que l'Edge Function auth-otp-send. */
+const NOT_REGISTERED =
+  'Ce numéro n’est pas encore inscrit. Contactez votre administrateur pour être ajouté, ou ouvrez le lien d’invitation de votre groupe.';
+
+/** Code d'invitation d'un groupe qui accepte encore des demandes d'adhésion. */
+function validInvite(code: string | undefined): boolean {
+  const normalized = code?.trim().toUpperCase();
+  return db.groups.some((group) => group.inviteCode === normalized && group.status === 'draft');
+}
+
+/** Super admin connecté : il envoie un code au nouveau numéro d'un membre. */
+function bySuperAdmin(): boolean {
+  const userId = getSessionUserId();
+  return !!userId && findUser(userId)?.globalRole === 'super_admin';
+}
+
 /** Compte associé à un numéro, refusé s'il est bloqué. */
 function activeUserByPhone(phone: string): User | undefined {
   const user = db.users.find((item) => item.phone === phone && !item.deletedAt);
@@ -131,10 +147,13 @@ export const mockAuthService: AuthService = {
     return user && !needsPin(user.id) ? 'pin' : 'otp';
   },
 
-  async sendOtp(phone) {
+  async sendOtp(phone, inviteCode) {
     requireOnline();
     await delay();
-    activeUserByPhone(phone); // un compte bloqué ne reçoit pas de code
+    // Un compte bloqué ne reçoit pas de code ; un numéro inconnu, seulement sur invitation.
+    if (!activeUserByPhone(phone) && !validInvite(inviteCode) && !bySuperAdmin()) {
+      throw new ServiceError(NOT_REGISTERED, 'not_found');
+    }
     await issueOtp(phone);
     persist();
   },

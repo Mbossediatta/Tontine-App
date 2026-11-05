@@ -2,6 +2,7 @@
 // Règle commune : un tour « attend » la cotisation de chaque membre actif, plus les pénalités
 // appliquées ; il a « collecté » la somme des paiements réussis. Un tour à venir n'attend rien.
 import { isSameMonth, startOfMonth, subMonths } from 'date-fns';
+import { contributionPerTurn } from '@/lib/tontine';
 import type { MonthlyCollection, Round } from '@/types';
 import { activeMemberships } from './access';
 import { db } from './db';
@@ -11,10 +12,7 @@ export function roundExpected(round: Round): number {
   if (round.status === 'upcoming') return 0;
   const group = db.groups.find((g) => g.id === round.groupId);
   if (!group) return 0;
-  const contributions =
-    group.contributionAmount *
-    (group.dailyContribution ? (group.turnDurationDays ?? 10) : 1) *
-    activeMemberships(group.id).length;
+  const contributions = contributionPerTurn(group) * activeMemberships(group.id).length;
   const feeUsers = new Set(
     db.memberships
       .filter((membership) => membership.groupId === group.id && membership.status === 'active')

@@ -21,6 +21,7 @@ import {
   Modal,
   Select,
 } from '@/components/ui';
+import { env } from '@/lib/env';
 import { formatPhone, fullName, plural } from '@/lib/format';
 import { useAction } from '@/lib/query';
 import { adminService, memberService } from '@/services';
@@ -243,16 +244,25 @@ export default function AdminDetailPage() {
                     <ul className="mt-2 divide-y divide-line">
                       {admin.groups.map((group) => (
                         <li key={group.id}>
-                          <Link
-                            to={`/admin/groupes/${group.id}`}
-                            className="flex min-h-touch items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-blue-50"
-                          >
-                            <span className="min-w-0 flex-1 truncate font-bold text-ink">
-                              {group.name}
-                            </span>
-                            <GroupStatusBadge status={group.status} />
-                            <ChevronRight className="h-5 w-5 text-muted" aria-hidden="true" />
-                          </Link>
+                          {env.realAuth ? (
+                            <div className="flex min-h-touch items-center gap-3 px-4 py-3">
+                              <span className="min-w-0 flex-1 truncate font-bold text-ink">
+                                {group.name}
+                              </span>
+                              <GroupStatusBadge status={group.status} />
+                            </div>
+                          ) : (
+                            <Link
+                              to={`/admin/groupes/${group.id}`}
+                              className="flex min-h-touch items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-blue-50"
+                            >
+                              <span className="min-w-0 flex-1 truncate font-bold text-ink">
+                                {group.name}
+                              </span>
+                              <GroupStatusBadge status={group.status} />
+                              <ChevronRight className="h-5 w-5 text-muted" aria-hidden="true" />
+                            </Link>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -264,81 +274,95 @@ export default function AdminDetailPage() {
                 </Card>
               </div>
 
-              <Card className="flex flex-col gap-2">
-                <CardTitle>Actions</CardTitle>
-                <ActionButton
-                  icon={<Pencil className="h-5 w-5" aria-hidden="true" />}
-                  onClick={() => setEditing(true)}
-                >
-                  Modifier nom et numéro
-                </ActionButton>
-                <ActionButton
-                  icon={<KeyRound className="h-5 w-5" aria-hidden="true" />}
-                  onClick={() => setConfirm('resetPin')}
-                >
-                  Réinitialiser le PIN
-                </ActionButton>
-                <ActionButton
-                  icon={<ArrowRightLeft className="h-5 w-5" aria-hidden="true" />}
-                  onClick={() => setReassigning(true)}
-                  disabled={!hasGroups}
-                >
-                  Réattribuer ses groupes
-                </ActionButton>
-                {user.isSuspended ? (
+              {env.realAuth ? (
+                <Card>
+                  <CardTitle>Consultation seule</CardTitle>
+                  <p className="mt-2 text-muted">
+                    Les informations affichées proviennent de la base. Les actions de gestion seront
+                    disponibles après leur raccordement au backend.
+                  </p>
+                </Card>
+              ) : (
+                <Card className="flex flex-col gap-2">
+                  <CardTitle>Actions</CardTitle>
                   <ActionButton
-                    icon={<UserCheck className="h-5 w-5" aria-hidden="true" />}
-                    onClick={() => setConfirm('reactivate')}
+                    icon={<Pencil className="h-5 w-5" aria-hidden="true" />}
+                    onClick={() => setEditing(true)}
                   >
-                    Réactiver le compte
+                    Modifier nom et numéro
                   </ActionButton>
-                ) : (
                   <ActionButton
-                    icon={<UserX className="h-5 w-5" aria-hidden="true" />}
-                    onClick={() => setConfirm('suspend')}
+                    icon={<KeyRound className="h-5 w-5" aria-hidden="true" />}
+                    onClick={() => setConfirm('resetPin')}
+                  >
+                    Réinitialiser le PIN
+                  </ActionButton>
+                  <ActionButton
+                    icon={<ArrowRightLeft className="h-5 w-5" aria-hidden="true" />}
+                    onClick={() => setReassigning(true)}
+                    disabled={!hasGroups}
+                  >
+                    Réattribuer ses groupes
+                  </ActionButton>
+                  {user.isSuspended ? (
+                    <ActionButton
+                      icon={<UserCheck className="h-5 w-5" aria-hidden="true" />}
+                      onClick={() => setConfirm('reactivate')}
+                    >
+                      Réactiver le compte
+                    </ActionButton>
+                  ) : (
+                    <ActionButton
+                      icon={<UserX className="h-5 w-5" aria-hidden="true" />}
+                      onClick={() => setConfirm('suspend')}
+                      danger
+                    >
+                      Suspendre le compte
+                    </ActionButton>
+                  )}
+                  <ActionButton
+                    icon={<ShieldOff className="h-5 w-5" aria-hidden="true" />}
+                    onClick={() => setConfirm('delete')}
+                    disabled={hasGroups}
                     danger
                   >
-                    Suspendre le compte
+                    Supprimer l’administrateur
                   </ActionButton>
-                )}
-                <ActionButton
-                  icon={<ShieldOff className="h-5 w-5" aria-hidden="true" />}
-                  onClick={() => setConfirm('delete')}
-                  disabled={hasGroups}
-                  danger
-                >
-                  Supprimer l’administrateur
-                </ActionButton>
-                {hasGroups ? (
-                  <p className="text-small text-muted">
-                    Pour le supprimer, réattribuez d’abord ses groupes.
-                  </p>
-                ) : null}
-              </Card>
+                  {hasGroups ? (
+                    <p className="text-small text-muted">
+                      Pour le supprimer, réattribuez d’abord ses groupes.
+                    </p>
+                  ) : null}
+                </Card>
+              )}
             </div>
 
-            <AccountFormDialog
-              kind="admin"
-              open={editing}
-              onClose={() => setEditing(false)}
-              account={user}
-            />
-            <ReassignDialog
-              admin={admin}
-              open={reassigning}
-              onClose={() => setReassigning(false)}
-            />
-            <ConfirmDialog
-              open={confirm !== null}
-              onClose={() => setConfirm(null)}
-              onConfirm={() => confirm && run.mutate(confirm)}
-              loading={run.isPending}
-              tone={confirm ? CONFIRMS[confirm].tone : 'blue'}
-              title={confirm ? CONFIRMS[confirm].title : ''}
-              confirmLabel={confirm ? CONFIRMS[confirm].confirm : ''}
-            >
-              {confirm ? <p>{CONFIRMS[confirm].body(name)}</p> : null}
-            </ConfirmDialog>
+            {!env.realAuth ? (
+              <>
+                <AccountFormDialog
+                  kind="admin"
+                  open={editing}
+                  onClose={() => setEditing(false)}
+                  account={user}
+                />
+                <ReassignDialog
+                  admin={admin}
+                  open={reassigning}
+                  onClose={() => setReassigning(false)}
+                />
+                <ConfirmDialog
+                  open={confirm !== null}
+                  onClose={() => setConfirm(null)}
+                  onConfirm={() => confirm && run.mutate(confirm)}
+                  loading={run.isPending}
+                  tone={confirm ? CONFIRMS[confirm].tone : 'blue'}
+                  title={confirm ? CONFIRMS[confirm].title : ''}
+                  confirmLabel={confirm ? CONFIRMS[confirm].confirm : ''}
+                >
+                  {confirm ? <p>{CONFIRMS[confirm].body(name)}</p> : null}
+                </ConfirmDialog>
+              </>
+            ) : null}
           </div>
         );
       }}

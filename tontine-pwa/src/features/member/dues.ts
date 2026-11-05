@@ -78,7 +78,7 @@ export function periodLabel(
   round: Round,
   language: Language = 'fr',
 ): string {
-  return overview.group.frequency === 'monthly' && !overview.group.dailyContribution
+  return overview.group.frequency === 'monthly' && overview.group.turnLength === 1
     ? translate(language, 'period.month', { month: monthNameIn(language, round.dueDate) })
     : translate(language, 'period.round', { number: round.number });
 }

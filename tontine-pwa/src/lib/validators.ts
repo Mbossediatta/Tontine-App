@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { isWeakPin } from './checks';
-import { maxDueDay } from './tontine';
+import { MAX_TURN_LENGTH, formatPeriods, maxDueDay } from './tontine';
+import type { Frequency } from '@/types';
 
 // Vérifications simples déplacées dans lib/checks (sans Zod) ; reprises ici pour
 // les formulaires et l'ancien chemin d'import.
@@ -69,13 +70,14 @@ export const createGroupSchema = z
       500,
       'Montant minimum : 500 FCFA',
     ),
-    dailyContribution: z.boolean(),
-    turnDurationDays: requiredInt('Indiquez la durée du tour').min(1).max(90),
+    turnLength: requiredInt('Indiquez la durée d’un tour').min(1, 'Au moins 1'),
     sharesPerRound: requiredInt('Indiquez le nombre de parts par tour').min(1).max(50),
     membershipFeeAmount: requiredInt('Indiquez le montant des frais').min(0),
     collectMembershipFee: z.boolean(),
     reserveFinalTurn: z.boolean(),
-    frequency: z.enum(['weekly', 'biweekly', 'monthly'], { error: 'Choisissez une fréquence' }),
+    frequency: z.enum(['daily', 'weekly', 'biweekly', 'monthly'], {
+      error: 'Choisissez le rythme de cotisation',
+    }),
     maxMembers: requiredInt('Indiquez le nombre total de parts')
       .min(2, 'Au moins 2 parts')
       .max(50, 'Au plus 50 parts'),
@@ -107,34 +109,44 @@ export const createGroupSchema = z
         message: 'Indiquez un montant supérieur à zéro.',
       });
     }
-    if (value.reserveFinalTurn && value.turnDurationDays < 1) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['turnDurationDays'],
-        message: 'Indiquez une durée valide pour le dernier tour.',
-      });
-    }
-    const max = maxDueDay(value.frequency);
-    if (value.paymentDueDay > max) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['paymentDueDay'],
-        message:
-          value.frequency === 'monthly'
-            ? 'Choisissez un jour entre 1 et 28'
-            : 'Choisissez un jour de la semaine',
-      });
-    }
+    checkTurnLength(value, ctx);
   });
 export type CreateGroupValues = z.infer<typeof createGroupSchema>;
+
+/** Durée d'un tour dans la limite de son rythme (un an, deux ans en mensuel) et jour limite. */
+function checkTurnLength(
+  value: { frequency: Frequency; turnLength: number; paymentDueDay: number },
+  ctx: z.RefinementCtx,
+): void {
+  const max = MAX_TURN_LENGTH[value.frequency];
+  if (value.turnLength > max) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['turnLength'],
+      message: `Au plus ${formatPeriods(value.frequency, max)} par tour`,
+    });
+  }
+  const maxDay = maxDueDay(value.frequency);
+  if (maxDay > 0 && value.paymentDueDay > maxDay) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['paymentDueDay'],
+      message:
+        value.frequency === 'monthly'
+          ? 'Choisissez un jour entre 1 et 28'
+          : 'Choisissez un jour de la semaine',
+    });
+  }
+}
 
 /** Champs validés à chaque étape de l'assistant de création. */
 export const CREATE_GROUP_STEPS = [
   ['name', 'description', 'adminId', 'communityId'],
   [
     'contributionAmount',
-    'dailyContribution',
-    'turnDurationDays',
+    'frequency',
+    'turnLength',
+    'paymentDueDay',
     'sharesPerRound',
     'membershipFeeAmount',
     'collectMembershipFee',
@@ -147,25 +159,29 @@ export const CREATE_GROUP_STEPS = [
   [],
 ] as const satisfies ReadonlyArray<ReadonlyArray<keyof CreateGroupValues>>;
 
-export const groupSettingsSchema = z.object({
-  name: groupNameSchema,
-  description: groupDescriptionSchema,
-  contributionAmount: requiredInt('Indiquez le montant').min(500, 'Montant minimum : 500 FCFA'),
-  dailyContribution: z.boolean(),
-  turnDurationDays: requiredInt('Indiquez la durée du tour').min(1).max(90),
-  sharesPerRound: requiredInt('Indiquez les parts par tour').min(1).max(50),
-  membershipFeeAmount: requiredInt('Indiquez les frais').min(0),
-  collectMembershipFee: z.boolean(),
-  reserveFinalTurn: z.boolean(),
-  frequency: z.enum(['weekly', 'biweekly', 'monthly']),
-  maxMembers: requiredInt('Indiquez le nombre de parts').min(2, 'Au moins 2').max(50, 'Au plus 50'),
-  startDate: z.string().min(1, 'Choisissez une date de démarrage'),
-  latePenalty: z
-    .number({ error: 'Montant invalide' })
-    .int('Nombre entier attendu')
-    .min(0, 'Montant invalide')
-    .optional(),
-});
+export const groupSettingsSchema = z
+  .object({
+    name: groupNameSchema,
+    description: groupDescriptionSchema,
+    contributionAmount: requiredInt('Indiquez le montant').min(500, 'Montant minimum : 500 FCFA'),
+    turnLength: requiredInt('Indiquez la durée d’un tour').min(1, 'Au moins 1'),
+    sharesPerRound: requiredInt('Indiquez les parts par tour').min(1).max(50),
+    membershipFeeAmount: requiredInt('Indiquez les frais').min(0),
+    collectMembershipFee: z.boolean(),
+    reserveFinalTurn: z.boolean(),
+    frequency: z.enum(['daily', 'weekly', 'biweekly', 'monthly']),
+    maxMembers: requiredInt('Indiquez le nombre de parts')
+      .min(2, 'Au moins 2')
+      .max(50, 'Au plus 50'),
+    paymentDueDay: requiredInt('Indiquez le jour limite').min(1, 'Jour invalide'),
+    startDate: z.string().min(1, 'Choisissez une date de démarrage'),
+    latePenalty: z
+      .number({ error: 'Montant invalide' })
+      .int('Nombre entier attendu')
+      .min(0, 'Montant invalide')
+      .optional(),
+  })
+  .superRefine(checkTurnLength);
 export type GroupSettingsValues = z.infer<typeof groupSettingsSchema>;
 
 export const addByPhoneSchema = z.object({

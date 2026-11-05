@@ -319,7 +319,6 @@ export type Database = {
           created_at: string;
           created_by: string;
           current_cycle: number;
-          daily_contribution: boolean;
           description: string | null;
           frequency: Database['public']['Enums']['frequency'];
           id: string;
@@ -335,7 +334,7 @@ export type Database = {
           shares_per_round: number;
           start_date: string;
           status: Database['public']['Enums']['group_status'];
-          turn_duration_days: number;
+          turn_length: number;
           updated_at: string;
         };
         ComputedFields: never;
@@ -348,7 +347,6 @@ export type Database = {
           created_at?: string;
           created_by: string;
           current_cycle?: number;
-          daily_contribution?: boolean;
           description?: string | null;
           frequency: Database['public']['Enums']['frequency'];
           id?: string;
@@ -364,7 +362,7 @@ export type Database = {
           shares_per_round?: number;
           start_date: string;
           status?: Database['public']['Enums']['group_status'];
-          turn_duration_days?: number;
+          turn_length?: number;
           updated_at?: string;
         };
         Update: {
@@ -376,7 +374,6 @@ export type Database = {
           created_at?: string;
           created_by?: string;
           current_cycle?: number;
-          daily_contribution?: boolean;
           description?: string | null;
           frequency?: Database['public']['Enums']['frequency'];
           id?: string;
@@ -392,7 +389,7 @@ export type Database = {
           shares_per_round?: number;
           start_date?: string;
           status?: Database['public']['Enums']['group_status'];
-          turn_duration_days?: number;
+          turn_length?: number;
           updated_at?: string;
         };
         Relationships: [
@@ -1119,6 +1116,90 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      admin_choices: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          id: string;
+          name: string;
+        }[];
+      };
+      admin_pin_pending: {
+        Args: { p_users: string[] };
+        Returns: {
+          pin_pending: boolean;
+          user_id: string;
+        }[];
+      };
+      admin_super_dashboard: { Args: Record<PropertyKey, never>; Returns: Json };
+      community_save: {
+        Args: { p_admin_ids: string[]; p_description: string; p_id: string; p_name: string };
+        Returns: string;
+      };
+      group_announce: { Args: { p_group: string; p_message: string }; Returns: number };
+      group_archive: { Args: { p_group: string }; Returns: undefined };
+      group_change_admin: { Args: { p_admin: string; p_group: string }; Returns: undefined };
+      group_close: { Args: { p_group: string }; Returns: undefined };
+      group_create: { Args: { p: Json }; Returns: string };
+      group_join_preview: { Args: { p_code: string }; Returns: Json };
+      group_reactivate: { Args: { p_group: string }; Returns: undefined };
+      group_regenerate_invite: { Args: { p_group: string }; Returns: string };
+      group_remove: { Args: { p_group: string }; Returns: undefined };
+      group_request_join: { Args: { p_code: string }; Returns: undefined };
+      group_request_join_open: { Args: { p_group: string }; Returns: undefined };
+      group_suspend: { Args: { p_group: string }; Returns: undefined };
+      group_transfer: {
+        Args: { p_admin: string; p_community: string; p_group: string };
+        Returns: undefined;
+      };
+      group_update: { Args: { p: Json; p_group: string }; Returns: undefined };
+      groups_discoverable: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          admin_id: string;
+          archived_at: string | null;
+          attribution_mode: Database['public']['Enums']['attribution_mode'];
+          community_id: string | null;
+          contribution_amount: number;
+          created_at: string;
+          created_by: string;
+          current_cycle: number;
+          description: string | null;
+          frequency: Database['public']['Enums']['frequency'];
+          id: string;
+          invite_code: string;
+          join_policy: Database['public']['Enums']['join_policy'];
+          late_penalty: number | null;
+          max_members: number;
+          member_status_visibility: Database['public']['Enums']['status_visibility'];
+          membership_fee_amount: number;
+          name: string;
+          payment_due_day: number;
+          reserve_final_turn: boolean;
+          shares_per_round: number;
+          start_date: string;
+          status: Database['public']['Enums']['group_status'];
+          turn_length: number;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: '*';
+          to: 'groups';
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      log_refusal: { Args: { p_hint: string }; Returns: undefined };
+      membership_accept: { Args: { p_membership: string }; Returns: undefined };
+      membership_add_by_phone: {
+        Args: { p_group: string; p_phone: string; p_share_count?: number };
+        Returns: number;
+      };
+      membership_reject: { Args: { p_membership: string }; Returns: undefined };
+      membership_remove: { Args: { p_membership: string }; Returns: undefined };
+      membership_set_role: {
+        Args: { p_membership: string; p_role: Database['public']['Enums']['group_role'] };
+        Returns: undefined;
+      };
       public_profiles: {
         Args: { ids: string[] };
         Returns: {
@@ -1129,6 +1210,16 @@ export type Database = {
         }[];
       };
       public_settings: { Args: Record<PropertyKey, never>; Returns: Json };
+      svc_admin_create: {
+        Args: {
+          p_actor: string;
+          p_first_name: string;
+          p_last_name: string;
+          p_phone: string;
+          p_user: string;
+        };
+        Returns: string;
+      };
       svc_otp_check: { Args: { p_code_hash: string; p_phone: string }; Returns: string };
       svc_otp_issue: {
         Args: { p_code_hash: string; p_ip: unknown; p_phone: string; p_validity_minutes: number };
@@ -1191,7 +1282,7 @@ export type Database = {
       dispute_kind: 'debited_not_recorded' | 'double_payment' | 'wrong_amount' | 'other';
       dispute_status: 'open' | 'in_progress' | 'resolved' | 'rejected';
       earning_kind: 'membership_fee' | 'late_penalty' | 'reserved_turn';
-      frequency: 'weekly' | 'biweekly' | 'monthly';
+      frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly';
       global_role: 'super_admin' | 'admin' | 'user';
       group_role: 'owner' | 'co_admin' | 'member';
       group_status: 'draft' | 'active' | 'finished' | 'suspended';
@@ -1366,7 +1457,7 @@ export const Constants = {
       dispute_kind: ['debited_not_recorded', 'double_payment', 'wrong_amount', 'other'],
       dispute_status: ['open', 'in_progress', 'resolved', 'rejected'],
       earning_kind: ['membership_fee', 'late_penalty', 'reserved_turn'],
-      frequency: ['weekly', 'biweekly', 'monthly'],
+      frequency: ['daily', 'weekly', 'biweekly', 'monthly'],
       global_role: ['super_admin', 'admin', 'user'],
       group_role: ['owner', 'co_admin', 'member'],
       group_status: ['draft', 'active', 'finished', 'suspended'],

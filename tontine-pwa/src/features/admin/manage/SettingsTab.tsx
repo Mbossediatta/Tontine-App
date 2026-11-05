@@ -11,7 +11,14 @@ import { useAction } from '@/lib/query';
 import { groupSettingsSchema, type GroupSettingsValues } from '@/lib/validators';
 import { groupService } from '@/services';
 import type { GroupOverview } from '@/types';
-import { FREQUENCY_OPTIONS, toOptionalNumber } from '../create/formUtils';
+import { MAX_TURN_LENGTH } from '@/lib/tontine';
+import {
+  dueDayOptions,
+  FREQUENCY_OPTIONS,
+  PER_PERIOD,
+  toOptionalNumber,
+  TURN_UNIT,
+} from '../create/formUtils';
 
 export function SettingsTab({ overview }: { overview: GroupOverview }) {
   const { group } = overview;
@@ -32,18 +39,19 @@ export function SettingsTab({ overview }: { overview: GroupOverview }) {
       name: group.name,
       description: group.description ?? '',
       contributionAmount: group.contributionAmount,
-      dailyContribution: group.dailyContribution ?? false,
-      turnDurationDays: group.turnDurationDays ?? 10,
+      turnLength: group.turnLength,
       sharesPerRound: group.sharesPerRound ?? 1,
       membershipFeeAmount: group.membershipFeeAmount ?? 0,
       collectMembershipFee: (group.membershipFeeAmount ?? 0) > 0,
       reserveFinalTurn: group.reserveFinalTurn ?? false,
       frequency: group.frequency,
       maxMembers: group.maxMembers,
+      paymentDueDay: group.paymentDueDay,
       startDate: format(new Date(group.startDate), 'yyyy-MM-dd'),
       latePenalty: group.latePenalty,
     },
   });
+  const frequency = watch('frequency');
 
   const save = useAction({
     action: (values: GroupSettingsValues) =>
@@ -85,32 +93,41 @@ export function SettingsTab({ overview }: { overview: GroupOverview }) {
           {locked ? (
             <p className="flex items-start gap-2 rounded-control bg-blue-50 p-3 text-label text-muted">
               <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              Le cycle a démarré : le montant, la fréquence et le nombre total de parts sont verrouillés
-              pour protéger les participants.
+              Le cycle a démarré : le montant, la fréquence et le nombre total de parts sont
+              verrouillés pour protéger les participants.
             </p>
           ) : null}
           <Input
-            label={group.dailyContribution ? 'Cotisation journalière par part (FCFA)' : 'Montant de la cotisation (FCFA)'}
+            label={`Cotisation ${PER_PERIOD[frequency]} et par part (FCFA)`}
             type="number"
             disabled={locked}
             error={errors.contributionAmount?.message}
             {...register('contributionAmount', numeric)}
           />
           <Select
-            label="Fréquence"
+            label="Rythme de cotisation"
             options={FREQUENCY_OPTIONS}
             disabled={locked}
             {...register('frequency')}
           />
           <Input
-            label="Durée d’un tour (jours)"
+            label={`Durée d’un tour (en ${TURN_UNIT[frequency]})`}
             type="number"
             min={1}
-            max={90}
+            max={MAX_TURN_LENGTH[frequency]}
             disabled={locked}
-            error={errors.turnDurationDays?.message}
-            {...register('turnDurationDays', numeric)}
+            error={errors.turnLength?.message}
+            {...register('turnLength', numeric)}
           />
+          {frequency === 'daily' ? null : (
+            <Select
+              label="Jour limite de paiement (dans la dernière période du tour)"
+              options={dueDayOptions(frequency)}
+              disabled={locked}
+              error={errors.paymentDueDay?.message}
+              {...register('paymentDueDay', numeric)}
+            />
+          )}
           <Input
             label="Parts bénéficiaires payées par tour"
             type="number"

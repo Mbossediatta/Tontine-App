@@ -5,11 +5,18 @@ import { useFormContext } from 'react-hook-form';
 import { AmountText } from '@/components/domain';
 import { Card, Input, Select, Textarea } from '@/components/ui';
 import { cn } from '@/lib/cn';
-import { formatDate } from '@/lib/format';
+import { formatDate, frequencyLabel } from '@/lib/format';
+import { formatCycleDuration, formatPeriods, MAX_TURN_LENGTH } from '@/lib/tontine';
 import { useAuth } from '@/hooks/useAuth';
 import type { CreateGroupValues } from '@/lib/validators';
 import { useAdminChoices, useCommunities } from '../queries';
-import { toOptionalNumber } from './formUtils';
+import {
+  dueDayOptions,
+  FREQUENCY_OPTIONS,
+  PER_PERIOD,
+  toOptionalNumber,
+  TURN_UNIT,
+} from './formUtils';
 
 /**
  * Administrateur du groupe, choisi parmi tous les admins actifs : il n'a pas à être
@@ -138,7 +145,9 @@ export function JoinPolicyField() {
         <LockKeyhole className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" aria-hidden="true" />
         <span>
           <strong className="block text-ink">Sur invitation</strong>
-          <span className="text-small text-muted">Seules les personnes avec le code peuvent voir le groupe.</span>
+          <span className="text-small text-muted">
+            Seules les personnes avec le code peuvent voir le groupe.
+          </span>
         </span>
       </label>
       <label
@@ -152,7 +161,8 @@ export function JoinPolicyField() {
         <span>
           <strong className="block text-ink">Ouvert dans la communauté</strong>
           <span className="text-small text-muted">
-            Les membres d’un groupe de cette communauté pourront le découvrir et demander à le rejoindre.
+            Les membres d’un groupe de cette communauté pourront le découvrir et demander à le
+            rejoindre.
           </span>
         </span>
       </label>
@@ -163,21 +173,25 @@ export function JoinPolicyField() {
 /** Aperçu en direct : cagnotte par tour et durée du cycle. */
 export function LivePreview() {
   const { watch } = useFormContext<CreateGroupValues>();
-  const [amount, members, duration, sharesPerRound, reserveFinalTurn, feeAmount] = watch([
-    'contributionAmount',
-    'maxMembers',
-    'turnDurationDays',
-    'sharesPerRound',
-    'reserveFinalTurn',
-    'membershipFeeAmount',
-  ]);
-  const periodCount =
+  const [amount, members, frequency, turnLength, sharesPerRound, reserveFinalTurn, feeAmount] =
+    watch([
+      'contributionAmount',
+      'maxMembers',
+      'frequency',
+      'turnLength',
+      'sharesPerRound',
+      'reserveFinalTurn',
+      'membershipFeeAmount',
+    ]);
+  const rounds =
     Math.ceil((members ?? 0) / Math.max(1, sharesPerRound ?? 1)) + (reserveFinalTurn ? 1 : 0);
-  const pot = (amount ?? 0) * (duration ?? 0) * (members ?? 0);
+  const perShare = (amount ?? 0) * (turnLength ?? 0);
   return (
     <Card tone="pot" className="text-ink" aria-live="polite">
-      Cagnotte collectée par période : <AmountText value={pot} className="font-bold" /> ·{' '}
-      {periodCount} période(s), soit {periodCount * (duration ?? 0)} jours.{' '}
+      Chaque part cotise <AmountText value={perShare} className="font-bold" /> par tour · cagnotte
+      d’un tour : <AmountText value={perShare * (members ?? 0)} className="font-bold" /> · {rounds}{' '}
+      tour(s) de {formatPeriods(frequency, turnLength ?? 0)}, soit{' '}
+      {formatCycleDuration(frequency, rounds, turnLength ?? 0)} au total.{' '}
       {feeAmount ? <>Frais d’adhésion : {feeAmount} FCFA par personne.</> : null}
     </Card>
   );
@@ -190,10 +204,17 @@ export function StepRules() {
     formState: { errors },
   } = useFormContext<CreateGroupValues>();
   const numeric = { setValueAs: toOptionalNumber };
+  const frequency = watch('frequency');
   return (
     <div className="flex flex-col gap-3">
+      <Select
+        label="Rythme de cotisation"
+        options={FREQUENCY_OPTIONS}
+        error={errors.frequency?.message}
+        {...register('frequency')}
+      />
       <Input
-        label="Cotisation journalière par part (FCFA)"
+        label={`Cotisation ${PER_PERIOD[frequency]} et par part (FCFA)`}
         type="number"
         inputMode="numeric"
         min={500}
@@ -202,13 +223,27 @@ export function StepRules() {
         {...register('contributionAmount', numeric)}
       />
       <Input
-        label="Durée d’un tour (jours)"
+        label={`Durée d’un tour (en ${TURN_UNIT[frequency]})`}
         type="number"
+        inputMode="numeric"
         min={1}
-        max={90}
-        error={errors.turnDurationDays?.message}
-        {...register('turnDurationDays', numeric)}
+        max={MAX_TURN_LENGTH[frequency]}
+        hint={
+          frequency === 'monthly'
+            ? 'Par exemple 1 mois, 3 mois, ou 12 mois pour un an.'
+            : `Jusqu’à ${formatPeriods(frequency, MAX_TURN_LENGTH[frequency])}.`
+        }
+        error={errors.turnLength?.message}
+        {...register('turnLength', numeric)}
       />
+      {frequency === 'daily' ? null : (
+        <Select
+          label="Jour limite de paiement (dans la dernière période du tour)"
+          options={dueDayOptions(frequency)}
+          error={errors.paymentDueDay?.message}
+          {...register('paymentDueDay', numeric)}
+        />
+      )}
       <Input
         label="Parts bénéficiaires payées par tour"
         type="number"
@@ -327,8 +362,9 @@ export function StepSummary() {
     ...(admin ? [['Administrateur', admin.name] as [string, ReactNode]] : []),
     ['Description', v.description || '—'],
     ['Cotisation', <AmountText key="a" value={v.contributionAmount} />],
-    ['Cotisation par', 'Jour et par part'],
-    ['Durée d’un tour', `${v.turnDurationDays} jours`],
+    ['Rythme', frequencyLabel(v.frequency)],
+    ['Cotisation par', `${PER_PERIOD[v.frequency].replace('par ', '')} et par part`],
+    ['Durée d’un tour', formatPeriods(v.frequency, v.turnLength)],
     ['Parts payées par tour', v.sharesPerRound],
     ['Parts du groupe', v.maxMembers],
     ['Démarrage', v.startDate ? formatDate(v.startDate) : '—'],

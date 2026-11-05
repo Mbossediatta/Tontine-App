@@ -1,5 +1,5 @@
 // Cycle de vie d'une tontine simulée : statuts de paiement, pénalités, ouverture et clôture des tours.
-import { computeDueDate, computePot, roundOpenDate } from '@/lib/tontine';
+import { computeDueDate, computePot, contributionPerTurn, roundOpenDate } from '@/lib/tontine';
 import { formatAmount } from '@/lib/format';
 import type { Group, PaymentStatus, Round } from '@/types';
 import { activeMemberships, requireGroup } from './access';
@@ -40,9 +40,7 @@ export function memberStatus(round: Round, userId: string, now: Date = new Date(
 
 export function amountBreakdown(group: Group, round: Round, userId: string) {
   const shareCount = activeMemberships(group.id).filter((m) => m.userId === userId).length;
-  const contributionPerShare =
-    group.contributionAmount * (group.dailyContribution ? (group.turnDurationDays ?? 10) : 1);
-  const contributionAmount = contributionPerShare * shareCount;
+  const contributionAmount = contributionPerTurn(group) * shareCount;
   const latePenaltyAmount = penaltyFor(round.id, userId);
   const membershipFee = hasPaidMembershipFee(group.id, userId)
     ? 0
@@ -195,9 +193,7 @@ export function createRounds(group: Group): void {
     (a, b) => (a.payoutOrder ?? 0) - (b.payoutOrder ?? 0),
   );
   const start = new Date(group.startDate);
-  const turnDays = group.turnDurationDays ?? 10;
-  const contributionPerShare = group.contributionAmount * (group.dailyContribution ? turnDays : 1);
-  const pot = computePot(contributionPerShare, members.length);
+  const pot = computePot(contributionPerTurn(group), members.length);
   const shareCountByUser = new Map<string, number>();
   for (const membership of members) {
     const shareNumber = (shareCountByUser.get(membership.userId) ?? 0) + 1;
@@ -215,12 +211,13 @@ export function createRounds(group: Group): void {
     batch: typeof members,
     recipientType: Round['recipientType'] = 'members',
   ) => {
-    const openDate = group.dailyContribution
-      ? new Date(start.getTime() + (number - 1) * turnDays * 86_400_000)
-      : roundOpenDate(start, group.frequency, number - 1);
-    const dueDate = group.dailyContribution
-      ? new Date(openDate.getTime() + turnDays * 86_400_000)
-      : computeDueDate(openDate, group.frequency, group.paymentDueDay);
+    const openDate = roundOpenDate(start, group.frequency, number - 1, group.turnLength);
+    const dueDate = computeDueDate(
+      openDate,
+      group.frequency,
+      group.paymentDueDay,
+      group.turnLength,
+    );
     db.rounds.push({
       id: newId('r'),
       groupId: group.id,

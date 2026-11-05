@@ -450,3 +450,7 @@ verify_jwt = false
 
 [functions.admin-pin-reset]
 verify_jwt = false
+
+# Notification de paiement PayTech : appelée sans session, vérifiée par signature.
+[functions.payments-ipn]
+verify_jwt = false

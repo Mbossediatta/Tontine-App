@@ -1,13 +1,12 @@
 -- Données de démonstration (local et projet de test uniquement, jamais en production).
--- Mêmes comptes que la simulation du frontend (tontine-pwa/src/mocks/users.ts).
+-- Base volontairement minimale (demande du 2026-11-05) : trois comptes seulement, un par rôle.
+-- Communautés, groupes, membres et paiements sont créés à la main depuis l'application.
 --
 -- Aucun PIN n'est créé ici : les empreintes dépendent du poivre secret (PIN_PEPPER).
 -- Pour se connecter : numéro → code SMS (affiché dans les journaux de la fonction avec
 -- SMS_MODE=console) → création du PIN.
 -- Le mot de passe interne Supabase Auth est remis à la bonne valeur à la première
 -- ouverture de session (voir openSession dans functions/_shared/db.ts).
---
--- Les groupes, tours et paiements de démonstration arrivent à l'étape 5.
 
 create temporary table demo_users (
   id uuid, first_name text, last_name text, phone text,
@@ -17,19 +16,7 @@ create temporary table demo_users (
 insert into demo_users values
   ('a0000000-0000-0000-0000-000000000001', 'Aminata', 'Sow', '776502698', 'super_admin', null, 6),
   ('a0000000-0000-0000-0000-000000000002', 'Moussa', 'Diop', '771234567', 'admin', 'wave', 6),
-  ('a0000000-0000-0000-0000-000000000003', 'Fatou', 'Ndiaye', '781234567', 'admin', 'orange_money', 6),
-  ('a0000000-0000-0000-0000-000000000011', 'Awa', 'Fall', '772345678', 'user', 'wave', 6),
-  ('a0000000-0000-0000-0000-000000000012', 'Ibrahima', 'Sarr', '763456789', 'user', 'orange_money', 6),
-  ('a0000000-0000-0000-0000-000000000013', 'Khady', 'Ba', '704567890', 'user', 'wave', 6),
-  ('a0000000-0000-0000-0000-000000000014', 'Cheikh', 'Mbaye', '775678901', 'user', 'wave', 6),
-  ('a0000000-0000-0000-0000-000000000015', 'Mariama', 'Gueye', '786789012', 'user', 'orange_money', 6),
-  ('a0000000-0000-0000-0000-000000000016', 'Ousmane', 'Faye', '767890123', 'user', 'wave', 6),
-  ('a0000000-0000-0000-0000-000000000017', 'Ndèye', 'Seck', '708901234', 'user', 'wave', 6),
-  ('a0000000-0000-0000-0000-000000000018', 'Mamadou', 'Cissé', '779012345', 'user', 'orange_money', 6),
-  ('a0000000-0000-0000-0000-000000000019', 'Aïssatou', 'Diallo', '780123456', 'user', 'wave', 6),
-  ('a0000000-0000-0000-0000-000000000020', 'Babacar', 'Thiam', '761234098', 'user', 'wave', 0),
-  ('a0000000-0000-0000-0000-000000000021', 'Coumba', 'Kane', '702345109', 'user', null, 0),
-  ('a0000000-0000-0000-0000-000000000022', 'Abdoulaye', 'Niang', '773456210', 'user', 'orange_money', 0);
+  ('a0000000-0000-0000-0000-000000000011', 'Awa', 'Fall', '772345678', 'user', 'wave', 6);
 
 -- Comptes Supabase Auth : e-mail technique, mot de passe aléatoire (remplacé à la
 -- première connexion par le mot de passe interne).

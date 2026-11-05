@@ -5,9 +5,9 @@ import { OnlineButton } from '@/components/layout/OnlineButton';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { AsyncContent, Card, CardTitle, EmptyState } from '@/components/ui';
 import { ServiceError } from '@/lib/errors';
-import { frequencyLabel, groupContributionLabel } from '@/lib/format';
+import { groupContributionLabel } from '@/lib/format';
 import { useAction } from '@/lib/query';
-import { computePot } from '@/lib/tontine';
+import { computePot, contributionPerTurn, formatPeriods } from '@/lib/tontine';
 import { groupService } from '@/services';
 import { useInvitePreview } from './queries';
 
@@ -71,23 +71,13 @@ export default function JoinPage() {
                 <div>
                   <dt className="text-muted">Durée d’un tour</dt>
                   <dd className="font-semibold text-ink">
-                    {group.dailyContribution
-                      ? `${group.turnDurationDays ?? 10} jours`
-                      : frequencyLabel(group.frequency)}
+                    {formatPeriods(group.frequency, group.turnLength)}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-muted">Cagnotte par tour</dt>
                   <dd className="font-semibold text-ink">
-                    <AmountText
-                      value={
-                        group.dailyContribution
-                          ? group.contributionAmount *
-                            (group.turnDurationDays ?? 10) *
-                            group.maxMembers
-                          : computePot(group.contributionAmount, group.maxMembers)
-                      }
-                    />
+                    <AmountText value={computePot(contributionPerTurn(group), group.maxMembers)} />
                   </dd>
                 </div>
                 <div>

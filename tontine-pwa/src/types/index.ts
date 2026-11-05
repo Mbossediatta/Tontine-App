@@ -1,6 +1,7 @@
 export type GlobalRole = 'super_admin' | 'admin' | 'user';
 export type GroupRole = 'owner' | 'co_admin' | 'member';
-export type Frequency = 'weekly' | 'biweekly' | 'monthly';
+/** Rythme de cotisation, choisi par l'admin du groupe. */
+export type Frequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
 /** `suspended` : groupe gelé par le super administrateur (plus aucun paiement ni versement). */
 export type GroupStatus = 'draft' | 'active' | 'finished' | 'suspended';
 export type AttributionMode = 'random' | 'manual';
@@ -43,11 +44,13 @@ export interface Group {
   joinPolicy?: 'invite' | 'community';
   name: string;
   description?: string;
-  contributionAmount: number; // FCFA, entier
-  /** Cotisation quotidienne par part pour les groupes configurés avec ce mode. */
-  dailyContribution?: boolean;
-  /** Durée d'une période de cotisation et d'un tour, en jours. */
-  turnDurationDays?: number;
+  /** Cotisation par part et par période du rythme (jour, semaine, quinzaine ou mois). FCFA. */
+  contributionAmount: number;
+  /**
+   * Durée d'un tour, en périodes du rythme : 10 (jours), 3 (semaines), 2 (mois)…
+   * Chaque part cotise contributionAmount × turnLength par tour.
+   */
+  turnLength: number;
   /** Nombre de parts bénéficiaires payées dans un tour. */
   sharesPerRound?: number;
   /** Montant fixe de frais d'adhésion, facturés une seule fois par personne. */

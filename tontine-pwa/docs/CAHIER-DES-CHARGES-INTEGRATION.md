@@ -34,7 +34,7 @@ Si une règle paraît ambiguë, **la poser avant de coder**, comme le demandait 
 | Élément | État |
 |---|---|
 | Écrans | 37 routes, 3 rôles (participant, admin, super admin), téléphone et ordinateur |
-| Données | Couche simulée complète (`src/services/mock/`), même comportement que le futur backend |
+| Données | Couche simulée complète ; le tableau de bord super admin est maintenant relié à Supabase lorsque `VITE_AUTH_MODE=supabase` |
 | Contrat | 15 interfaces de service, ~100 fonctions, toutes typées |
 | Qualité | TypeScript strict, ESLint sans erreur, 113 tests, build sans avertissement |
 | Exploration | 76 pages visitées automatiquement : aucune erreur, aucun débordement |
@@ -58,6 +58,10 @@ interface de service, une implémentation Supabase qui respecte exactement le m�
   de démonstration ; la simulation pèse 159 Ko dans le fichier principal).
 - Client Supabase unique dans `src/lib/supabase.ts` (`@supabase/supabase-js`, à installer),
   avec `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`.
+- Le service du tableau de bord super admin utilise déjà la session authentifiée pour lire les
+  indicateurs, alertes, administrateurs, transactions et le journal. Les actions de gestion
+  non encore raccordées restent désactivées en mode Supabase ; l’ajout d’administrateur passe
+  par l’Edge Function `admin-create`.
 
 ### 2.2 Ce que chaque implémentation doit respecter
 
@@ -177,6 +181,7 @@ personne ne connaît.
 | `auth-pin-change` | session, PIN actuel, nouveau PIN | Mêmes règles d’essais que `auth-pin-login`. |
 | `auth-login-method` | numéro | Répond seulement `'pin'` ou `'otp'` (connexion sur ordinateur). |
 | `admin-pin-reset` | session super admin, utilisateur | `must_reset = true`, **révoque toutes les sessions** de la personne (`auth.admin.signOut`), trace dans `audit_log` (`pin_reset`). |
+| `admin-create` | session super admin, prénom, nom, numéro | Promeut un compte participant ou crée son compte interne et son profil admin ; consigne l’action dans `audit_log`. Le premier accès se fait par SMS puis création du PIN. |
 
 **Ouvrir la session :** le mot de passe interne n’est **jamais stocké** : il est recalculé à la
 demande, `HMAC-SHA256(SESSION_PEPPER, user_id)` (256 bits, impossible à deviner). L’Edge
@@ -539,9 +544,9 @@ propositions. Liste exhaustive des signatures : [`CONTRAT-BACKEND.md`](CONTRAT-B
 | `memberService` | `list`, `get` | RPC (super admin, paginée) |
 | | `create`, `block`, `unblock`, `changePhone` | RPC / EF (`changePhone` vérifie un code SMS envoyé au nouveau numéro) |
 | | `resetPin` | EF `admin-pin-reset` (révoque les sessions, 4.1) |
-| `adminService` | `dashboard`, `superDashboard` | RPC `admin_stats`, `platform_stats` (étendues) |
-| | `listTransactions` | RPC paginée |
-| | admins : `listAdmins`, `listAdminChoices`, `getAdmin`, `createAdmin`, `updateAdmin`, `suspend`, `reactivate`, `deleteAdmin`, `reassignGroups` | RPC |
+| `adminService` | `superDashboard`, `listAdmins`, `getAdmin`, `listTransactions` | Lectures Supabase avec la session authentifiée ; `admin_pin_pending` vérifie le rôle côté base |
+| | `createAdmin` | Edge Function `admin-create` (promotion/création du compte Auth, profil et audit) |
+| | autres opérations admin | Non raccordées en mode Supabase ; les actions correspondantes restent masquées ou désactivées |
 | | communautés : `listCommunities`, `saveCommunity` | T + RPC |
 | | supervision : `suspendGroup`, `reactivateGroup`, `closeGroup`, `archiveGroup`, `changeGroupAdmin`, `transferGroup` | RPC |
 | `financeService` | `reconciliation`, `payouts`, `earnings` | RPC |

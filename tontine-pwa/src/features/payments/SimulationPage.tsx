@@ -7,7 +7,7 @@ import { Button } from '@/features/member/ui/Button';
 import { Card } from '@/features/member/ui/Card';
 import { errorMessage } from '@/lib/errors';
 import { paymentMethodLabel } from '@/lib/format';
-import { completeSimulatedCheckout, getSimulatedCheckout } from '@/services/mock/gateway';
+import { simulatedCheckout } from '@/services';
 import type { PaymentMethod } from '@/types';
 import { markPaymentRedirect } from '@/lib/paymentRedirect';
 
@@ -21,7 +21,7 @@ export default function SimulationPage() {
   const paymentId = params.get('payment') ?? '';
   const query = useQuery({
     queryKey: ['simulation', paymentId],
-    queryFn: () => getSimulatedCheckout(paymentId),
+    queryFn: () => simulatedCheckout.get(paymentId),
   });
   const [busy, setBusy] = useState<'success' | 'failure' | null>(null);
   const [error, setError] = useState<string>();
@@ -29,7 +29,7 @@ export default function SimulationPage() {
   const finish = async (success: boolean) => {
     setBusy(success ? 'success' : 'failure');
     try {
-      await completeSimulatedCheckout(paymentId, success);
+      await simulatedCheckout.complete(paymentId, success);
       const target = success ? '/paiement/succes' : '/paiement/echec';
       markPaymentRedirect(); // retour vers l'appli : toujours pas de PIN redemandé
       window.location.assign(`${target}?payment=${encodeURIComponent(paymentId)}`);

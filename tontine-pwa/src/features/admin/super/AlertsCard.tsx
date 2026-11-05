@@ -29,7 +29,13 @@ function AlertBody({ alert }: { alert: PlatformAlert }) {
  * « Alertes à traiter » : rouge pour les échecs de paiement, orange pour les retards,
  * bleu pour les demandes en attente. Une alerte avec une page associée est cliquable.
  */
-export function AlertsCard({ alerts }: { alerts: PlatformAlert[] }) {
+export function AlertsCard({
+  alerts,
+  linksEnabled = true,
+}: {
+  alerts: PlatformAlert[];
+  linksEnabled?: boolean;
+}) {
   return (
     <Card className="flex flex-col gap-3">
       <CardTitle>Alertes à traiter</CardTitle>
@@ -43,7 +49,7 @@ export function AlertsCard({ alerts }: { alerts: PlatformAlert[] }) {
             const boxClass = cn('flex gap-3 rounded-control p-4', TONES[alert.tone].box);
             return (
               <li key={alert.id}>
-                {alert.link ? (
+                {alert.link && linksEnabled ? (
                   <Link
                     to={alert.link}
                     className={cn(boxClass, 'transition-opacity hover:opacity-90')}

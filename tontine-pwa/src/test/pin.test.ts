@@ -7,10 +7,11 @@ import { lastOtpFor } from '@/services/mock/otp';
 
 const AWA = '772345678'; // compte de démonstration (PIN déjà créé)
 const NEW_NUMBER = '775550000'; // numéro sans compte
+const INVITE = 'BUR92X'; // groupe de démonstration pas encore démarré
 
 /** Envoie un code SMS au numéro puis le saisit, comme le ferait l'utilisateur. */
-async function verifyBySms(phone: string) {
-  await authService.sendOtp(phone);
+async function verifyBySms(phone: string, inviteCode?: string) {
+  await authService.sendOtp(phone, inviteCode);
   return authService.verifyOtp(phone, lastOtpFor(phone) ?? '');
 }
 
@@ -49,8 +50,17 @@ describe('connexion par SMS puis PIN', () => {
     expect((await authService.getSession()).user?.id).toBe(user.id);
   }, 10_000);
 
+  it('nouveau numéro sans invitation : refusé, aucun code envoyé', async () => {
+    await expect(authService.sendOtp(NEW_NUMBER)).rejects.toThrow(/Contactez votre administrateur/);
+    await expect(authService.sendOtp(NEW_NUMBER, 'ZZZZ99')).rejects.toThrow(/pas encore inscrit/);
+    expect(lastOtpFor(NEW_NUMBER)).toBeUndefined();
+  });
+
   it('nouveau numéro : profil, puis PIN (pas trop simple), puis session ouverte', async () => {
-    expect(await verifyBySms(NEW_NUMBER)).toMatchObject({ isNewAccount: true, hasPin: false });
+    expect(await verifyBySms(NEW_NUMBER, INVITE)).toMatchObject({
+      isNewAccount: true,
+      hasPin: false,
+    });
     expect((await authService.getSession()).needsProfile).toBe(true);
     await authService.completeProfile({ firstName: 'Rama', lastName: 'Diouf' });
     await expect(authService.setPin('1111')).rejects.toThrow(/facile/);

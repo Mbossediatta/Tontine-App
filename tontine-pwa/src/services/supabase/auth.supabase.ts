@@ -165,8 +165,8 @@ export function createSupabaseAuthService(bridge: SessionBridge): AuthService {
       return reply.method;
     },
 
-    async sendOtp(phone) {
-      await call('auth-otp-send', { phone });
+    async sendOtp(phone, inviteCode) {
+      await call('auth-otp-send', inviteCode ? { phone, inviteCode } : { phone });
     },
 
     async verifyOtp(phone, code): Promise<OtpResult> {

@@ -174,8 +174,7 @@ export interface CreateGroupInput {
   name: string;
   description?: string;
   contributionAmount: number;
-  dailyContribution?: boolean;
-  turnDurationDays?: number;
+  turnLength: number;
   sharesPerRound?: number;
   membershipFeeAmount?: number;
   collectMembershipFee?: boolean;

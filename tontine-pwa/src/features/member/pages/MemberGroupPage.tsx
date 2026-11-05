@@ -57,7 +57,7 @@ function GroupFacts({ overview, admins }: { overview: GroupOverview; admins: str
 /** Libellé de la période d'un tour : le mois pour une tontine mensuelle, sinon la date. */
 function roundLabel(group: GroupOverview['group'], view: RoundView): string {
   const month = monthName(view.round.dueDate);
-  return group.frequency === 'monthly' && !group.dailyContribution
+  return group.frequency === 'monthly' && group.turnLength === 1
     ? month.charAt(0).toUpperCase() + month.slice(1)
     : shortDate(view.round.dueDate);
 }

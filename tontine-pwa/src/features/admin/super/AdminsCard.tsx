@@ -20,7 +20,13 @@ const COLUMNS =
  * Écran large : colonnes. Mobile : une carte par admin. « Voir » ouvre sa fiche,
  * « Suspendre » / « Réactiver » agit directement (après confirmation).
  */
-export function AdminTable({ admins }: { admins: AdminPerformance[] }) {
+export function AdminTable({
+  admins,
+  readOnly = false,
+}: {
+  admins: AdminPerformance[];
+  readOnly?: boolean;
+}) {
   // Admin à suspendre ou réactiver, en attente de confirmation.
   const [pending, setPending] = useState<AdminPerformance | null>(null);
   const toggle = useAction({
@@ -36,7 +42,9 @@ export function AdminTable({ admins }: { admins: AdminPerformance[] }) {
     <div>
       {/* En-têtes de colonnes : visibles seulement quand les colonnes existent. */}
       <div
-        className={`hidden gap-3 border-b border-line px-2 pb-2 text-small uppercase tracking-wide text-muted md:grid ${COLUMNS}`}
+        className={`hidden gap-3 border-b border-line px-2 pb-2 text-small uppercase tracking-wide text-muted md:grid ${
+          COLUMNS
+        }`}
         aria-hidden="true"
       >
         <span>Admin</span>
@@ -88,14 +96,16 @@ export function AdminTable({ admins }: { admins: AdminPerformance[] }) {
               >
                 Voir
               </Link>
-              <OnlineButton
-                variant="outline"
-                size="sm"
-                className={rowActionClass}
-                onClick={() => setPending(admin)}
-              >
-                {admin.user.isSuspended ? 'Réactiver' : 'Suspendre'}
-              </OnlineButton>
+              {!readOnly ? (
+                <OnlineButton
+                  variant="outline"
+                  size="sm"
+                  className={rowActionClass}
+                  onClick={() => setPending(admin)}
+                >
+                  {admin.user.isSuspended ? 'Réactiver' : 'Suspendre'}
+                </OnlineButton>
+              ) : null}
             </span>
           </li>
         ))}
@@ -124,20 +134,34 @@ export function AdminTable({ admins }: { admins: AdminPerformance[] }) {
 }
 
 /** Carte « Administrateurs » du tableau de bord, avec le lien vers la rubrique complète. */
-export function AdminsCard({ admins }: { admins: AdminPerformance[] }) {
+export function AdminsCard({
+  admins,
+  readOnly = false,
+}: {
+  admins: AdminPerformance[];
+  readOnly?: boolean;
+}) {
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <CardTitle>Administrateurs</CardTitle>
-        <Link to="/admin/administrateurs" className="font-bold text-blue-700 underline">
-          Gérer les admins
-        </Link>
+        {readOnly ? null : (
+          <Link to="/admin/administrateurs" className="font-bold text-blue-700 underline">
+            Gérer les admins
+          </Link>
+        )}
       </div>
       {admins.length === 0 ? (
         <p className="text-muted">Aucun administrateur pour le moment.</p>
       ) : (
-        <AdminTable admins={admins} />
+        <AdminTable admins={admins} readOnly={readOnly} />
       )}
+      {readOnly ? (
+        <p className="text-small text-muted">
+          Les données viennent de Supabase. Les actions de gestion seront reliées au backend dans
+          une prochaine étape.
+        </p>
+      ) : null}
     </Card>
   );
 }

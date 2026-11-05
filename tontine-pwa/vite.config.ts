@@ -54,5 +54,9 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Tests unitaires : toujours sur la simulation, quel que soit le .env local.
+    // Les tests contre Supabase local sont lancés à part (npm run test:integration).
+    env: { VITE_AUTH_MODE: 'mock' },
+    exclude: ['**/node_modules/**', 'src/test/integration/**'],
   },
 });

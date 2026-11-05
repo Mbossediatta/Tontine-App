@@ -44,7 +44,12 @@ function buildRounds(group: Group, orderedUserIds: string[], openRoundIndex: num
   const start = new Date(group.startDate);
   return orderedUserIds.map((userId, index) => {
     const openDate = roundOpenDate(start, group.frequency, index);
-    const dueDate = computeDueDate(openDate, group.frequency, group.paymentDueDay);
+    const dueDate = computeDueDate(
+      openDate,
+      group.frequency,
+      group.paymentDueDay,
+      group.turnLength,
+    );
     const status: Round['status'] =
       index < openRoundIndex ? 'paid_out' : index === openRoundIndex ? 'open' : 'upcoming';
     return {
@@ -88,6 +93,7 @@ export function seedGroups(now: Date = new Date()): GroupSeed {
     description: 'La tontine mensuelle de la famille Diop et de leurs proches.',
     contributionAmount: 4500,
     frequency: 'monthly',
+    turnLength: 1,
     maxMembers: 10,
     paymentDueDay: 10,
     startDate: familleStart.toISOString(),
@@ -122,6 +128,7 @@ export function seedGroups(now: Date = new Date()): GroupSeed {
     description: 'Cotisation entre collègues, démarrage le mois prochain.',
     contributionAmount: 10000,
     frequency: 'monthly',
+    turnLength: 1,
     maxMembers: 6,
     paymentDueDay: 5,
     startDate: startOfMonth(subMonths(now, -1)).toISOString(),
@@ -141,6 +148,7 @@ export function seedGroups(now: Date = new Date()): GroupSeed {
     description: 'Petite tontine hebdomadaire entre voisines.',
     contributionAmount: 2000,
     frequency: 'weekly',
+    turnLength: 1,
     maxMembers: 8,
     paymentDueDay: 5,
     startDate: amiesStart.toISOString(),
@@ -162,6 +170,7 @@ export function seedGroups(now: Date = new Date()): GroupSeed {
     description: 'Tontine des commerçantes du marché de Thiaroye.',
     contributionAmount: 10000,
     frequency: 'monthly',
+    turnLength: 1,
     maxMembers: 6,
     paymentDueDay: 5,
     startDate: startOfMonth(subMonths(now, 5)).toISOString(),
@@ -185,6 +194,7 @@ export function seedGroups(now: Date = new Date()): GroupSeed {
     description: 'Groupe suspendu en attendant la vérification des membres.',
     contributionAmount: 5000,
     frequency: 'monthly',
+    turnLength: 1,
     maxMembers: 10,
     paymentDueDay: 10,
     startDate: startOfMonth(subMonths(now, 1)).toISOString(),

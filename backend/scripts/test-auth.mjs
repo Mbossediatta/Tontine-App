@@ -8,6 +8,16 @@ import assert from 'node:assert/strict';
 const API = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const ANON = process.env.SUPABASE_ANON_KEY ?? 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
 const CONTAINER = 'supabase_edge_runtime_calebasse';
+const DB_CONTAINER = 'supabase_db_calebasse';
+
+/** SQL direct sur la base locale (préparation et nettoyage du test). */
+function sql(query) {
+  const r = spawnSync('docker', ['exec', DB_CONTAINER, 'psql', '-U', 'postgres', '-tAc', query], {
+    encoding: 'utf8',
+  });
+  assert.equal(r.status, 0, r.stderr);
+  return r.stdout.trim();
+}
 
 let passed = 0;
 async function step(name, fn) {
@@ -55,9 +65,9 @@ function lastCode(phone) {
 }
 
 /** Envoie un code et attend qu'il apparaisse dans les journaux (léger décalage). */
-async function sendCode(phone) {
+async function sendCode(phone, inviteCode) {
   const before = codesFor(phone).length;
-  const sent = await call('auth-otp-send', { phone });
+  const sent = await call('auth-otp-send', { phone, inviteCode });
   assert.equal(sent.status, 200, JSON.stringify(sent.body));
   for (let i = 0; i < 50 && codesFor(phone).length === before; i++) {
     await new Promise((resolve) => setTimeout(resolve, 200));
@@ -65,8 +75,8 @@ async function sendCode(phone) {
   return lastCode(phone);
 }
 
-async function otp(phone) {
-  const code = await sendCode(phone);
+async function otp(phone, inviteCode) {
+  const code = await sendCode(phone, inviteCode);
   const verified = await call('auth-otp-verify', { phone, code });
   assert.equal(verified.status, 200, JSON.stringify(verified.body));
   return verified.body;
@@ -75,6 +85,16 @@ async function otp(phone) {
 const NEW_PHONE = `76${String(Date.now()).slice(-7)}`;
 const AWA = '772345678';
 const SUPER = '776502698';
+/**
+ * Groupe d'essai pas encore démarré : son code ouvre l'inscription. Créé pour le test
+ * (le seed ne contient que trois comptes) et supprimé à la fin.
+ */
+const INVITE = 'TESTAUTH';
+sql(`delete from public.groups where invite_code = '${INVITE}';
+  insert into public.groups (name, contribution_amount, frequency, max_members, payment_due_day,
+    start_date, invite_code, created_by, admin_id)
+  select 'Groupe test connexion', 5000, 'monthly', 5, 5, current_date + 30, '${INVITE}', id, id
+  from public.profiles where phone = '771234567';`);
 
 console.log('Connexion — test de bout en bout');
 
@@ -89,8 +109,20 @@ await step('nouveau numéro : méthode « otp »', async () => {
   assert.deepEqual(r.body, { method: 'otp' });
 });
 
+await step('numéro inconnu sans invitation : refusé, aucun SMS', async () => {
+  const r = await call('auth-otp-send', { phone: NEW_PHONE });
+  assert.equal(r.status, 404);
+  assert.match(r.body.error.message, /Contactez votre administrateur/);
+  assert.equal(codesFor(NEW_PHONE).length, 0);
+});
+
+await step('code d’invitation inconnu : refusé', async () => {
+  const r = await call('auth-otp-send', { phone: NEW_PHONE, inviteCode: 'ZZZZ99' });
+  assert.equal(r.status, 404);
+});
+
 await step('code faux refusé et noté', async () => {
-  const code = await sendCode(NEW_PHONE);
+  const code = await sendCode(NEW_PHONE, INVITE);
   const wrong = code === '000000' ? '111111' : '000000';
   const r = await call('auth-otp-verify', { phone: NEW_PHONE, code: wrong });
   assert.equal(r.status, 400);
@@ -99,7 +131,7 @@ await step('code faux refusé et noté', async () => {
 
 let proof;
 await step('bon code : nouveau compte, pas de PIN, jeton de preuve', async () => {
-  const r = await otp(NEW_PHONE);
+  const r = await otp(NEW_PHONE, INVITE);
   assert.equal(r.isNewAccount, true);
   assert.equal(r.hasPin, false);
   assert.ok(r.proofToken);
@@ -253,8 +285,9 @@ await step('journal de sécurité : échecs de PIN et de code notés', async () 
 await step('limite : 5 codes par numéro et par heure', async () => {
   const phone = `75${String(Date.now()).slice(-7)}`;
   let last;
-  for (let i = 0; i < 6; i++) last = await call('auth-otp-send', { phone });
+  for (let i = 0; i < 6; i++) last = await call('auth-otp-send', { phone, inviteCode: INVITE });
   assert.equal(last.status, 429);
 });
 
+sql(`delete from public.groups where invite_code = '${INVITE}'`);
 console.log(`\n${passed} étapes réussies.`);

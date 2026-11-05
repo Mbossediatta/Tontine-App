@@ -25,7 +25,11 @@ export interface AuthService {
    * réinitialisé : code SMS d'abord). Ne révèle ni le nom ni aucune autre donnée.
    */
   loginMethod(phone: string): Promise<'pin' | 'otp'>;
-  sendOtp(phone: string): Promise<void>;
+  /**
+   * Envoie le code SMS. Inscription sur invitation : un numéro sans compte n'en reçoit un
+   * qu'avec le code d'invitation d'un groupe pas encore démarré (sinon erreur « not_found »).
+   */
+  sendOtp(phone: string, inviteCode?: string): Promise<void>;
   /** Vérifie le code SMS : le numéro est alors prouvé pour l'étape suivante. */
   verifyOtp(phone: string, code: string): Promise<OtpResult>;
   /** Numéro sans compte : crée le compte (le PIN reste à créer). */

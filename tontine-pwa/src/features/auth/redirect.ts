@@ -9,6 +9,14 @@ export interface RedirectState {
   firstName?: string;
 }
 
+/**
+ * Code d'invitation du parcours en cours : la personne a ouvert un lien /rejoindre/CODE
+ * (ou saisi son code) avant de se connecter. Il ouvre l'inscription d'un nouveau numéro.
+ */
+export function inviteCodeOf(state: RedirectState | null | undefined): string | undefined {
+  return state?.from?.match(/^\/rejoindre\/([A-Za-z0-9]{4,12})$/)?.[1]?.toUpperCase();
+}
+
 /** Page d'accueil de chaque rôle : tableaux de bord admin, sinon accueil participant. */
 export function roleHome(user: User | null): string {
   return user && user.globalRole !== 'user' ? '/admin' : '/';

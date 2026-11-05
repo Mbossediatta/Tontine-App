@@ -7,7 +7,7 @@ import { authService } from '@/services';
 import { AuthError, AuthLink } from './components/AuthButton';
 import { AuthScreen } from './components/AuthScreen';
 import { CodeBoxes } from './components/CodeBoxes';
-import type { RedirectState } from './redirect';
+import { inviteCodeOf, type RedirectState } from './redirect';
 
 const CODE_LENGTH = 6;
 /** Secondes avant de pouvoir redemander un code. */
@@ -99,7 +99,7 @@ export default function OtpPage() {
     setResending(true);
     setError(undefined);
     try {
-      await authService.sendOtp(phone);
+      await authService.sendOtp(phone, inviteCodeOf(state));
       setSecondsLeft(RESEND_DELAY);
       setCode('');
       setSentCount((count) => count + 1);

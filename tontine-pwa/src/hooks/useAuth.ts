@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { clearDataCache } from '@/lib/dataCache';
 import { isComputer } from '@/lib/device';
 import { isReturningFromPayment } from '@/lib/paymentRedirect';
+import { isTabSessionActive, setTabSessionActive } from '@/lib/tabSession';
 import { authService } from '@/services';
 import type { User } from '@/types';
 
@@ -56,6 +57,13 @@ export const useAuthStore = create<AuthState>()((set) => ({
   setLocked: (locked) => set({ locked }),
 }));
 
+// Marque de l'onglet (lib/tabSession) : posée tant que l'application est ouverte et
+// déverrouillée, retirée à la déconnexion et au verrouillage.
+useAuthStore.subscribe((state) => {
+  if (state.status === 'loading') return;
+  setTabSessionActive(state.status === 'authenticated' && !state.locked && !state.needsPin);
+});
+
 /** Utilisateur connecté et état de la session. */
 export function useAuth() {
   const status = useAuthStore((state) => state.status);
@@ -87,8 +95,9 @@ export function useCurrentUser(): User {
  *   est redemandé (écran « Bonjour Awa »).
  * - Ordinateur (souvent partagé) : rien n'est retenu d'une ouverture à l'autre ; une
  *   session restée ouverte est fermée et l'écran du numéro s'affiche.
- * - Exception : retour de la page de paiement (aller-retour qui recharge l'appli) ; ce
- *   n'est pas une relance, la session continue sans PIN (voir lib/paymentRedirect).
+ * - Exceptions : retour de la page de paiement (aller-retour qui recharge l'appli) et
+ *   rechargement de la page (F5) ; ce n'est pas une relance, la session continue sans
+ *   PIN (voir lib/paymentRedirect et lib/tabSession).
  */
 export function useAuthBootstrap(): void {
   useEffect(() => {
@@ -98,8 +107,8 @@ export function useAuthBootstrap(): void {
       .then(async (session) => {
         if (cancelled) return;
         useAuthStore.setState({ lockAfterMinutes: session.lockAfterMinutes });
-        const midPayment = session.user !== null && isReturningFromPayment();
-        if (session.user && isComputer() && !midPayment) {
+        const resumed = session.user !== null && (isReturningFromPayment() || isTabSessionActive());
+        if (session.user && isComputer() && !resumed) {
           await authService.logout();
           await clearDataCache();
           if (!cancelled) useAuthStore.getState().setUser(null);
@@ -109,7 +118,7 @@ export function useAuthBootstrap(): void {
         store.setUser(session.user);
         store.setNeedsProfile(session.needsProfile);
         store.setNeedsPin(session.needsPin);
-        store.setLocked(session.user !== null && !session.needsPin && !midPayment);
+        store.setLocked(session.user !== null && !session.needsPin && !resumed);
       })
       .catch(() => {
         if (!cancelled) useAuthStore.getState().setUser(null);

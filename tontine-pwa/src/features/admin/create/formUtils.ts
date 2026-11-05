@@ -10,13 +10,31 @@ export function toOptionalNumber(value: unknown): number | undefined {
   return Number.isNaN(parsed) ? undefined : parsed;
 }
 
+/** Rythme de cotisation, choisi par l'admin du groupe. */
 export const FREQUENCY_OPTIONS: SelectOption[] = [
-  { value: 'weekly', label: 'Hebdomadaire' },
+  { value: 'daily', label: 'Journalière (chaque jour)' },
+  { value: 'weekly', label: 'Hebdomadaire (chaque semaine)' },
   { value: 'biweekly', label: 'Toutes les deux semaines (quinzaine)' },
-  { value: 'monthly', label: 'Mensuelle' },
+  { value: 'monthly', label: 'Mensuelle (chaque mois)' },
 ];
 
-/** Jours limites possibles : jour du mois (mensuel) ou jour de la semaine. */
+/** Unité de la durée d'un tour selon le rythme : « jours », « semaines »… */
+export const TURN_UNIT: Record<Frequency, string> = {
+  daily: 'jours',
+  weekly: 'semaines',
+  biweekly: 'quinzaines',
+  monthly: 'mois',
+};
+
+/** Montant par période : « par jour », « par semaine »… */
+export const PER_PERIOD: Record<Frequency, string> = {
+  daily: 'par jour',
+  weekly: 'par semaine',
+  biweekly: 'par quinzaine',
+  monthly: 'par mois',
+};
+
+/** Jours limites possibles : jour du mois (mensuel), jour de la semaine, aucun (journalier). */
 export function dueDayOptions(frequency: Frequency): SelectOption[] {
   return Array.from({ length: maxDueDay(frequency) }, (_, i) => {
     const day = i + 1;

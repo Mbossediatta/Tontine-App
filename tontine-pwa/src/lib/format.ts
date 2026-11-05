@@ -64,12 +64,14 @@ export function fullName(user: { firstName: string; lastName: string }): string 
 }
 
 const FREQUENCY_LABELS: Record<Frequency, string> = {
+  daily: 'Journalière',
   weekly: 'Hebdomadaire',
   biweekly: 'Toutes les deux semaines',
   monthly: 'Mensuelle',
 };
 
 const FREQUENCY_PER: Record<Frequency, string> = {
+  daily: 'par jour',
   weekly: 'par semaine',
   biweekly: 'par quinzaine',
   monthly: 'par mois',
@@ -84,12 +86,9 @@ export function contributionLabel(amount: number, frequency: Frequency): string 
   return `${formatAmount(amount)} ${FREQUENCY_PER[frequency]}`;
 }
 
-export function groupContributionLabel(
-  group: Pick<Group, 'contributionAmount' | 'frequency' | 'dailyContribution'>,
-): string {
-  return group.dailyContribution
-    ? `${formatAmount(group.contributionAmount)} par jour et par part`
-    : contributionLabel(group.contributionAmount, group.frequency);
+/** « 1 000 FCFA par jour et par part » */
+export function groupContributionLabel(group: Pick<Group, 'contributionAmount' | 'frequency'>) {
+  return `${contributionLabel(group.contributionAmount, group.frequency)} et par part`;
 }
 
 const METHOD_LABELS: Record<PaymentMethod, string> = {
@@ -107,6 +106,7 @@ const WEEKDAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', '
 
 /** Libellé du jour limite : « le 10 du mois » ou « le lundi ». */
 export function dueDayLabel(frequency: Frequency, day: number): string {
+  if (frequency === 'daily') return 'le dernier jour du tour';
   if (frequency === 'monthly') return `le ${day} du mois`;
   return `le ${WEEKDAYS[day - 1] ?? '—'}`;
 }
