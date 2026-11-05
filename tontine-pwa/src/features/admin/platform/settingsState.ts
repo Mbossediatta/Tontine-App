@@ -18,10 +18,10 @@ export function useSaveSettings<K extends keyof PlatformSettings>(section: K) {
 }
 
 /**
- * Enregistre une section qui a une clé secrète (paiement, SMS). `newSecret` n'est
+ * Enregistre une section qui a une clé secrète (paiement). `newSecret` n'est
  * envoyé que si l'administrateur a saisi une nouvelle clé ; l'ancienne n'est jamais lue.
  */
-export function useSaveSecretSettings<K extends 'payment' | 'sms'>(section: K) {
+export function useSaveSecretSettings<K extends 'payment'>(section: K) {
   return useAction<{ values: PlatformSettings[K]; newSecret: string }>({
     action: ({ values, newSecret }) =>
       settingsService.update(section, values, newSecret.trim() || undefined),

@@ -42,7 +42,7 @@ export function PaymentSection({ settings, setSettings }: SectionProps) {
           }
           options={[
             { value: 'test', label: 'Test' },
-            { value: 'live', label: 'Production' },
+            { value: 'prod', label: 'Production (paiements réels)' },
           ]}
         />
         <Input

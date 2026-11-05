@@ -347,7 +347,7 @@ export interface PlatformSettings {
     secretKeyHint: string | null;
     /** Frais prélevés par le service de paiement, en %. */
     feePercent: number;
-    mode: 'test' | 'live';
+    mode: 'test' | 'prod';
   };
   rules: {
     /** Jours de tolérance après la date limite avant d'être « en retard ». */

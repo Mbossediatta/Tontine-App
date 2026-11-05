@@ -1,18 +1,9 @@
-import { useState } from 'react';
 import { Button, Card, CardTitle, Input, Textarea } from '@/components/ui';
 import type { PlatformSettings } from '@/types';
-import { SecretField } from './SecretField';
-import {
-  numberUpdater,
-  useSaveSecretSettings,
-  useSaveSettings,
-  type SectionProps,
-} from './settingsState';
+import { numberUpdater, useSaveSettings, type SectionProps } from './settingsState';
 
 export function SmsSection({ settings, setSettings }: SectionProps) {
-  const saveSms = useSaveSecretSettings('sms');
-  // Nouvelle clé API éventuelle : vidée une fois enregistrée.
-  const [newSecret, setNewSecret] = useState('');
+  const saveSms = useSaveSettings('sms');
   const updateNumber = numberUpdater(setSettings);
   return (
     <Card className="flex flex-col gap-4">
@@ -33,12 +24,6 @@ export function SmsSection({ settings, setSettings }: SectionProps) {
             setSettings({ ...settings, sms: { ...settings.sms, senderName: event.target.value } })
           }
         />
-        <SecretField
-          label="Nouvelle clé API"
-          hint={settings.sms.apiKeyHint}
-          value={newSecret}
-          onChange={setNewSecret}
-        />
         <Input
           label="Coût par SMS (FCFA)"
           type="number"
@@ -47,12 +32,14 @@ export function SmsSection({ settings, setSettings }: SectionProps) {
           onChange={(event) => updateNumber('sms', 'costPerSms', event.target.value)}
         />
       </div>
+      <p className="text-small text-muted">
+        Les identifiants de l’API Orange (client et clé secrète) se règlent dans les secrets du
+        serveur, pas sur cette page.
+      </p>
       <Button
         variant="blue"
         loading={saveSms.isPending}
-        onClick={() =>
-          saveSms.mutate({ values: settings.sms, newSecret }, { onSuccess: () => setNewSecret('') })
-        }
+        onClick={() => saveSms.mutate(settings.sms)}
       >
         Enregistrer le fournisseur
       </Button>

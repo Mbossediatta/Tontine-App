@@ -26,8 +26,8 @@ export function SettingsPage() {
       <div className="flex items-start gap-3 rounded-control bg-blue-100 p-4 text-blue-900">
         <LockKeyhole className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
         <p className="text-label">
-          Les clés sont masquées dans les champs. En production, elles doivent être conservées côté
-          serveur et ne jamais être exposées au navigateur.
+          La clé secrète PayTech est gardée chiffrée sur le serveur : on peut la remplacer, mais
+          personne ne peut la relire depuis cette page.
         </p>
       </div>
       <PaymentSection {...props} />
