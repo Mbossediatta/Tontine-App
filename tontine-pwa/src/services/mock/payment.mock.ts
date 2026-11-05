@@ -1,4 +1,5 @@
 import { ServiceError } from '@/lib/errors';
+import { serviceFee } from '@/lib/tontine';
 import { formatAmount, fullName } from '@/lib/format';
 import type { MyTransaction } from '@/types';
 import type { PaymentService } from '../payment.service';
@@ -150,11 +151,14 @@ export const mockPaymentService: PaymentService = {
     if (round.status !== 'open') throw new ServiceError('Ce tour n’accepte plus de paiement.');
     const status = memberStatus(round, user.id);
     if (status === 'paid') throw new ServiceError('Vous avez déjà payé ce tour.', 'conflict');
+    const breakdown = amountBreakdown(group, round, user.id);
     const payment = {
       id: newId('pay'),
       roundId,
       userId: user.id,
-      ...amountBreakdown(group, round, user.id),
+      ...breakdown,
+      // Frais PayTech payés par le membre, en plus (jamais dans la cagnotte).
+      serviceFeeAmount: serviceFee(breakdown.amount, db.settings.payment.feePercent),
       method,
       providerRef: `SIM-${Date.now().toString(36).toUpperCase()}`,
       status: 'pending' as const,

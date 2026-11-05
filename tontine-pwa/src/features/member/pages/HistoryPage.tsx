@@ -113,6 +113,7 @@ function TransactionSheet({ item, onClose }: { item: MyTransaction | null; onClo
           cycle: item.cycle,
           roundNumber: item.roundNumber,
           amount: item.payment.amount,
+          serviceFee: item.payment.serviceFeeAmount,
           method: item.payment.method,
           providerRef: item.payment.providerRef,
           paidAt: item.payment.paidAt ?? item.date,

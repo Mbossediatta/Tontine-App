@@ -1,4 +1,4 @@
-// Agrégateur de paiement simulé (remplace PayDunya / PayTech en mode mock).
+// Agrégateur de paiement simulé (remplace PayTech en mode mock).
 // La confirmation arrive quelques secondes après le retour, comme un webhook.
 import { ServiceError } from '@/lib/errors';
 import { formatAmount, fullName } from '@/lib/format';
@@ -22,7 +22,9 @@ export async function getSimulatedCheckout(paymentId: string): Promise<Simulated
   const payment = db.payments.find((p) => p.id === paymentId);
   if (!payment) throw new ServiceError('Paiement introuvable.', 'not_found');
   const group = requireGroup(requireRound(payment.roundId).groupId);
-  return { paymentId, amount: payment.amount, method: payment.method, groupName: group.name };
+  // Montant débité au membre : la tontine + les frais du service de paiement.
+  const charged = payment.amount + (payment.serviceFeeAmount ?? 0);
+  return { paymentId, amount: charged, method: payment.method, groupName: group.name };
 }
 
 /** Résultat choisi sur la page de simulation ; le statut ne change qu'après le délai. */

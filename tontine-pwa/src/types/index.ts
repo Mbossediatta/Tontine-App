@@ -126,6 +126,11 @@ export interface Payment {
   contributionAmount?: number;
   membershipFeeAmount?: number;
   latePenaltyAmount?: number;
+  /**
+   * Frais du service de paiement (PayTech), payés par le membre en plus de `amount`.
+   * Ils vont au prestataire, jamais dans la cagnotte. Débité : amount + serviceFeeAmount.
+   */
+  serviceFeeAmount?: number;
   method: PaymentMethod;
   providerRef?: string;
   status: PaymentStatus;

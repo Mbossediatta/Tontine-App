@@ -1,4 +1,4 @@
-// Aller-retour vers la page de paiement (PayDunya / PayTech, ou la page simulée).
+// Aller-retour vers la page de paiement (PayTech, ou la page simulée).
 // Ce départ et ce retour rechargent toute l'application : sans cette marque, elle
 // croirait être relancée et redemanderait le PIN (téléphone) ou fermerait la session
 // (ordinateur) au milieu du paiement.

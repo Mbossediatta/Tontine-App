@@ -58,6 +58,7 @@ function receiptData(receipt: PaymentReceipt, user: User): PaymentReceiptData {
     cycle: receipt.cycle,
     roundNumber: receipt.roundNumber,
     amount: payment.amount,
+    serviceFee: payment.serviceFeeAmount,
     method: payment.method,
     providerRef: payment.providerRef,
     paidAt: payment.paidAt ?? new Date().toISOString(),
@@ -194,7 +195,11 @@ export function PaymentResultPage() {
               <Check className="h-8 w-8" strokeWidth={2.5} aria-hidden="true" />
             </StateIcon>
             <h1 className="text-[18px] font-bold">Paiement réussi</h1>
-            <AmountDisplay value={payment.amount} size="xl" className="text-green-700" />
+            <AmountDisplay
+              value={payment.amount + (payment.serviceFeeAmount ?? 0)}
+              size="xl"
+              className="text-green-700"
+            />
           </div>
           <PaymentDetails receipt={receipt} />
           <div className="grid grid-cols-2 gap-2">
@@ -268,7 +273,7 @@ export function PaymentResultPage() {
         <h1 className="text-[18px] font-bold">
           {timedOut ? 'Paiement en cours de vérification' : 'Confirmation en cours'}
         </h1>
-        <AmountDisplay value={payment.amount} size="md" />
+        <AmountDisplay value={payment.amount + (payment.serviceFeeAmount ?? 0)} size="md" />
         <p className="text-[15px] leading-6 text-slate-600">
           {timedOut
             ? 'La confirmation prend plus de temps que prévu. Tu recevras une notification dès qu’elle arrive.'

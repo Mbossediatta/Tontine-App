@@ -84,6 +84,9 @@ function ChoiceRow({
 }
 
 /** Récapitulatif avant paiement, en tableau compact. */
+/** Montant débité : la cotisation (et ses compléments) plus les frais de paiement. */
+const totalToPay = (due: Due) => due.amount + due.overview.myServiceFee;
+
 function Summary({ due, method }: { due: Due; method: Method }) {
   const { overview } = due;
   const contribution = overview.myAmountDue - overview.myPenalty - overview.myMembershipFeeDue;
@@ -97,6 +100,10 @@ function Summary({ due, method }: { due: Due; method: Method }) {
   }
   if (overview.myMembershipFeeDue > 0) {
     rows.push(['Frais d’adhésion', <AmountDisplay key="f" value={overview.myMembershipFeeDue} />]);
+  }
+  if (overview.myServiceFee > 0) {
+    // Frais du service de paiement (PayTech) : payés par le membre, hors cagnotte.
+    rows.push(['Frais de paiement', <AmountDisplay key="s" value={overview.myServiceFee} />]);
   }
   rows.push(['Moyen', METHODS.find((m) => m.id === method)?.name ?? '']);
   return (
@@ -114,7 +121,7 @@ function Summary({ due, method }: { due: Due; method: Method }) {
         <div className="flex min-h-[56px] items-center justify-between gap-4 px-4 py-2">
           <dt className="text-[15px] font-semibold">Total</dt>
           <dd>
-            <AmountDisplay value={due.amount} size="md" />
+            <AmountDisplay value={totalToPay(due)} size="md" />
           </dd>
         </div>
       </dl>
@@ -279,7 +286,8 @@ export default function PayFlowPage() {
             <p className="flex items-start gap-2 text-[13px] leading-5 text-slate-600">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-green-700" aria-hidden="true" />
               Tu vas valider le paiement sur la page sécurisée de{' '}
-              {METHODS.find((m) => m.id === method)?.name}. Aucun frais en plus.
+              {METHODS.find((m) => m.id === method)?.name}. Les frais de paiement sont inclus dans
+              le total.
             </p>
             {error ? (
               <p
@@ -299,7 +307,7 @@ export default function PayFlowPage() {
           <Button block loading={sending} disabled={!online} onClick={() => void pay()}>
             {online ? (
               <>
-                Payer <AmountDisplay value={selected?.amount ?? 0} />
+                Payer <AmountDisplay value={selected ? totalToPay(selected) : 0} />
               </>
             ) : (
               'Connexion requise pour payer'

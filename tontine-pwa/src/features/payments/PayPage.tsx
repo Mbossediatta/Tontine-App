@@ -22,7 +22,7 @@ export default function PayPage() {
     <>
       <PageHeader title="Payer" backTo={`/groupes/${id}`} />
       <AsyncContent query={query}>
-        {({ group, currentRound, myStatus, myAmountDue, myPenalty }) => {
+        {({ group, currentRound, myStatus, myAmountDue, myPenalty, myServiceFee }) => {
           if (!currentRound || currentRound.status !== 'open' || !myStatus || myStatus === 'paid') {
             return (
               <EmptyState
@@ -37,8 +37,8 @@ export default function PayPage() {
             );
           }
           const penalty = myPenalty;
-          // Les frais éventuels de l'agrégateur seront fournis par le backend.
-          const total = myAmountDue;
+          // Frais du service de paiement (PayTech) payés par le membre, en plus.
+          const total = myAmountDue + myServiceFee;
 
           const pay = async () => {
             if (!method) {
@@ -70,6 +70,12 @@ export default function PayPage() {
                     <>
                       {' '}
                       · dont pénalité <AmountText value={penalty} />
+                    </>
+                  ) : null}
+                  {myServiceFee > 0 ? (
+                    <>
+                      {' '}
+                      · dont frais de paiement <AmountText value={myServiceFee} />
                     </>
                   ) : null}
                 </p>

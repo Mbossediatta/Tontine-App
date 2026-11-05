@@ -23,7 +23,7 @@ export function seedSecrets(): PlatformSecrets {
 export function seedSettings(): PlatformSettings {
   return {
     payment: {
-      provider: 'PayDunya',
+      provider: 'PayTech',
       publicKey: 'pk_test_9f2c7a41d8',
       secretKeyHint: null, // calculé à la lecture, à partir de seedSecrets()
       feePercent: 1.5,

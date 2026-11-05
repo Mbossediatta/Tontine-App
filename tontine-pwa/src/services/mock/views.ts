@@ -1,5 +1,5 @@
 // Construction des vues renvoyées par les services simulés.
-import { computePot } from '@/lib/tontine';
+import { computePot, serviceFee } from '@/lib/tontine';
 import type { Group, GroupOverview, MemberView, PublicUser, User } from '@/types';
 import { activeMemberships, canManage, membershipOf } from './access';
 import { db, requireUser } from './db';
@@ -130,6 +130,10 @@ export function buildOverview(group: Group, viewer: User): GroupOverview {
         ? (group.membershipFeeAmount ?? 0)
         : 0,
     myPenalty: penalty,
+    myServiceFee: serviceFee(
+      myStatus && myStatus !== 'paid' && current ? amountDue(group, current, viewer.id) : 0,
+      db.settings.payment.feePercent,
+    ),
     myTurn: myTurnForUser,
     orderIsSet: members.length > 0 && members.every((m) => typeof m.payoutOrder === 'number'),
   };

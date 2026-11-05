@@ -68,7 +68,8 @@ mêmes fonctions, avec les mêmes règles, pour que les écrans n’aient presqu
   s’il est fourni. L’ancienne clé n’est jamais relue. Stockage côté serveur (coffre ou
   table protégée), jamais exposé au navigateur.
 
-### Paiement (PayDunya ou PayTech)
+### Paiement (PayTech)
+Détail du parcours PayTech : `CAHIER-DES-CHARGES-INTEGRATION.md`, section 4.7.
 1. `initiatePayment({ roundId, method })` crée le paiement « en attente » et renvoie
    `{ paymentId, checkoutUrl }`.
 2. Le navigateur est redirigé vers `checkoutUrl`, puis revient sur
@@ -76,6 +77,9 @@ mêmes fonctions, avec les mêmes règles, pour que les écrans n’aient presqu
 3. **Seule la notification du prestataire (webhook, signature vérifiée) passe le paiement
    à « payé »**. Le retour du navigateur ne prouve rien.
 4. L’écran de succès interroge le statut toutes les 3 s (60 s au plus).
+5. **Frais payés par le membre** : `serviceFeeAmount` = arrondi supérieur de
+   `amount × payment.feePercent / 100`, débité en plus de `amount` et jamais compté
+   dans la cagnotte (`myServiceFee` dans la vue du groupe).
 
 ### Journal d’audit et journal de sécurité
 - Audit : chaque action sensible (création/modification de groupe, versement validé,

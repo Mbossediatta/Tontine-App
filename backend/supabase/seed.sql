@@ -1,0 +1,5 @@
+-- Données de démonstration (étape 4 du plan) : mêmes comptes et groupes que la simulation
+-- du frontend (tontine-pwa/src/mocks/), pour basculer VITE_USE_MOCKS de true à false sans
+-- surprise. Rejoué par `npm run reset` après les migrations.
+--
+-- Vide pour l'instant : il sera rempli quand le schéma (étape 2) existera.

@@ -40,3 +40,13 @@ export function computeDueDate(openDate: Date, frequency: Frequency, dueDay: num
 export function maxDueDay(frequency: Frequency): number {
   return frequency === 'monthly' ? 28 : 7;
 }
+
+/**
+ * Frais du service de paiement (PayTech) payés par le membre : pourcentage du montant,
+ * arrondi au franc supérieur. Le pourcentage vient des paramètres de la plateforme
+ * (payment.feePercent) ; c'est le serveur qui fait foi.
+ */
+export function serviceFee(amount: number, feePercent: number): number {
+  if (amount <= 0 || feePercent <= 0) return 0;
+  return Math.ceil((amount * feePercent) / 100);
+}

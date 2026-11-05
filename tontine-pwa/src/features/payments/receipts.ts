@@ -114,7 +114,10 @@ export interface PaymentReceiptData {
   groupName: string;
   cycle: number;
   roundNumber: number;
+  /** Montant destiné à la tontine (cotisation, pénalité, frais d'adhésion). */
   amount: number;
+  /** Frais du service de paiement payés en plus par le membre. */
+  serviceFee?: number;
   method: PaymentMethod;
   providerRef?: string;
   paidAt: string;
@@ -136,8 +139,12 @@ export function buildPaymentReceipt(data: PaymentReceiptData): Uint8Array {
     title: 'Reçu de cotisation',
     number: data.paymentId.toUpperCase(),
     amountLabel: 'Montant payé',
-    amount: data.amount,
+    // Ce que le membre a réellement payé : la tontine et les frais de paiement.
+    amount: data.amount + (data.serviceFee ?? 0),
     rows: [
+      ...(data.serviceFee
+        ? [['Dont frais de paiement', formatAmount(data.serviceFee)] as [string, string]]
+        : []),
       ['Membre', data.payerName],
       ['Téléphone', data.payerPhone ? formatPhone(data.payerPhone) : '—'],
       ['Groupe', data.groupName],

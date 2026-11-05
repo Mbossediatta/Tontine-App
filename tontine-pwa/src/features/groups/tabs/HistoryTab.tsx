@@ -94,6 +94,7 @@ export function HistoryTab({ groupId }: { groupId: string }) {
                             cycle,
                             roundNumber,
                             amount: payment.amount,
+                            serviceFee: payment.serviceFeeAmount,
                             method: payment.method,
                             providerRef: payment.providerRef,
                             paidAt: payment.paidAt ?? '',

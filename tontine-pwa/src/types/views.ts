@@ -65,6 +65,8 @@ export interface GroupOverview {
   myMembershipFeeDue: number;
   /** Pénalité de retard appliquée sur le tour en cours. */
   myPenalty: number;
+  /** Frais de paiement (PayTech) à ajouter à myAmountDue, payés par le membre. */
+  myServiceFee: number;
   /** Mon tour de bénéficiaire, s'il n'est pas encore reversé. */
   myTurn?: Round;
   orderIsSet: boolean;
