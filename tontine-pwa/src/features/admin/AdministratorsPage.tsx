@@ -3,7 +3,6 @@ import { UserPlus } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { OnlineButton } from '@/components/layout/OnlineButton';
 import { AsyncContent, Card, EmptyState } from '@/components/ui';
-import { env } from '@/lib/env';
 import { fullName, plural, searchable } from '@/lib/format';
 import { AccountFormDialog } from './components/AccountFormDialog';
 import { FilterChips, SearchField } from './components/ListToolbar';
@@ -79,9 +78,7 @@ export default function AdministratorsPage() {
               title="Aucun administrateur"
               description={
                 list.length === 0
-                  ? env.realAuth
-                    ? 'Aucun compte administrateur n’est enregistré dans la base.'
-                    : 'Créez le premier administrateur avec son numéro de téléphone.'
+                  ? 'Créez le premier administrateur avec son numéro de téléphone.'
                   : 'Aucun administrateur ne correspond à ces critères.'
               }
               action={
@@ -98,7 +95,7 @@ export default function AdministratorsPage() {
             <Paged items={visible} resetKey={`${status}|${search}`}>
               {(page) => (
                 <Card>
-                  <AdminTable admins={page} readOnly={env.realAuth} />
+                  <AdminTable admins={page} />
                 </Card>
               )}
             </Paged>

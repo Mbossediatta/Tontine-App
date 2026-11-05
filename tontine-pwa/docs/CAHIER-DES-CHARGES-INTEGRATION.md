@@ -60,8 +60,9 @@ interface de service, une implémentation Supabase qui respecte exactement le m�
   avec `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`.
 - Le service du tableau de bord super admin utilise déjà la session authentifiée pour lire les
   indicateurs, alertes, administrateurs, transactions et le journal. Les actions de gestion
-  non encore raccordées restent désactivées en mode Supabase ; l’ajout d’administrateur passe
-  par l’Edge Function `admin-create`.
+  des administrateurs (modifier, suspendre, réactiver, retirer, réattribuer les groupes) passent
+  par les fonctions SQL `admin_*` ; l’ajout d’administrateur passe par l’Edge Function
+  `admin-create`.
 
 ### 2.2 Ce que chaque implémentation doit respecter
 

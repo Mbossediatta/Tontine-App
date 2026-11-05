@@ -10,7 +10,6 @@ import { CollectionChart } from '../components/CollectionChart';
 import { DashboardHeader } from '../components/DashboardHeader';
 import { StatCard } from '../components/StatCard';
 import { useSuperDashboard } from '../queries';
-import { env } from '@/lib/env';
 import { AdminsCard } from './AdminsCard';
 import { AlertsCard } from './AlertsCard';
 import { AuditCard } from './AuditCard';
@@ -103,7 +102,7 @@ export function SuperAdminDashboard() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,3fr)] lg:items-start">
               {/* Alertes d'abord dans le code : sur téléphone, elles passent avant le graphique. */}
               <div className="lg:col-start-2 lg:row-start-1">
-                <AlertsCard alerts={data.alerts} linksEnabled={!env.realAuth} />
+                <AlertsCard alerts={data.alerts} />
               </div>
               <div className="lg:col-start-1 lg:row-start-1">
                 <CollectionChart data={data.monthly} />
@@ -111,7 +110,7 @@ export function SuperAdminDashboard() {
             </div>
 
             {/* 3. Administrateurs */}
-            <AdminsCard admins={data.admins} readOnly={env.realAuth} />
+            <AdminsCard admins={data.admins} />
 
             {/* 4. Transactions et journal d'audit */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
