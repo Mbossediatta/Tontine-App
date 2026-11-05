@@ -49,6 +49,38 @@ backend/
     tests/database/       tests pgTAP
 ```
 
+## Schéma (étape 2)
+
+Trois migrations dans `supabase/migrations/` :
+
+| Fichier | Contenu |
+|---|---|
+| `…130000_schema_comptes_groupes.sql` | `profiles`, `communities`, `community_admins`, `groups`, `memberships` (une ligne par part ; une demande d’adhésion = ligne `pending`) |
+| `…130100_schema_tours_paiements.sql` | `rounds`, `round_beneficiaries`, `payments` (avec `service_fee_amount`), `penalties`, `platform_earnings`, `admin_compensations`, `swap_requests` |
+| `…130200_schema_backoffice.sql` | `notifications`, `push_subscriptions`, `audit_log` et `security_events` (ajout seul), `disputes`, `dispute_events`, `provider_ledger`, `sms_log`, `platform_settings` (une ligne, modèles en `fr` et `wo`) ; schéma `private` : `auth_otps`, `auth_pins` |
+
+- RLS est activé sur toutes les tables (règles : étape 3 ci-dessous).
+- Le schéma `private` n’est pas exposé par l’API (accès `service_role` seulement).
+- Les modèles de SMS en wolof sont un premier jet, à faire relire avant tout envoi réel.
+
+## Règles d’accès (étape 3)
+
+Migration `…140000_rls.sql`, testée par `supabase/tests/database/rls.test.sql` (35 tests).
+
+- **Clé publique (`anon`)** : aucune table. Tout ce qui précède la connexion passe par les
+  Edge Functions.
+- **Compte connecté** : lecture de ce qui le concerne ; écriture directe seulement de son
+  profil (prénom, nom, photo, numéro de versement, langue, préférences), de « lu » sur ses
+  notifications et de ses abonnements push. Le reste passe par des RPC / Edge Functions.
+- **Compte suspendu ou supprimé** : ne voit plus rien.
+- **Gérer un groupe** = super admin, admin responsable (`admin_id`), propriétaire ou co-admin
+  actif. Être admin d’une communauté ne donne aucun droit sur ses groupes.
+- **Numéros** : visibles seulement par soi-même, les gestionnaires du groupe et le super
+  admin. Les autres membres ont nom et photo via `public_profiles(ids)`.
+- **Paramètres** : complets pour le super admin ; `public_settings()` donne aux autres les
+  frais, limites et textes, sans aucun indice de clé.
+- Journal de sécurité, revenus, relevé PayTech, SMS : super admin seulement.
+
 ## Choix de configuration
 
 - **Pas d’inscription publique** (`enable_signup = false`) : les comptes sont créés par nos
@@ -68,8 +100,8 @@ backend/
 | Étape | Contenu | État |
 |---|---|---|
 | 1 | Initialisation : projet, structure, secrets, README | ✅ |
-| 2 | Schéma : types, tables, index, triggers ; types TypeScript générés | à faire |
-| 3 | RLS : fonctions d’aide, politiques, vues, tests pgTAP | à faire |
+| 2 | Schéma : types, tables, index, triggers ; types TypeScript générés | ✅ |
+| 3 | RLS : fonctions d’aide, politiques, vues, tests pgTAP | ✅ |
 | 4 | Connexion : code SMS (Orange) et PIN, profil, seed | à faire |
 | 5 | Groupes, communautés, adhésions, parts, tirage et ordre | à faire |
 | 6 | Cycle : démarrage, tours, verrouillage, échanges de tour | à faire |
