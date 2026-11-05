@@ -223,7 +223,10 @@ web3 = 30
 # Calebasse : l'e-mail n'est qu'un identifiant interne (<uuid>@users.calebasse.invalid) qui
 # permet à auth-pin-login d'ouvrir la session avec le mot de passe interne. Aucun e-mail
 # n'est jamais envoyé ; le vrai numéro de téléphone est dans public.profiles.
-enable_signup = false
+# Doit rester à true : à false, Supabase désactive toute connexion par e-mail. Les
+# inscriptions publiques restent bloquées par [auth] enable_signup = false
+# (vérifié par scripts/test-auth.mjs).
+enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
@@ -419,3 +422,31 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# --- Edge Functions de connexion (section 4.1 du cahier) ---
+# verify_jwt = false : elles servent avant la connexion. Celles qui exigent une session
+# (auth-pin-change, admin-pin-reset, auth-pin-set sans jeton de preuve) la vérifient
+# elles-mêmes avec auth.getUser.
+[functions.auth-login-method]
+verify_jwt = false
+
+[functions.auth-otp-send]
+verify_jwt = false
+
+[functions.auth-otp-verify]
+verify_jwt = false
+
+[functions.auth-profile-create]
+verify_jwt = false
+
+[functions.auth-pin-set]
+verify_jwt = false
+
+[functions.auth-pin-login]
+verify_jwt = false
+
+[functions.auth-pin-change]
+verify_jwt = false
+
+[functions.admin-pin-reset]
+verify_jwt = false

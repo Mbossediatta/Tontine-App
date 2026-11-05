@@ -16,7 +16,7 @@ const RESEND_DELAY = 45;
 // Code affiché à l'écran : mode démonstration seulement. La condition porte sur
 // import.meta.env pour être résolue à la construction : absent du build de production.
 const DemoOtpHint =
-  import.meta.env.VITE_USE_MOCKS === 'true'
+  import.meta.env.VITE_USE_MOCKS === 'true' && import.meta.env.VITE_AUTH_MODE !== 'supabase'
     ? lazy(() => import('./DemoOtpHint').then((m) => ({ default: m.DemoOtpHint })))
     : null;
 

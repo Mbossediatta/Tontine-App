@@ -12,7 +12,8 @@
     "functions": "supabase functions serve --env-file supabase/functions/.env",
     "types": "supabase gen types typescript --local > ../tontine-pwa/src/types/database.ts && cd ../tontine-pwa && npx prettier --write src/types/database.ts",
     "test:db": "supabase test db",
-    "lint:db": "supabase db lint"
+    "lint:db": "supabase db lint",
+    "test:auth": "node scripts/test-auth.mjs"
   },
   "devDependencies": {
     "supabase": "^2.122.1"

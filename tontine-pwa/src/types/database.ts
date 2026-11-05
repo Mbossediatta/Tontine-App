@@ -1129,6 +1129,28 @@ export type Database = {
         }[];
       };
       public_settings: { Args: Record<PropertyKey, never>; Returns: Json };
+      svc_otp_check: { Args: { p_code_hash: string; p_phone: string }; Returns: string };
+      svc_otp_issue: {
+        Args: { p_code_hash: string; p_ip: unknown; p_phone: string; p_validity_minutes: number };
+        Returns: string;
+      };
+      svc_pin_begin_attempt: {
+        Args: { p_max_attempts: number; p_user: string };
+        Returns: {
+          attempt: number;
+          pin_hash: string;
+        }[];
+      };
+      svc_pin_finish_attempt: {
+        Args: { p_max_attempts: number; p_success: boolean; p_user: string };
+        Returns: number;
+      };
+      svc_pin_require_reset: { Args: { p_user: string }; Returns: undefined };
+      svc_pin_save: { Args: { p_pin_hash: string; p_user: string }; Returns: undefined };
+      svc_pin_usable: { Args: { p_user: string }; Returns: boolean };
+      svc_purge_auth_otps: { Args: Record<PropertyKey, never>; Returns: number };
+      svc_recent_pin_failures: { Args: { p_ip: unknown }; Returns: number };
+      svc_revoke_sessions: { Args: { p_user: string }; Returns: undefined };
     };
     Enums: {
       app_language: 'fr' | 'wo';

@@ -15,7 +15,7 @@ import { redirectTarget, type RedirectState } from './redirect';
 // import.meta.env pour être résolue à la construction : en production, ce code n'est
 // même pas inclus dans l'application.
 const DemoAccountPicker =
-  import.meta.env.VITE_USE_MOCKS === 'true'
+  import.meta.env.VITE_USE_MOCKS === 'true' && import.meta.env.VITE_AUTH_MODE !== 'supabase'
     ? lazy(() => import('./DemoAccountPicker').then((m) => ({ default: m.DemoAccountPicker })))
     : null;
 

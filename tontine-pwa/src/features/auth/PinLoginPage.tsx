@@ -162,7 +162,7 @@ export default function PinLoginPage() {
               invalid={Boolean(error) && pin.length === 0}
             />
             <AuthError>{error}</AuthError>
-            {env.useMocks ? (
+            {env.useMocks && !env.realAuth ? (
               <p className="text-[13px] text-auth-muted">
                 Démonstration : PIN des comptes de démonstration {DEMO_PIN}.
               </p>

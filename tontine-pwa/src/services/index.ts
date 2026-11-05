@@ -16,7 +16,7 @@ import type { RoundService } from './round.service';
 import type { SettingsService } from './settings.service';
 import type { SwapService } from './swap.service';
 import { mockAdminService } from './mock/admin.mock';
-import { mockAuthService } from './mock/auth.mock';
+import { mockAuthService, mockSessionBridge } from './mock/auth.mock';
 import { mockCommunicationService } from './mock/communication.mock';
 import { mockDisputeService } from './mock/dispute.mock';
 import { mockFinanceService } from './mock/finance.mock';
@@ -29,8 +29,14 @@ import { mockReportService } from './mock/report.mock';
 import { mockRoundService } from './mock/round.mock';
 import { mockSettingsService } from './mock/settings.mock';
 import { mockSwapService } from './mock/swap.mock';
+import { createSupabaseAuthService } from './supabase/auth.supabase';
 
-export const authService: AuthService = mockAuthService;
+// VITE_AUTH_MODE=supabase : connexion réelle (code SMS et PIN par le backend), données
+// encore simulées en attendant les autres services.
+export const authService: AuthService =
+  import.meta.env.VITE_AUTH_MODE === 'supabase'
+    ? createSupabaseAuthService(mockSessionBridge)
+    : mockAuthService;
 export const communicationService: CommunicationService = mockCommunicationService;
 export const disputeService: DisputeService = mockDisputeService;
 export const financeService: FinanceService = mockFinanceService;

@@ -60,6 +60,12 @@ insert into public.notifications (id, user_id, type, title, body) values
 insert into public.security_events (kind, severity, detail) values
   ('pin_failed', 'warning', 'PIN incorrect (1er essai)');
 
+-- Totaux réels (la base contient aussi le seed) : le super admin doit tout voir.
+create temporary table expected as
+select (select count(*) from public.profiles)::int as profiles,
+       (select count(*) from public.security_events)::int as security_events;
+grant select on expected to authenticated;
+
 -- ---------------------------------------------------------------------------
 -- Visiteur non connecté (clé publique)
 -- ---------------------------------------------------------------------------
@@ -141,8 +147,8 @@ select is((select count(*) from public.groups)::int, 0, 'Z suspendu : ne voit pl
 -- Super admin
 -- ---------------------------------------------------------------------------
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000001"}', true);
-select is((select count(*) from public.profiles)::int, 8, 'S : voit tous les profils');
-select is((select count(*) from public.security_events)::int, 1, 'S : voit le journal de sécurité');
+select is((select count(*) from public.profiles)::int, (select profiles from expected), 'S : voit tous les profils');
+select is((select count(*) from public.security_events)::int, (select security_events from expected), 'S : voit tout le journal de sécurité');
 
 -- Vérification finale, sans RLS : M1 n'a pas pu modifier le profil de M2.
 reset role;

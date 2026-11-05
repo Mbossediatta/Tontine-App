@@ -26,7 +26,9 @@ npm start                         # base locale + Studio (http://localhost:54323
 npm run reset                     # rejoue les migrations puis seed.sql
 npm run functions                 # Edge Functions en local
 npm run types                     # régénère ../tontine-pwa/src/types/database.ts
-npm run test:db                   # tests pgTAP
+npm run test:db                   # tests pgTAP (règles d’accès)
+npm run test:auth                 # parcours de connexion de bout en bout (fonctions lancées
+                                  # avec SMS_MODE=console, sinon de vrais SMS partent)
 npm stop
 ```
 
@@ -81,6 +83,40 @@ Migration `…140000_rls.sql`, testée par `supabase/tests/database/rls.test.sql
   frais, limites et textes, sans aucun indice de clé.
 - Journal de sécurité, revenus, relevé PayTech, SMS : super admin seulement.
 
+## Connexion (étape 4)
+
+Migration `…150000_connexion.sql` (opérations atomiques, appelables par `service_role`
+seulement) et 8 Edge Functions :
+
+| Fonction | Entrée → sortie |
+|---|---|
+| `auth-login-method` | `{ phone }` → `{ method: 'pin' \| 'otp' }` |
+| `auth-otp-send` | `{ phone }` → `{ ok }` (5 codes par numéro et par heure, 20 par adresse IP) |
+| `auth-otp-verify` | `{ phone, code }` → `{ isNewAccount, firstName, hasPin, proofToken }` |
+| `auth-profile-create` | `{ proofToken, firstName, lastName }` → `{ ok }` |
+| `auth-pin-set` | `{ proofToken, pin }` (ou session sans PIN) → `{ session, user }` |
+| `auth-pin-login` | `{ phone, pin }` → `{ session, user }` |
+| `auth-pin-change` | session + `{ currentPin, newPin }` → `{ ok }` |
+| `admin-pin-reset` | session super admin + `{ userId }` → `{ ok }` (ferme ses sessions) |
+
+Erreurs : `{ error: { code, message } }`, avec les codes du frontend (`invalid`, `conflict`…)
+et un message en français à afficher tel quel. Côté frontend, `verifyOtp` garde le
+`proofToken` en mémoire pour `completeProfile` et `setPin` ; `session` va dans
+`supabase.auth.setSession`.
+
+- Codes SMS : empreinte HMAC seulement, 10 minutes, 5 essais, usage unique.
+- PIN : Argon2id sur un HMAC du PIN avec le poivre ; l’essai est compté **avant** la
+  vérification (impossible de tester plus de PIN que permis, même en parallèle) ; au-delà de
+  `security.maxPinAttempts`, seul un code SMS permet d’en créer un nouveau.
+- La session ne s’ouvre qu’après le PIN ; le PIN n’est jamais un mot de passe Supabase.
+- `[auth.email] enable_signup` doit rester à `true` (sinon la connexion interne par e-mail
+  est coupée) ; les inscriptions publiques restent bloquées par `[auth] enable_signup = false`.
+
+**Essayer en local** : dans `supabase/functions/.env`, `SMS_MODE=console` écrit les SMS dans
+les journaux de `npm run functions` au lieu de les envoyer (refusé hors de la machine locale).
+Comptes du seed : ceux de la simulation (super admin 770100101, admin 771234567, membre
+772345678…), **sans PIN** : numéro → code lu dans les journaux → création du PIN.
+
 ## Choix de configuration
 
 - **Pas d’inscription publique** (`enable_signup = false`) : les comptes sont créés par nos
@@ -102,7 +138,7 @@ Migration `…140000_rls.sql`, testée par `supabase/tests/database/rls.test.sql
 | 1 | Initialisation : projet, structure, secrets, README | ✅ |
 | 2 | Schéma : types, tables, index, triggers ; types TypeScript générés | ✅ |
 | 3 | RLS : fonctions d’aide, politiques, vues, tests pgTAP | ✅ |
-| 4 | Connexion : code SMS (Orange) et PIN, profil, seed | à faire |
+| 4 | Connexion : code SMS (Orange) et PIN, profil, seed | ✅ côté serveur (branchement du frontend : avec les autres services) |
 | 5 | Groupes, communautés, adhésions, parts, tirage et ordre | à faire |
 | 6 | Cycle : démarrage, tours, verrouillage, échanges de tour | à faire |
 | 7 | Notifications : `notify`, `push-send`, abonnements | à faire |

@@ -1,6 +1,7 @@
 import { ServiceError } from '@/lib/errors';
 import type { User } from '@/types';
 import type { AuthService } from '../auth.service';
+import type { SessionBridge } from '../supabase/auth.supabase';
 import { recordAudit } from './audit';
 import {
   currentUser,
@@ -274,3 +275,38 @@ export async function demoLogin(userId: string): Promise<void> {
   setPendingPhone(null);
   setSessionUserId(userId);
 }
+
+/**
+ * Connexion réelle (VITE_AUTH_MODE=supabase) avec des données encore simulées : le compte
+ * connecté est rattaché au compte de démonstration qui a le même numéro, ou ajouté à la
+ * simulation s'il n'y en a pas (ex. un nouveau compte, ou le super admin réel).
+ */
+export const mockSessionBridge: SessionBridge = {
+  link(user) {
+    const existing =
+      db.users.find((item) => item.id === user.id) ??
+      db.users.find((item) => item.phone === user.phone && !item.deletedAt);
+    const linked = existing ?? { ...user };
+    if (!existing) db.users.push(linked);
+    setPendingPhone(null);
+    setSessionUserId(linked.id);
+    persist();
+    return { ...linked };
+  },
+  update(user) {
+    const linked = currentUser();
+    Object.assign(linked, {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatarUrl: user.avatarUrl,
+      payoutPhone: user.payoutPhone,
+      payoutMethod: user.payoutMethod,
+    });
+    persist();
+    return { ...linked };
+  },
+  unlink() {
+    setSessionUserId(null);
+    setPendingPhone(null);
+  },
+};
