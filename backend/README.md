@@ -74,6 +74,7 @@ Les migrations versionnées dans `supabase/migrations/` :
 | `…280000_echanges.sql` | Échange de tour entre membres (exception voulue au verrouillage de l’ordre) : parts échangées sur `swap_requests`, `swap_request` (tours à venir, une demande en cours par part), `swap_respond` (accord du membre), `swap_decide` (admin : bénéficiaires et rangs échangés, audit `swap_approved`), `swap_cancel` |
 | `…290000_notifications_push.sql` | Notifications push : chaque notification créée part vers les téléphones abonnés du membre (déclencheur `notifications_push` → `pg_net` → Edge Function `push-send`, Web Push, préférences du membre respectées) |
 | `…300000_calendrier_confidentiel.sql` | Calendrier confidentiel : un membre ne lit que ses propres lignes de `round_beneficiaries` et plus le rang (`payout_order`) des autres ; `group_order_view` (son rang, tous pour un admin du groupe, nombre de bénéficiaires par tour) ; `swap_request` sur un tour anonyme (bénéficiaire retrouvé par le serveur), réponses sans nom pour le demandeur |
+| `…310000_statuts_confidentiels.sql` | Statuts de paiement confidentiels : `group_round_statuses` ne donne à un membre que son propre statut (tous pour un admin du groupe) ; le nombre de parts payées reste visible |
 | `…200000_rythme_journalier.sql`, `…200100_duree_tour.sql` | Rythme de cotisation `daily`/`weekly`/`biweekly`/`monthly` et `turn_length` (durée d’un tour en périodes du rythme, choisie par l’admin ; un an au plus, deux ans en mensuel) |
 
 - RLS est activé sur toutes les tables (règles : étape 3 ci-dessous).

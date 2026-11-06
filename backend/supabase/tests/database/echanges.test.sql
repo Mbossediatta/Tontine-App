@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(25);
+select plan(27);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000e2', 'e-admin@users.calebasse.invalid'),
@@ -140,6 +140,20 @@ select is(
   (select body from public.notifications
    where user_id = '00000000-0000-0000-0000-0000000000e3' and type = 'swap_rejected'),
   'Le membre du tour 4 a refusé l’échange de tour.', 'the requester does not learn the name');
+
+-- Statuts de paiement confidentiels : Awa ne reçoit que le sien, l'admin ceux de tous.
+set local role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000e3');
+select is(
+  (select count(*)::int from jsonb_object_keys(
+     public.group_round_statuses(array[pg_temp.id('g')]) -> pg_temp.id('r1')::text -> 'statuses')),
+  1, 'a member only gets their own payment status');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000e2');
+select is(
+  (select count(*)::int from jsonb_object_keys(
+     public.group_round_statuses(array[pg_temp.id('g')]) -> pg_temp.id('r1')::text -> 'statuses')),
+  4, 'the group admin gets every status');
+reset role;
 
 select * from finish();
 rollback;

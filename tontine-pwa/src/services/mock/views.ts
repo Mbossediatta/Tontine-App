@@ -139,8 +139,9 @@ export function buildOverview(group: Group, viewer: User): GroupOverview {
 
 export function buildMemberViews(group: Group, viewer: User): MemberView[] {
   const manager = canManage(group, viewer);
-  // Règle du groupe : statuts réservés aux administrateurs, ou visibles de tous les membres.
-  const showStatuses = manager || group.memberStatusVisibility !== 'admins';
+  // Confidentiel : un membre ne voit que son propre statut de paiement ; les
+  // administrateurs du groupe voient celui de tous.
+  const showStatus = (userId: string) => manager || userId === viewer.id;
   const current = currentRoundOf(group.id);
   const memberships = db.memberships
     .filter(
@@ -168,7 +169,7 @@ export function buildMemberViews(group: Group, viewer: User): MemberView[] {
     shareNumber: shareNumbers.get(membership.id) ?? 1,
     shareCount: shareCounts.get(membership.userId) ?? 1,
     currentStatus:
-      showStatuses && current && membership.status === 'active'
+      showStatus(membership.userId) && current && membership.status === 'active'
         ? memberStatus(current, membership.userId)
         : undefined,
   }));

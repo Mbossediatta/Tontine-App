@@ -158,7 +158,8 @@ function MemberList({ members, userId }: { members: MemberView[]; userId: string
   const active = members.filter((m) => m.membership.status === 'active');
   // Une personne à plusieurs parts n'apparaît qu'une fois.
   const people = active.filter((m) => m.shareNumber === 1);
-  const statusesHidden = people.every((m) => m.currentStatus === undefined);
+  // Statuts confidentiels : seul le mien est transmis (sauf pour les administrateurs).
+  const othersHidden = people.some((m) => m.user.id !== userId && m.currentStatus === undefined);
   return (
     <Card>
       <ul className="divide-y divide-slate-200">
@@ -198,9 +199,9 @@ function MemberList({ members, userId }: { members: MemberView[]; userId: string
           );
         })}
       </ul>
-      {statusesHidden ? (
+      {othersHidden ? (
         <p className="border-t border-slate-200 px-4 py-3 text-[13px] text-slate-600">
-          Les statuts de paiement ne sont pas affichés pour ce groupe.
+          Par confidentialité, seul ton statut de paiement est affiché.
         </p>
       ) : null}
     </Card>
