@@ -1,5 +1,5 @@
 import { lazy, type ReactNode } from 'react';
-import { createBrowserRouter, type RouteObject } from 'react-router-dom';
+import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { RequireAuth } from '@/features/auth/RequireAuth';
 import { RequireRole } from '@/features/auth/RequireRole';
@@ -82,6 +82,13 @@ function MemberPage({ member, other }: { member: ReactNode; other: ReactNode }) 
   return user.globalRole === 'user' ? member : other;
 }
 
+/** Accueil : le super admin n'a pas d'espace membre, il arrive sur son tableau de bord. */
+function HomeRoute() {
+  const user = useCurrentUser();
+  if (user.globalRole === 'super_admin') return <Navigate to="/admin" replace />;
+  return <MemberPage member={<MemberHomePage />} other={<HomePage />} />;
+}
+
 const mockOnly: RouteObject[] = env.useMocks ? [{ path: '/demo-ui', element: <DemoUiPage /> }] : [];
 
 const mockOnlyAuthenticated: RouteObject[] = env.useMocks
@@ -106,7 +113,7 @@ export const routes: RouteObject[] = [
         children: [
           {
             path: '/',
-            element: <MemberPage member={<MemberHomePage />} other={<HomePage />} />,
+            element: <HomeRoute />,
           },
           {
             path: '/groupes',

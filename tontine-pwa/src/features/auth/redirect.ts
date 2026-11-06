@@ -33,5 +33,8 @@ export function roleHome(user: User | null): string {
  */
 export function redirectTarget(location: Location, user: User | null = null): string {
   const from = (location.state as RedirectState | null)?.from;
-  return from && from.startsWith('/') && !from.startsWith('//') ? from : roleHome(user);
+  // L'adresse du site seule (« / ») n'est pas un choix : on ouvre l'accueil du rôle.
+  return from && from !== '/' && from.startsWith('/') && !from.startsWith('//')
+    ? from
+    : roleHome(user);
 }
