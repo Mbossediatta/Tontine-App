@@ -1,4 +1,5 @@
 import { ServiceError } from '@/lib/errors';
+import { formatAmount, fullName } from '@/lib/format';
 import type { RoundService } from '../round.service';
 import {
   activeMemberships,
@@ -9,10 +10,18 @@ import {
   requireGroup,
   requireRound,
 } from './access';
-import { currentUser, delay, persist, requireOnline, requireUser } from './db';
+import { currentUser, delay, nowIso, persist, requireOnline, requireUser } from './db';
 import { recordAudit } from './audit';
 import { assertGroupOpen } from './platform';
-import { closeRound, cycleRounds, lateAfter, memberStatus, notify, paidCount } from './lifecycle';
+import {
+  closeRound,
+  cycleRounds,
+  lateAfter,
+  memberStatus,
+  notify,
+  notifyManagers,
+  paidCount,
+} from './lifecycle';
 import { buildMemberViews, toPublicUser } from './views';
 
 function assertOrderEditable(groupId: string) {
@@ -126,6 +135,66 @@ export const mockRoundService: RoundService = {
       const membership = members.find((m) => m.id === id);
       if (membership) membership.payoutOrder = index + 1;
     });
+    persist();
+  },
+
+  async markPayoutSent(roundId, userId, method, ref) {
+    requireOnline();
+    await delay();
+    const round = requireRound(roundId);
+    const group = requireGroup(round.groupId);
+    const actor = currentUser();
+    assertCanManage(group, actor);
+    if (round.status !== 'paid_out' || round.recipientType === 'platform') {
+      throw new ServiceError('Validez d’abord le versement de la cagnotte.');
+    }
+    const reference = ref.trim();
+    if (reference.length < 3 || reference.length > 60) {
+      throw new ServiceError('Indiquez la référence de la transaction (Wave ou Orange Money).');
+    }
+    const amount = round.beneficiaryAmounts?.[userId];
+    if (amount === undefined)
+      throw new ServiceError('Cette personne n’est pas bénéficiaire de ce tour.');
+    if (round.transfers?.[userId]) {
+      throw new ServiceError('L’envoi de cette cagnotte est déjà enregistré.', 'conflict');
+    }
+    round.transfers = {
+      ...round.transfers,
+      [userId]: { sentAt: nowIso(), method, ref: reference },
+    };
+    const via = method === 'wave' ? 'Wave' : 'Orange Money';
+    notify(
+      userId,
+      'payout',
+      'Cagnotte envoyée',
+      `${group.name} : ${formatAmount(amount)} vous ont été envoyés par ${via} (réf. ${reference}). Confirmez la réception dans l’application.`,
+      `/groupes/${group.id}`,
+    );
+    recordAudit(
+      actor,
+      'payout_sent',
+      `a envoyé ${formatAmount(amount)} à ${fullName(requireUser(userId))} par ${via} (réf. ${reference}) — tour ${round.number} de « ${group.name} »`,
+      group.id,
+    );
+    persist();
+  },
+
+  async confirmPayoutReceived(roundId) {
+    requireOnline();
+    await delay();
+    const round = requireRound(roundId);
+    const user = currentUser();
+    const transfer = round.transfers?.[user.id];
+    if (!transfer || transfer.receivedAt)
+      throw new ServiceError('Aucun envoi à confirmer pour ce tour.');
+    transfer.receivedAt = nowIso();
+    const group = requireGroup(round.groupId);
+    notifyManagers(
+      group.id,
+      'payout',
+      'Cagnotte reçue',
+      `${group.name} : ${fullName(user)} confirme avoir reçu sa cagnotte du tour ${round.number}.`,
+    );
     persist();
   },
 

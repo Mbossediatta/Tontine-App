@@ -146,6 +146,21 @@ export function createSupabaseRoundService(): RoundService {
       requireOnline();
       await rpc('round_payout', { p_round: roundId });
     },
+
+    async markPayoutSent(roundId, userId, method, ref) {
+      requireOnline();
+      await rpc('payout_mark_sent', {
+        p_round: roundId,
+        p_user: userId,
+        p_method: method,
+        p_ref: ref,
+      });
+    },
+
+    async confirmPayoutReceived(roundId) {
+      requireOnline();
+      await rpc('payout_confirm_received', { p_round: roundId });
+    },
   };
 }
 

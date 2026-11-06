@@ -119,8 +119,18 @@ export interface Round {
   /** Versement bloqué par le super administrateur (en cas de doute) : la date, et pourquoi. */
   payoutBlockedAt?: string;
   payoutBlockReason?: string;
+  /** Envoi réel de la cagnotte à chaque bénéficiaire (clé : id de la personne). */
+  transfers?: Record<string, PayoutTransfer>;
   /** Cycle auquel appartient le tour. */
   cycle: number;
+}
+
+/** Argent de la cagnotte envoyé par l'admin (Wave, Orange Money) et réception confirmée. */
+export interface PayoutTransfer {
+  sentAt: string;
+  method: PayoutMethod;
+  ref: string;
+  receivedAt?: string;
 }
 
 export interface Payment {
@@ -259,6 +269,7 @@ export type AuditAction =
   | 'community_updated'
   | 'group_community_changed'
   | 'reminder_sent'
+  | 'payout_sent'
   | 'swap_approved';
 
 /** Entrée du journal d'audit : qui a fait quoi, quand, et sur quel groupe. */

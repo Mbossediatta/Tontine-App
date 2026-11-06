@@ -27,6 +27,7 @@ export const auditActions: Record<AuditAction, { label: string; category: AuditC
   community_updated: { label: 'Communauté modifiée', category: 'groups' },
   swap_approved: { label: 'Échange de tour validé', category: 'groups' },
   payout_validated: { label: 'Versement validé', category: 'money' },
+  payout_sent: { label: 'Cagnotte envoyée', category: 'money' },
   payout_blocked: { label: 'Versement bloqué', category: 'money' },
   payout_unblocked: { label: 'Versement débloqué', category: 'money' },
   cash_recorded: { label: 'Paiement en espèces enregistré', category: 'money' },

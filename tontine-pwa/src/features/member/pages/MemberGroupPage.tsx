@@ -8,6 +8,7 @@ import { useCurrentUser } from '@/hooks/useAuth';
 import { cn } from '@/lib/cn';
 import { contributionLabel, frequencyLabel, fullName, initials, plural } from '@/lib/format';
 import type { GroupOverview, MemberView, RoundView } from '@/types';
+import { PayoutReceiptCard } from '../components/PayoutReceiptCard';
 import { duesOf, monthName, shortDate } from '../dues';
 import { AmountDisplay } from '../ui/AmountDisplay';
 import { Button } from '../ui/Button';
@@ -293,6 +294,17 @@ export default function MemberGroupPage() {
           </Card>
         );
       })()}
+
+      {(rounds.data ?? [])
+        .filter(
+          (view) =>
+            view.round.status === 'paid_out' &&
+            view.round.recipientType !== 'platform' &&
+            view.beneficiaries.some((person) => person.id === user.id),
+        )
+        .map((view) => (
+          <PayoutReceiptCard key={view.round.id} view={view} userId={user.id} groupId={id} />
+        ))}
 
       <section aria-labelledby="facts">
         <SectionHeader id="facts" title="Le groupe" />

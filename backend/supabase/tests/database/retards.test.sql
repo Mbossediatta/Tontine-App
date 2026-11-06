@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(26);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000a2', 'r-admin@users.calebasse.invalid'),
@@ -117,6 +117,29 @@ select throws_ok($$select public.debt_record_payment(pg_temp.id('d'))$$,
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000a4');
 select throws_ok($$select public.debt_record_payment(pg_temp.id('d'))$$,
   '42501', null, 'a member cannot settle a debt');
+
+-- Versement réel de la cagnotte du tour 2 (Awa) : envoi noté par l'admin, réception confirmée.
+select throws_ok(
+  $$select public.payout_mark_sent(pg_temp.id('r2'), '00000000-0000-0000-0000-0000000000a3', 'wave', 'TX-123')$$,
+  '42501', null, 'a member cannot record a transfer');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a2');
+select lives_ok(
+  $$select public.payout_mark_sent(pg_temp.id('r2'), '00000000-0000-0000-0000-0000000000a3', 'wave', 'TX-123')$$,
+  'the admin records the Wave transfer and its reference');
+select throws_ok(
+  $$select public.payout_mark_sent(pg_temp.id('r2'), '00000000-0000-0000-0000-0000000000a3', 'wave', 'TX-124')$$,
+  '23505', null, 'a transfer is recorded once');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a4');
+select throws_ok($$select public.payout_confirm_received(pg_temp.id('r2'))$$,
+  '22023', null, 'only the beneficiary confirms');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a3');
+select lives_ok($$select public.payout_confirm_received(pg_temp.id('r2'))$$,
+  'the beneficiary confirms reception');
+reset role;
+select is(
+  (select sent_ref || '/' || (received_at is not null)::text from public.round_beneficiaries
+   where round_id = pg_temp.id('r2')),
+  'TX-123/true', 'the transfer is tracked until reception');
 
 select * from finish();
 rollback;

@@ -7,6 +7,7 @@ import { OnlineButton } from '@/components/layout/OnlineButton';
 import { AsyncContent, Card, CardTitle } from '@/components/ui';
 import { useRounds, useSwaps } from '@/features/groups/queries';
 import { SwapList } from '@/features/groups/SwapList';
+import { TransfersCard } from './TransfersCard';
 import { useCurrentUser } from '@/hooks/useAuth';
 import type { GroupOverview, RoundView } from '@/types';
 import { OrderSection } from './OrderSection';
@@ -65,6 +66,7 @@ export function RoundsTab({ overview }: { overview: GroupOverview }) {
                 ) : null}
               </Card>
             ) : null}
+            <TransfersCard rounds={rounds} />
             <SwapList swaps={swaps.data ?? []} myUserId={user.id} mode="admin" />
             <RoundTimeline rounds={rounds} myUserId={user.id} />
             <PayoutDialog round={payoutRound} onClose={() => setPayoutRound(null)} />

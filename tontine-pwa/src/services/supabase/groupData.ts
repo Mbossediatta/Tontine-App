@@ -14,6 +14,8 @@ import type {
   PublicUser,
   Round,
   TransactionRow,
+  PayoutMethod,
+  PayoutTransfer,
 } from '@/types';
 import { rows, rpc, sessionUserId } from './rpc';
 
@@ -70,7 +72,14 @@ interface RoundRow {
   payout_validated_by: string | null;
   payout_blocked_at: string | null;
   payout_block_reason: string | null;
-  round_beneficiaries: { membership_id: string; amount: number }[];
+  round_beneficiaries: {
+    membership_id: string;
+    amount: number;
+    sent_at: string | null;
+    sent_method: PayoutMethod | null;
+    sent_ref: string | null;
+    received_at: string | null;
+  }[];
 }
 
 interface PaymentRow {
@@ -155,9 +164,19 @@ function toRound(row: RoundRow, memberships: Membership[]): Round {
   const first = memberships.find((item) => item.id === beneficiaryIds[0]);
   // Montant reçu par personne (somme de ses parts bénéficiaires), comme dans la simulation.
   const amounts = new Map<string, number>();
+  const transfers: Record<string, PayoutTransfer> = {};
   for (const item of row.round_beneficiaries) {
     const userId = memberships.find((membership) => membership.id === item.membership_id)?.userId;
     if (userId) amounts.set(userId, (amounts.get(userId) ?? 0) + item.amount);
+    // Envoi réel de la cagnotte (le même pour toutes les parts d'une personne).
+    if (userId && item.sent_at && item.sent_method && item.sent_ref) {
+      transfers[userId] = {
+        sentAt: item.sent_at,
+        method: item.sent_method,
+        ref: item.sent_ref,
+        receivedAt: item.received_at ?? undefined,
+      };
+    }
   }
   return {
     id: row.id,
@@ -175,6 +194,7 @@ function toRound(row: RoundRow, memberships: Membership[]): Round {
     payoutValidatedBy: row.payout_validated_by ?? undefined,
     payoutBlockedAt: row.payout_blocked_at ?? undefined,
     payoutBlockReason: row.payout_block_reason ?? undefined,
+    transfers,
     cycle: row.cycle,
   };
 }
@@ -305,7 +325,7 @@ export async function loadContext(groupRows: GroupRow[], viewer?: Viewer): Promi
       ? client
           .from('rounds')
           .select(
-            'id, group_id, cycle, number, open_date, due_date, recipient_type, pot_amount, status, paid_out_at, payout_validated_by, payout_blocked_at, payout_block_reason, round_beneficiaries (membership_id, amount)',
+            'id, group_id, cycle, number, open_date, due_date, recipient_type, pot_amount, status, paid_out_at, payout_validated_by, payout_blocked_at, payout_block_reason, round_beneficiaries (membership_id, amount, sent_at, sent_method, sent_ref, received_at)',
           )
           .in('group_id', ids)
           .order('number')

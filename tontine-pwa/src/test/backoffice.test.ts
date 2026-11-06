@@ -352,6 +352,16 @@ describe('back-office du super administrateur', () => {
     await demoLogin(MOUSSA);
     await paymentService.recordDebtPayment(debt?.debt.id ?? '');
     expect((await paymentService.listDebts(group.id))[0]?.debt.status).toBe('settled');
+
+    // Versement réel : l'admin note l'envoi Wave, le bénéficiaire confirme la réception.
+    await roundService.markPayoutSent(roundId, MOUSSA, 'wave', 'TX-0001');
+    await expect(roundService.markPayoutSent(roundId, MOUSSA, 'wave', 'TX-0002')).rejects.toThrow(
+      /déjà enregistré/,
+    );
+    await roundService.confirmPayoutReceived(roundId);
+    const paidOut = (await roundService.list(group.id)).find((view) => view.round.id === roundId);
+    expect(paidOut?.round.transfers?.[MOUSSA]).toMatchObject({ ref: 'TX-0001' });
+    expect(paidOut?.round.transfers?.[MOUSSA]?.receivedAt).toBeDefined();
   }, 15_000);
 
   it('un membre peut avoir deux parts et reçoit deux tours avec une cotisation doublée', async () => {
