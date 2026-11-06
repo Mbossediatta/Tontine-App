@@ -7,6 +7,7 @@ import { useUnreadCount } from '@/features/notifications/queries';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { contributionLabelIn, dayLabelIn, monthNameIn, shortDateIn, useT } from '@/i18n';
 import { cn } from '@/lib/cn';
+import { initials } from '@/lib/format';
 import type { GroupOverview } from '@/types';
 import {
   activeGroups,
@@ -236,8 +237,18 @@ export default function MemberHomePage() {
   return (
     <div className="flex flex-col gap-6 motion-safe:animate-fade-in">
       <header className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-[18px] font-bold leading-6">
+        {/* Ma photo (sinon mes initiales), comme sur le profil ; un appui ouvre le profil. */}
+        <Link to="/profil" aria-label="Mon profil" className="shrink-0 rounded-full">
+          {user.avatarUrl ? (
+            <img src={user.avatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
+          ) : (
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-[15px] font-bold text-green-800">
+              {initials(user)}
+            </span>
+          )}
+        </Link>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-[18px] font-bold leading-6">
             {t('home.hello', { name: user.firstName })}
           </h1>
           <p className="text-[13px] text-slate-600">{dayLabelIn(language, new Date())}</p>

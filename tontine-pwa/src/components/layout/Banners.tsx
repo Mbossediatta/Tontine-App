@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { RefreshCw, WifiOff } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useOnline } from '@/hooks/useOnline';
 
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+/** Après « Plus tard », le bandeau revient au plus tôt après ce délai (au retour dans l'appli). */
+const REMIND_AFTER_MS = 30 * 60 * 1000;
 
 /** Bandeau affiché en haut de l'écran quand la connexion est perdue. */
 export function OfflineBanner() {
@@ -32,10 +34,17 @@ export function UpdateBanner() {
     },
   });
 
+  // Moment du dernier « Plus tard » : la version reste en attente, on la reproposera.
+  const postponedAt = useRef(0);
+
   useEffect(() => {
     if (!registration) return;
 
     const checkForUpdate = () => {
+      // Une version déjà téléchargée attend : on la repropose une fois le délai passé.
+      if (registration.waiting && Date.now() - postponedAt.current >= REMIND_AFTER_MS) {
+        setNeedRefresh(true);
+      }
       if (!navigator.onLine) return;
       void registration.update().catch((error: unknown) => {
         console.error('Impossible de vérifier la mise à jour de la PWA.', error);
@@ -51,7 +60,7 @@ export function UpdateBanner() {
       window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', checkWhenVisible);
     };
-  }, [registration]);
+  }, [registration, setNeedRefresh]);
 
   if (!needRefresh) return null;
   return (
@@ -71,7 +80,10 @@ export function UpdateBanner() {
       </button>
       <button
         type="button"
-        onClick={() => setNeedRefresh(false)}
+        onClick={() => {
+          postponedAt.current = Date.now();
+          setNeedRefresh(false);
+        }}
         className="min-h-touch px-2 underline"
       >
         Plus tard
