@@ -17,8 +17,20 @@ interface GroupAdminsSectionProps {
 export function GroupAdminsSection({ members, isOwner }: GroupAdminsSectionProps) {
   const [candidate, setCandidate] = useState('');
   const [toDemote, setToDemote] = useState<MemberView | null>(null);
-  const admins = members.filter((m) => m.membership.role !== 'member');
-  const candidates = members.filter((m) => m.membership.role === 'member');
+  // Un rôle porte sur une part : une personne à plusieurs parts n'apparaît qu'une fois.
+  const admins = members.filter(
+    (m, index) =>
+      m.membership.role !== 'member' &&
+      members.findIndex(
+        (other) => other.membership.role !== 'member' && other.user.id === m.user.id,
+      ) === index,
+  );
+  const adminIds = new Set(admins.map((m) => m.user.id));
+  const candidates = members.filter(
+    (m, index) =>
+      !adminIds.has(m.user.id) &&
+      members.findIndex((other) => other.user.id === m.user.id) === index,
+  );
 
   const promote = useAction({
     action: (id: string) => membershipService.setRole(id, 'co_admin'),
