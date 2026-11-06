@@ -5,9 +5,16 @@ import { useMyGroups } from '@/features/groups/queries';
 import { useOnline } from '@/hooks/useOnline';
 import { cn } from '@/lib/cn';
 import { errorMessage } from '@/lib/errors';
-import { dueTimeLabel, serviceFee } from '@/lib/tontine';
+import {
+  installmentOf as installmentFor,
+  periodsLabel,
+  periodsLeft as periodsLeftOf,
+  restOf as restOfOverview,
+  type Installment,
+} from '@/features/payments/installments';
+import { dueTimeLabel } from '@/lib/tontine';
 import { paymentService } from '@/services';
-import type { Frequency, InitiatePaymentInput } from '@/types';
+import type { InitiatePaymentInput } from '@/types';
 import { deadlineLabel, duesOf, periodLabel, shortDate, type Due } from '../dues';
 import { AmountDisplay } from '../ui/AmountDisplay';
 import { BottomAction } from '../ui/BottomAction';
@@ -84,53 +91,10 @@ function ChoiceRow({
   );
 }
 
-/** « 1 jour », « 3 semaines »… : périodes du rythme de cotisation. */
-const PERIOD_WORDS: Record<Frequency, [string, string]> = {
-  daily: ['jour', 'jours'],
-  weekly: ['semaine', 'semaines'],
-  biweekly: ['quinzaine', 'quinzaines'],
-  monthly: ['mois', 'mois'],
-};
-const periodsLabel = (frequency: Frequency, count: number) =>
-  `${count} ${PERIOD_WORDS[frequency][count > 1 ? 1 : 0]}`;
-
-/** Montants d'un versement (même calcul que le serveur, private.installment). */
-interface Installment {
-  contribution: number;
-  penalty: number;
-  fee: number;
-  serviceFee: number;
-  /** Montant débité : versement plus frais de paiement. */
-  total: number;
-}
-
-/** Cotisation qui reste à verser sur le tour (hors pénalité et frais d'adhésion). */
-const restOf = (due: Due) =>
-  due.overview.myAmountDue - due.overview.myPenalty - due.overview.myMembershipFeeDue;
-
-/** Périodes restant à payer : 1 quand le tour se paie d'un coup. */
-const periodsLeft = (due: Due) =>
-  due.overview.myPeriodAmount > 0 ? Math.ceil(restOf(due) / due.overview.myPeriodAmount) : 1;
-
-/**
- * Versement de `periods` périodes (toutes mes parts), ou tout le reste du tour si null.
- * Les frais d'adhésion partent avec le premier versement, la pénalité avec le dernier.
- */
-function installmentOf(due: Due, periods: number | null): Installment {
-  const { overview } = due;
-  const rest = restOf(due);
-  const contribution = periods === null ? rest : Math.min(rest, periods * overview.myPeriodAmount);
-  const penalty = contribution >= rest ? overview.myPenalty : 0;
-  const fee = overview.myMembershipFeeDue;
-  const fees = serviceFee(contribution + penalty + fee, overview.feePercent);
-  return {
-    contribution,
-    penalty,
-    fee,
-    serviceFee: fees,
-    total: contribution + penalty + fee + fees,
-  };
-}
+// Calcul des versements : features/payments/installments.ts (partagé avec l'espace admin).
+const restOf = (due: Due) => restOfOverview(due.overview);
+const periodsLeft = (due: Due) => periodsLeftOf(due.overview);
+const installmentOf = (due: Due, periods: number | null) => installmentFor(due.overview, periods);
 
 /** Récapitulatif avant paiement, en tableau compact. */
 function Summary({
