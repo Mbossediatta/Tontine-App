@@ -51,9 +51,10 @@ select throws_ok($$select public.group_start((select id from ids where name = 'g
 select lives_ok($$select public.order_draw((select id from ids where name = 'g'))$$,
   'the manager draws the order');
 select is(
-  (select array_agg(payout_order order by payout_order) from public.memberships
-   where group_id = (select id from ids where name = 'g')),
-  array[1, 2], 'each share gets one place');
+  (select array_agg((o ->> 'payoutOrder')::int order by (o ->> 'payoutOrder')::int)
+   from jsonb_array_elements(public.group_order_view(array[(select id from ids where name = 'g')])
+     -> 'orders') o),
+  array[1, 2], 'each share gets one place (the manager sees the whole order)');
 select lives_ok(
   $$select public.order_set((select id from ids where name = 'g'), array(
       select id from public.memberships where group_id = (select id from ids where name = 'g')

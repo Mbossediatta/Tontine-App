@@ -56,7 +56,11 @@ export function SwapList({ swaps, myUserId, mode }: SwapListProps) {
                 <ArrowLeftRight className="h-4 w-4 text-blue-700" aria-hidden="true" />
                 <span className="flex-1 font-bold text-ink">
                   {request.requesterId === myUserId ? 'Vous' : fullName(requester)} ↔{' '}
-                  {request.partnerId === myUserId ? 'vous' : fullName(partner)}
+                  {request.partnerId === myUserId
+                    ? 'vous'
+                    : mode === 'member'
+                      ? `le membre du tour ${partnerRound.number}`
+                      : fullName(partner)}
                 </span>
                 <Badge tone={STATUS[request.status].tone}>{STATUS[request.status].label}</Badge>
               </div>

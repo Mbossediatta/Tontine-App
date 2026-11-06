@@ -227,6 +227,16 @@ export interface GroupContext {
    * parts payées, et statut de chacun quand on a le droit de le voir.
    */
   roundStatuses: Map<string, RoundStatuses>;
+  /**
+   * Nombre de bénéficiaires de chaque tour. Un membre ne voit que ses propres parts
+   * bénéficiaires : ce nombre fixe quand même sa part de la cagnotte.
+   */
+  beneficiaryCounts: Map<string, number>;
+}
+
+interface OrderView {
+  orders: Array<{ membershipId: string; payoutOrder: number }>;
+  beneficiaryCounts: Record<string, number>;
 }
 
 interface RoundStatuses {
@@ -286,7 +296,7 @@ export async function loadContext(groupRows: GroupRow[], viewer?: Viewer): Promi
     ids.length
       ? client
           .from('memberships')
-          .select('id, group_id, user_id, role, status, payout_order, joined_at')
+          .select('id, group_id, user_id, role, status, joined_at')
           .in('group_id', ids)
       : Promise.resolve({ data: [], error: null }),
     ids.length
@@ -305,8 +315,16 @@ export async function loadContext(groupRows: GroupRow[], viewer?: Viewer): Promi
       'public_settings',
     ),
   ]);
+  // Ordre de passage confidentiel (…_calendrier_confidentiel.sql) : mon rang, ou tous les
+  // rangs si je gère le groupe ; et le nombre de bénéficiaires de chaque tour.
+  const orderView = ids.length
+    ? await rpc<OrderView>('group_order_view', { p_groups: ids })
+    : { orders: [], beneficiaryCounts: {} };
+  const ranks = new Map(orderView.orders.map((item) => [item.membershipId, item.payoutOrder]));
 
-  const memberships = rows<MembershipRow>(membershipRows).map(toMembership);
+  const memberships = rows<MembershipRow>(membershipRows).map((row) =>
+    toMembership({ ...row, payout_order: ranks.get(row.id) ?? null }),
+  );
   const rawRounds = rows<RoundRow>(roundRows);
   const rounds = rawRounds.map((row) => toRound(row, memberships));
   const roundIds = rounds.map((round) => round.id);
@@ -343,6 +361,7 @@ export async function loadContext(groupRows: GroupRow[], viewer?: Viewer): Promi
     ),
     people: await loadPeople([...personIds]),
     roundStatuses: new Map(Object.entries(statuses ?? {})),
+    beneficiaryCounts: new Map(Object.entries(orderView.beneficiaryCounts)),
   };
 }
 

@@ -5,6 +5,7 @@ import {
   assertCanManage,
   assertCanView,
   assertOwner,
+  canManage,
   membershipOf,
   requireGroup,
   requireMembership,
@@ -25,7 +26,14 @@ export const mockMembershipService: MembershipService = {
     const user = currentUser();
     const group = requireGroup(groupId);
     assertCanView(group, user);
-    return buildMemberViews(group, user);
+    const views = buildMemberViews(group, user);
+    if (canManage(group, user)) return views;
+    // Calendrier confidentiel : le rang des autres (donc leur tour) n'est pas transmis.
+    return views.map((view) =>
+      view.user.id === user.id
+        ? view
+        : { ...view, membership: { ...view.membership, payoutOrder: undefined } },
+    );
   },
 
   async accept(membershipId) {

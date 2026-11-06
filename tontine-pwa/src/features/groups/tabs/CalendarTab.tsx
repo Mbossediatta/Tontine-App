@@ -39,9 +39,11 @@ export function CalendarTab({ groupId, cycleActive }: { groupId: string; cycleAc
               rounds={rounds}
               myUserId={user.id}
               renderAction={(view) =>
-                swappable(view) &&
-                myRounds.some((mine) => mine.round.id !== view.round.id) &&
-                view.beneficiaries.some((person) => person.id !== user.id) ? (
+                (swappable(view) &&
+                  myRounds.some((mine) => mine.round.id !== view.round.id) &&
+                  // Tour d'un autre (anonyme si je ne gère pas le groupe : aucun nom reçu).
+                  !view.beneficiaries.every((person) => person.id === user.id)) ||
+                view.beneficiaries.length === 0 ? (
                   <OnlineButton size="sm" variant="ghost" onClick={() => setTarget(view)}>
                     Proposer un échange
                   </OnlineButton>

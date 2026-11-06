@@ -1266,6 +1266,7 @@ export type Database = {
       group_close: { Args: { p_group: string }; Returns: undefined };
       group_create: { Args: { p: Json }; Returns: string };
       group_join_preview: { Args: { p_code: string }; Returns: Json };
+      group_order_view: { Args: { p_groups: string[] }; Returns: Json };
       group_reactivate: { Args: { p_group: string }; Returns: undefined };
       group_regenerate_invite: { Args: { p_group: string }; Returns: string };
       group_remove: { Args: { p_group: string }; Returns: undefined };
@@ -1437,7 +1438,7 @@ export type Database = {
       swap_cancel: { Args: { p_swap: string }; Returns: undefined };
       swap_decide: { Args: { p_approve: boolean; p_swap: string }; Returns: undefined };
       swap_request: {
-        Args: { p_my_round: string; p_partner: string; p_partner_round: string };
+        Args: { p_my_round: string; p_partner?: string; p_partner_round: string };
         Returns: string;
       };
       swap_respond: { Args: { p_accept: boolean; p_swap: string }; Returns: undefined };

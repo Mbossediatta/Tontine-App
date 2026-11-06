@@ -16,7 +16,8 @@ interface SwapRequestDialogProps {
 
 /** Demande d'échange : l'autre membre accepte, puis un administrateur du groupe valide. */
 export function SwapRequestDialog({ target, myRounds, myUserId, onClose }: SwapRequestDialogProps) {
-  // Plusieurs bénéficiaires possibles par tour : on choisit avec qui échanger.
+  // Plusieurs bénéficiaires possibles par tour : on choisit avec qui échanger. Pour un
+  // membre, le tour d'un autre est anonyme : le serveur retrouve son bénéficiaire.
   const partners = target.beneficiaries.filter(
     (person, index, all) =>
       person.id !== myUserId && all.findIndex((other) => other.id === person.id) === index,
@@ -28,7 +29,7 @@ export function SwapRequestDialog({ target, myRounds, myUserId, onClose }: SwapR
   const mine = offers.find((view) => view.round.id === myRoundId)?.round;
 
   const request = useAction({
-    action: () => swapService.request(myRoundId, target.round.id, partnerId),
+    action: () => swapService.request(myRoundId, target.round.id, partnerId || undefined),
     success: 'Demande d’échange envoyée',
     onSuccess: onClose,
   });
@@ -63,12 +64,12 @@ export function SwapRequestDialog({ target, myRounds, myUserId, onClose }: SwapR
             }))}
           />
         ) : null}
-        {partner && mine ? (
+        {mine ? (
           <p>
             Vous recevriez la cagnotte au tour {target.round.number} (
             {formatDate(target.round.dueDate)}) au lieu du tour {mine.number} (
-            {formatDate(mine.dueDate)}). {fullName(partner)} doit accepter, puis un administrateur
-            du groupe valide l’échange.
+            {formatDate(mine.dueDate)}). {partner ? fullName(partner) : 'Le membre de ce tour'} doit
+            accepter, puis un administrateur du groupe valide l’échange.
           </p>
         ) : null}
       </div>

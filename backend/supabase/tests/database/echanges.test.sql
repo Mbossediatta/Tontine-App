@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(25);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000e2', 'e-admin@users.calebasse.invalid'),
@@ -111,6 +111,35 @@ select pg_temp.as_user('00000000-0000-0000-0000-0000000000e5');
 select public.swap_cancel(pg_temp.id('s2'));
 select is((select status::text from public.swap_requests where id = pg_temp.id('s2')),
   'cancelled', 'the requester cancels an open request');
+
+-- Calendrier confidentiel : Awa ne voit que ses propres tours.
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000e3');
+select is(
+  (select count(*)::int from public.round_beneficiaries b
+   join public.rounds r on r.id = b.round_id where r.group_id = pg_temp.id('g')),
+  1, 'a member only sees the beneficiary row of their own share');
+select throws_ok($$select payout_order from public.memberships$$,
+  '42501', null, 'the payout rank of others is not readable');
+select is(jsonb_array_length(public.group_order_view(array[pg_temp.id('g')]) -> 'orders'),
+  1, 'a member gets only their own rank');
+select is((public.group_order_view(array[pg_temp.id('g')]) -> 'beneficiaryCounts' ->> pg_temp.id('r1')::text)::int,
+  1, 'a member still knows how many people share each round');
+-- Demande sur un tour anonyme : le serveur retrouve Fatou.
+insert into ids select 's3', public.swap_request(pg_temp.id('r3'), pg_temp.id('r4'));
+select is((select partner_id from public.swap_requests where id = pg_temp.id('s3')),
+  '00000000-0000-0000-0000-0000000000e5'::uuid, 'the holder of an anonymous round is found');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000e5');
+select public.swap_respond(pg_temp.id('s3'), false);
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000e2');
+select is(
+  (select count(*)::int from public.round_beneficiaries b
+   join public.rounds r on r.id = b.round_id where r.group_id = pg_temp.id('g')),
+  4, 'the group admin sees every beneficiary');
+reset role;
+select is(
+  (select body from public.notifications
+   where user_id = '00000000-0000-0000-0000-0000000000e3' and type = 'swap_rejected'),
+  'Le membre du tour 4 a refusé l’échange de tour.', 'the requester does not learn the name');
 
 select * from finish();
 rollback;

@@ -24,6 +24,9 @@ function assertOrderEditable(groupId: string) {
   return group;
 }
 
+/** Bénéficiaire d'un tour qui n'est pas le mien : son nom reste confidentiel. */
+const ANOTHER_MEMBER = { id: '', firstName: 'Un autre', lastName: 'membre' };
+
 export const mockRoundService: RoundService = {
   async list(groupId) {
     await delay();
@@ -61,11 +64,18 @@ export const mockRoundService: RoundService = {
           });
         }
       }
-      const beneficiaryShares = [...shareAmounts.values()];
+      // Calendrier confidentiel : un membre ne voit que ses propres tours (comme la base).
+      const beneficiaryShares = [...shareAmounts.values()].filter(
+        ({ user: person }) => manager || person.id === user.id,
+      );
       const beneficiaries = beneficiaryShares.map(({ user: person }) => person);
       return {
         round: round.recipientType === 'platform' && !manager ? { ...round, potAmount: 0 } : round,
-        beneficiary: beneficiaries[0] ?? toPublicUser(requireUser(round.beneficiaryId), manager),
+        beneficiary:
+          beneficiaries[0] ??
+          (round.recipientType === 'platform'
+            ? toPublicUser(requireUser(round.beneficiaryId), manager)
+            : ANOTHER_MEMBER),
         beneficiaries,
         beneficiaryShares,
         paidCount: paidCount(round),

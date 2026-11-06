@@ -146,6 +146,9 @@ describe('parcours', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Calendrier de passage' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Membres' })).toBeInTheDocument();
+    // Calendrier confidentiel : les tours des autres n'ont pas de nom, le mien si.
+    expect((await screen.findAllByText('Un autre membre', {}, TIMEOUT)).length).toBeGreaterThan(0);
+    expect(screen.getByText('Toi')).toBeInTheDocument();
   }, 10_000);
 
   it('le paiement simulé passe le statut à « payé » partout', async () => {

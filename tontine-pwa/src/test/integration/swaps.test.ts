@@ -81,12 +81,15 @@ describe('échange de tour sur Supabase', () => {
     expect((await roundOf(groupId, AWA))?.number).toBe(2);
   });
 
-  it('Awa propose son tour 2 contre le tour 3 d’Ibou, qui accepte', async () => {
+  it('Awa propose son tour 2 contre le tour 3 (anonyme pour elle), Ibou accepte', async () => {
     await signInAs(AWA);
     const mine = await roundOf(groupId, AWA);
-    const theirs = await roundOf(groupId, IBOU);
-    await swapService.request(mine?.id ?? '', theirs?.id ?? '', IBOU);
-    await expect(swapService.request(mine?.id ?? '', theirs?.id ?? '', IBOU)).rejects.toThrow(
+    // Calendrier confidentiel : Awa voit la date du tour 3, pas le nom de son bénéficiaire.
+    const theirs = (await roundService.list(groupId)).find((view) => view.round.number === 3);
+    expect(theirs?.beneficiaries).toEqual([]);
+    expect(await roundOf(groupId, IBOU)).toBeUndefined();
+    await swapService.request(mine?.id ?? '', theirs?.round.id ?? '');
+    await expect(swapService.request(mine?.id ?? '', theirs?.round.id ?? '')).rejects.toThrow(
       /déjà en cours/,
     );
 

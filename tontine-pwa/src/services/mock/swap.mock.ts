@@ -113,13 +113,20 @@ export const mockSwapService: SwapService = {
       }));
   },
 
-  async request(myRoundId, partnerRoundId, partnerId) {
+  async request(myRoundId, partnerRoundId, requestedPartnerId) {
     requireOnline();
     await delay();
     const user = currentUser();
     const myRound = requireRound(myRoundId);
     const partnerRound = requireRound(partnerRoundId);
     const group = requireActiveGroup(myRound.groupId);
+    // Tour anonyme : le membre de ce tour est retrouvé (sa première part dans l'ordre).
+    const partnerId =
+      requestedPartnerId ??
+      activeMemberships(group.id)
+        .filter((m) => m.userId !== user.id && partsOf(partnerRound).includes(m.id))
+        .sort((a, b) => (a.payoutOrder ?? 0) - (b.payoutOrder ?? 0))[0]?.userId;
+    if (!partnerId) throw new ServiceError('Choisissez le tour d’un autre membre.');
     if (
       partnerRound.groupId !== group.id ||
       partnerId === user.id ||

@@ -37,6 +37,8 @@ import type { SimulatedCheckout } from '../mock/gateway';
 
 /** Bénéficiaire affiché pour la période réservée au super admin. */
 const PLATFORM: PublicUser = { id: '', firstName: 'Calebasse', lastName: 'de l’Espoir' };
+/** Bénéficiaire d'un tour qui n'est pas le mien : son nom reste confidentiel. */
+const ANOTHER_MEMBER: PublicUser = { id: '', firstName: 'Un autre', lastName: 'membre' };
 
 async function groupContext(groupId: string): Promise<GroupContext> {
   const ctx = await loadContext(await groupRows((query) => query.eq('id', groupId)));
@@ -62,8 +64,10 @@ function roundView(ctx: GroupContext, round: Round, manager: boolean): RoundView
       : activeMemberships(ctx, round.groupId).filter((member) =>
           round.beneficiaryMembershipIds?.includes(member.id),
         );
-  const shareValue = Math.floor(round.potAmount / Math.max(1, recipients.length));
-  let remainder = round.potAmount - shareValue * recipients.length;
+  // Un membre ne voit que ses parts : la cagnotte se partage entre tous les bénéficiaires.
+  const recipientCount = ctx.beneficiaryCounts.get(round.id) ?? recipients.length;
+  const shareValue = Math.floor(round.potAmount / Math.max(1, recipientCount));
+  let remainder = round.potAmount - shareValue * recipientCount;
   const shares = new Map<string, { user: PublicUser; shareCount: number; amount: number }>();
   for (const member of recipients) {
     const amount = shareValue + (remainder > 0 ? 1 : 0);
@@ -89,7 +93,8 @@ function roundView(ctx: GroupContext, round: Round, manager: boolean): RoundView
   const beneficiaries = beneficiaryShares.map((share) => share.user);
   return {
     round: round.recipientType === 'platform' && !manager ? { ...round, potAmount: 0 } : round,
-    beneficiary: beneficiaries[0] ?? PLATFORM,
+    beneficiary:
+      beneficiaries[0] ?? (round.recipientType === 'platform' ? PLATFORM : ANOTHER_MEMBER),
     beneficiaries,
     beneficiaryShares,
     paidCount: paidCountOf(ctx, round),
@@ -349,7 +354,7 @@ export function createSupabaseSwapService(): SwapService {
       await rpc('swap_request', {
         p_my_round: myRoundId,
         p_partner_round: partnerRoundId,
-        p_partner: partnerId,
+        p_partner: partnerId ?? null,
       });
     },
     async respond(swapId, accept) {

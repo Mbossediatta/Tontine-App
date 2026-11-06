@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useGroup, useMembers, useRounds } from '@/features/groups/queries';
+import { useGroup, useMembers, useRounds, useSwaps } from '@/features/groups/queries';
+import { SwapList } from '@/features/groups/SwapList';
+import { SwapRequestDialog } from '@/features/groups/SwapRequestDialog';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { cn } from '@/lib/cn';
 import { contributionLabel, frequencyLabel, fullName, initials, plural } from '@/lib/format';
@@ -62,18 +65,31 @@ function roundLabel(group: GroupOverview['group'], view: RoundView): string {
     : shortDate(view.round.dueDate);
 }
 
+/** Seuls des tours à venir s'échangent, entre membres, pendant le cycle. */
+function isSwappable(overview: GroupOverview, view: RoundView): boolean {
+  return (
+    overview.group.status === 'active' &&
+    view.round.status === 'upcoming' &&
+    view.round.recipientType !== 'platform'
+  );
+}
+
 /**
  * Calendrier de passage, en ligne de temps : mois passés grisés, tour en cours
- * signalé, et mon mois mis en évidence (fond vert clair).
+ * signalé, et mon mois mis en évidence (fond vert clair). Confidentiel : seuls mes
+ * tours portent un nom ; sur un tour à venir d'un autre, je peux proposer un échange.
  */
 function PayoutCalendar({
   overview,
   rounds,
   userId,
+  onSwap,
 }: {
   overview: GroupOverview;
   rounds: RoundView[];
   userId: string;
+  /** Absent quand je n'ai pas de tour à venir à céder. */
+  onSwap?: (view: RoundView) => void;
 }) {
   return (
     <Card>
@@ -84,9 +100,8 @@ function PayoutCalendar({
           const current = round.id === overview.currentRound?.id;
           const mine = view.beneficiaries.some((b) => b.id === userId);
           const names =
-            round.recipientType === 'platform'
-              ? 'Plateforme'
-              : view.beneficiaries.map((b) => (b.id === userId ? 'Toi' : fullName(b))).join(', ');
+            round.recipientType === 'platform' ? 'Plateforme' : mine ? 'Toi' : 'Un autre membre';
+          const swappable = onSwap && !mine && isSwappable(overview, view);
           return (
             <li
               key={round.id}
@@ -118,6 +133,14 @@ function PayoutCalendar({
                   'Versé'
                 ) : current ? (
                   <strong className="font-semibold text-blue-700">En cours</strong>
+                ) : swappable ? (
+                  <button
+                    type="button"
+                    onClick={() => onSwap(view)}
+                    className="-mr-2 min-h-[44px] rounded-lg px-2 font-semibold text-blue-700 hover:bg-blue-50"
+                  >
+                    Échanger
+                  </button>
                 ) : (
                   `Tour ${round.number}`
                 )}
@@ -192,6 +215,8 @@ export default function MemberGroupPage() {
   const group = useGroup(id);
   const rounds = useRounds(id);
   const members = useMembers(id);
+  const swaps = useSwaps(id, group.data?.group.status === 'active');
+  const [swapTarget, setSwapTarget] = useState<RoundView | null>(null);
 
   if (group.isPending) {
     return (
@@ -212,6 +237,11 @@ export default function MemberGroupPage() {
         m.shareNumber === 1 && (m.membership.role === 'owner' || m.membership.role === 'co_admin'),
     )
     .map((m) => fullName(m.user));
+  // Mes tours à venir : ce que je peux céder dans un échange.
+  const myRounds = (rounds.data ?? []).filter(
+    (view) =>
+      isSwappable(overview, view) && view.beneficiaries.some((person) => person.id === user.id),
+  );
 
   return (
     <div className="flex flex-col gap-6 motion-safe:animate-fade-in">
@@ -259,8 +289,25 @@ export default function MemberGroupPage() {
             description="L’ordre de passage sera établi au démarrage du groupe."
           />
         ) : (
-          <PayoutCalendar overview={overview} rounds={rounds.data ?? []} userId={user.id} />
+          <>
+            <SwapList swaps={swaps.data ?? []} myUserId={user.id} mode="member" />
+            <PayoutCalendar
+              overview={overview}
+              rounds={rounds.data ?? []}
+              userId={user.id}
+              onSwap={myRounds.length > 0 ? setSwapTarget : undefined}
+            />
+          </>
         )}
+        {swapTarget ? (
+          <SwapRequestDialog
+            key={swapTarget.round.id}
+            target={swapTarget}
+            myRounds={myRounds}
+            myUserId={user.id}
+            onClose={() => setSwapTarget(null)}
+          />
+        ) : null}
       </section>
 
       <section aria-labelledby="members">
