@@ -15,10 +15,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!--
       Polices chargées en parallèle et sans bloquer l'affichage (avant : @import dans le CSS,
-      qui retardait le premier écran). En attendant, les polices système s'affichent.
+      qui retardait le premier écran) ; public/boot.js les applique dès qu'elles sont prêtes.
     -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&amp;family=Nunito+Sans:wght@400;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&amp;family=Nunito+Sans:wght@400;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" media="print" onload="this.media='all'" />
+    <link id="fonts" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&amp;family=Nunito+Sans:wght@400;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" media="print" />
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&amp;family=Nunito+Sans:wght@400;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" /></noscript>
     <link rel="preload" as="image" href="/brand/logo-emblem.webp" type="image/webp" />
     <title>Calebasse de l’Espoir</title>
@@ -217,15 +217,8 @@
       <div class="splash-dots" aria-hidden="true"><i></i><i></i><i></i></div>
       <p class="splash-footer">Cotisez, suivez, recevez · en FCFA</p>
     </div>
-    <script>
-      // Écran de démarrage : une fois par session (onglet). Ensuite (rechargement, retour
-      // de paiement), on le retire avant même qu'il soit dessiné. Voir src/app/splash.ts.
-      try {
-        if (sessionStorage.getItem('calebasse.splashSeen.v1')) document.getElementById('splash').remove();
-      } catch (e) {
-        /* Stockage indisponible : l'écran s'affiche normalement. */
-      }
-    </script>
+    <!-- Écran de démarrage et polices : public/boot.js (pas de JavaScript dans la page). -->
+    <script src="/boot.js"></script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
