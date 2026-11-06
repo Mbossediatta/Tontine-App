@@ -163,7 +163,7 @@ export function buildMemberViews(group: Group, viewer: User): MemberView[] {
     seenShares.set(membership.userId, number);
     shareNumbers.set(membership.id, number);
   }
-  return memberships.map((membership) => ({
+  const views = memberships.map((membership) => ({
     membership,
     user: toPublicUser(requireUser(membership.userId), manager),
     shareNumber: shareNumbers.get(membership.id) ?? 1,
@@ -173,4 +173,9 @@ export function buildMemberViews(group: Group, viewer: User): MemberView[] {
         ? memberStatus(current, membership.userId)
         : undefined,
   }));
+  if (manager) return views;
+  // Confidentiel : le nombre de parts des autres n'est pas transmis (une ligne par personne).
+  return views
+    .filter((view) => view.user.id === viewer.id || view.shareNumber === 1)
+    .map((view) => (view.user.id === viewer.id ? view : { ...view, shareCount: 1 }));
 }

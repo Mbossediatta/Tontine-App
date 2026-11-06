@@ -549,7 +549,7 @@ export function buildMemberViews(ctx: GroupContext, group: Group): MemberView[] 
     shareCounts.set(membership.userId, number);
     shareNumbers.set(membership.id, number);
   }
-  return memberships.map((membership) => ({
+  const views = memberships.map((membership) => ({
     membership,
     user: person(ctx, membership.userId, manager),
     shareNumber: shareNumbers.get(membership.id) ?? 1,
@@ -559,6 +559,11 @@ export function buildMemberViews(ctx: GroupContext, group: Group): MemberView[] 
         ? memberStatus(ctx, current, membership.userId)
         : undefined,
   }));
+  if (manager) return views;
+  // Confidentiel : le nombre de parts des autres n'est pas transmis (une ligne par personne).
+  return views
+    .filter((view) => view.user.id === ctx.viewer.id || view.shareNumber === 1)
+    .map((view) => (view.user.id === ctx.viewer.id ? view : { ...view, shareCount: 1 }));
 }
 
 /** Retards sur le tour en cours des groupes actifs (somme due, pénalité comprise). */
