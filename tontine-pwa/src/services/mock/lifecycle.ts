@@ -5,7 +5,6 @@ import type { Group, PaymentStatus, Round } from '@/types';
 import { activeMemberships, requireGroup } from './access';
 import { db, newId, nowIso } from './db';
 import { hasPaidMembershipFee, recordReservedTurnEarning } from './revenue';
-import { sendSmsToUser } from './sms';
 
 /** Pénalité de retard appliquée à un membre pour un tour (0 si aucune). */
 export function penaltyFor(roundId: string, userId: string): number {
@@ -261,7 +260,6 @@ export function closeRound(round: Round): void {
     }
     round.beneficiaryAmounts = Object.fromEntries(amounts);
     for (const [userId, amount] of amounts) {
-      sendSmsToUser(userId, 'payout');
       notify(
         userId,
         'payout',

@@ -6,7 +6,6 @@ import { assertSuperAdmin, requireGroup } from './access';
 import { recordAudit } from './audit';
 import { currentUser, db, delay, persist, requireOnline } from './db';
 import { notify } from './lifecycle';
-import { sendSmsToUser } from './sms';
 
 async function authorize(): Promise<User> {
   requireOnline();
@@ -59,7 +58,6 @@ export const mockCommunicationService: CommunicationService = {
         cleanMessage,
         target.kind === 'group' ? `/groupes/${target.groupId}` : undefined,
       );
-      sendSmsToUser(user.id, 'announcement');
     }
     recordAudit(
       actor,

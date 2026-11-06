@@ -504,6 +504,56 @@ export type Database = {
           },
         ];
       };
+      payment_reminders: {
+        Row: {
+          day: string;
+          id: string;
+          round_id: string;
+          sent_at: string;
+          sent_by: string | null;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          day?: string;
+          id?: string;
+          round_id: string;
+          sent_at?: string;
+          sent_by?: string | null;
+          user_id: string;
+        };
+        Update: {
+          day?: string;
+          id?: string;
+          round_id?: string;
+          sent_at?: string;
+          sent_by?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'payment_reminders_round_id_fkey';
+            columns: ['round_id'];
+            isOneToOne: false;
+            referencedRelation: 'rounds';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'payment_reminders_sent_by_fkey';
+            columns: ['sent_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'payment_reminders_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       payments: {
         Row: {
           amount: number;
@@ -747,6 +797,7 @@ export type Database = {
           payout_method: Database['public']['Enums']['payout_method'] | null;
           payout_phone: string | null;
           phone: string | null;
+          terms_version: number | null;
           updated_at: string;
         };
         ComputedFields: never;
@@ -764,6 +815,7 @@ export type Database = {
           payout_method?: Database['public']['Enums']['payout_method'] | null;
           payout_phone?: string | null;
           phone?: string | null;
+          terms_version?: number | null;
           updated_at?: string;
         };
         Update: {
@@ -780,6 +832,7 @@ export type Database = {
           payout_method?: Database['public']['Enums']['payout_method'] | null;
           payout_phone?: string | null;
           phone?: string | null;
+          terms_version?: number | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -1043,8 +1096,10 @@ export type Database = {
           group_id: string;
           id: string;
           partner_id: string;
+          partner_membership_id: string;
           partner_round_id: string;
           requester_id: string;
+          requester_membership_id: string;
           requester_round_id: string;
           status: Database['public']['Enums']['swap_status'];
         };
@@ -1056,8 +1111,10 @@ export type Database = {
           group_id: string;
           id?: string;
           partner_id: string;
+          partner_membership_id: string;
           partner_round_id: string;
           requester_id: string;
+          requester_membership_id: string;
           requester_round_id: string;
           status?: Database['public']['Enums']['swap_status'];
         };
@@ -1068,8 +1125,10 @@ export type Database = {
           group_id?: string;
           id?: string;
           partner_id?: string;
+          partner_membership_id?: string;
           partner_round_id?: string;
           requester_id?: string;
+          requester_membership_id?: string;
           requester_round_id?: string;
           status?: Database['public']['Enums']['swap_status'];
         };
@@ -1089,6 +1148,13 @@ export type Database = {
             referencedColumns: ['id'];
           },
           {
+            foreignKeyName: 'swap_requests_partner_membership_id_fkey';
+            columns: ['partner_membership_id'];
+            isOneToOne: false;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id'];
+          },
+          {
             foreignKeyName: 'swap_requests_partner_round_id_fkey';
             columns: ['partner_round_id'];
             isOneToOne: false;
@@ -1103,10 +1169,50 @@ export type Database = {
             referencedColumns: ['id'];
           },
           {
+            foreignKeyName: 'swap_requests_requester_membership_id_fkey';
+            columns: ['requester_membership_id'];
+            isOneToOne: false;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id'];
+          },
+          {
             foreignKeyName: 'swap_requests_requester_round_id_fkey';
             columns: ['requester_round_id'];
             isOneToOne: false;
             referencedRelation: 'rounds';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      terms_acceptances: {
+        Row: {
+          accepted_at: string;
+          id: string;
+          user_agent: string | null;
+          user_id: string;
+          version: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          accepted_at?: string;
+          id?: string;
+          user_agent?: string | null;
+          user_id: string;
+          version: number;
+        };
+        Update: {
+          accepted_at?: string;
+          id?: string;
+          user_agent?: string | null;
+          user_id?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'terms_acceptances_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
             referencedColumns: ['id'];
           },
         ];
@@ -1123,6 +1229,10 @@ export type Database = {
           name: string;
         }[];
       };
+      admin_compensate: {
+        Args: { p_amount: number; p_group: string; p_note: string };
+        Returns: undefined;
+      };
       admin_pin_pending: {
         Args: { p_users: string[] };
         Returns: {
@@ -1130,11 +1240,26 @@ export type Database = {
           user_id: string;
         }[];
       };
+      admin_reactivate: { Args: { p_user: string }; Returns: undefined };
+      admin_reassign_groups: { Args: { p_from: string; p_to: string }; Returns: number };
+      admin_revoke: { Args: { p_user: string }; Returns: undefined };
       admin_super_dashboard: { Args: Record<PropertyKey, never>; Returns: Json };
+      admin_suspend: { Args: { p_user: string }; Returns: undefined };
+      admin_update: {
+        Args: { p_first_name: string; p_last_name: string; p_phone: string; p_user: string };
+        Returns: undefined;
+      };
       community_save: {
         Args: { p_admin_ids: string[]; p_description: string; p_id: string; p_name: string };
         Returns: string;
       };
+      dispute_record_payment: { Args: { p_dispute: string }; Returns: undefined };
+      dispute_refund: {
+        Args: { p_amount: number; p_dispute: string; p_note: string };
+        Returns: undefined;
+      };
+      dispute_reject: { Args: { p_dispute: string; p_note: string }; Returns: undefined };
+      dispute_take: { Args: { p_dispute: string }; Returns: undefined };
       group_announce: { Args: { p_group: string; p_message: string }; Returns: number };
       group_archive: { Args: { p_group: string }; Returns: undefined };
       group_change_admin: { Args: { p_admin: string; p_group: string }; Returns: undefined };
@@ -1146,6 +1271,12 @@ export type Database = {
       group_remove: { Args: { p_group: string }; Returns: undefined };
       group_request_join: { Args: { p_code: string }; Returns: undefined };
       group_request_join_open: { Args: { p_group: string }; Returns: undefined };
+      group_restart_cycle: {
+        Args: { p_group: string; p_keep_order: boolean; p_start_date: string };
+        Returns: undefined;
+      };
+      group_round_statuses: { Args: { p_groups: string[] }; Returns: Json };
+      group_start: { Args: { p_group: string }; Returns: undefined };
       group_suspend: { Args: { p_group: string }; Returns: undefined };
       group_transfer: {
         Args: { p_admin: string; p_community: string; p_group: string };
@@ -1188,7 +1319,10 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      legal_terms: { Args: Record<PropertyKey, never>; Returns: Json };
       log_refusal: { Args: { p_hint: string }; Returns: undefined };
+      member_block: { Args: { p_user: string }; Returns: undefined };
+      member_unblock: { Args: { p_user: string }; Returns: undefined };
       membership_accept: { Args: { p_membership: string }; Returns: undefined };
       membership_add_by_phone: {
         Args: { p_group: string; p_phone: string; p_share_count?: number };
@@ -1200,6 +1334,12 @@ export type Database = {
         Args: { p_membership: string; p_role: Database['public']['Enums']['group_role'] };
         Returns: undefined;
       };
+      order_draw: { Args: { p_group: string }; Returns: undefined };
+      order_set: { Args: { p_group: string; p_memberships: string[] }; Returns: undefined };
+      payment_receipt: { Args: { p_payment: string }; Returns: Json };
+      payment_record_cash: { Args: { p_round: string; p_user: string }; Returns: undefined };
+      payout_block: { Args: { p_reason: string; p_round: string }; Returns: undefined };
+      payout_unblock: { Args: { p_round: string }; Returns: undefined };
       public_profiles: {
         Args: { ids: string[] };
         Returns: {
@@ -1210,7 +1350,34 @@ export type Database = {
         }[];
       };
       public_settings: { Args: Record<PropertyKey, never>; Returns: Json };
+      reminder_send: { Args: { p_round: string; p_user?: string }; Returns: number };
+      round_payout: { Args: { p_round: string }; Returns: undefined };
+      settings_get: { Args: Record<PropertyKey, never>; Returns: Json };
+      settings_update: {
+        Args: { p_new_secret?: string; p_section: string; p_values: Json };
+        Returns: undefined;
+      };
       svc_admin_create: {
+        Args: {
+          p_actor: string;
+          p_first_name: string;
+          p_last_name: string;
+          p_phone: string;
+          p_user: string;
+        };
+        Returns: string;
+      };
+      svc_announcement: {
+        Args: {
+          p_actor: string;
+          p_group: string;
+          p_kind: string;
+          p_message: string;
+          p_title: string;
+        };
+        Returns: Json;
+      };
+      svc_member_create: {
         Args: {
           p_actor: string;
           p_first_name: string;
@@ -1224,6 +1391,26 @@ export type Database = {
       svc_otp_issue: {
         Args: { p_code_hash: string; p_ip: unknown; p_phone: string; p_validity_minutes: number };
         Returns: string;
+      };
+      svc_payment_confirm: {
+        Args: { p_charged: number; p_payment: string; p_phone: string; p_provider_ref: string };
+        Returns: string;
+      };
+      svc_payment_fail: { Args: { p_payment: string }; Returns: string };
+      svc_payment_owner: { Args: { p_payment: string }; Returns: string };
+      svc_payment_prepare: {
+        Args: {
+          p_method: Database['public']['Enums']['payment_method'];
+          p_round: string;
+          p_user: string;
+        };
+        Returns: Json;
+      };
+      svc_payment_set_token: { Args: { p_payment: string; p_token: string }; Returns: undefined };
+      svc_paytech_keys: { Args: Record<PropertyKey, never>; Returns: Json };
+      svc_phone_change: {
+        Args: { p_actor: string; p_phone: string; p_user: string };
+        Returns: undefined;
       };
       svc_pin_begin_attempt: {
         Args: { p_max_attempts: number; p_user: string };
@@ -1242,6 +1429,20 @@ export type Database = {
       svc_purge_auth_otps: { Args: Record<PropertyKey, never>; Returns: number };
       svc_recent_pin_failures: { Args: { p_ip: unknown }; Returns: number };
       svc_revoke_sessions: { Args: { p_user: string }; Returns: undefined };
+      svc_terms_accept: {
+        Args: { p_user: string; p_user_agent: string; p_version: number };
+        Returns: undefined;
+      };
+      svc_terms_due: { Args: { p_user: string }; Returns: number };
+      swap_cancel: { Args: { p_swap: string }; Returns: undefined };
+      swap_decide: { Args: { p_approve: boolean; p_swap: string }; Returns: undefined };
+      swap_request: {
+        Args: { p_my_round: string; p_partner: string; p_partner_round: string };
+        Returns: string;
+      };
+      swap_respond: { Args: { p_accept: boolean; p_swap: string }; Returns: undefined };
+      terms_accept: { Args: { p_user_agent?: string; p_version: number }; Returns: undefined };
+      terms_status: { Args: Record<PropertyKey, never>; Returns: Json };
     };
     Enums: {
       app_language: 'fr' | 'wo';
@@ -1278,7 +1479,9 @@ export type Database = {
         | 'admin_compensated'
         | 'community_created'
         | 'community_updated'
-        | 'group_community_changed';
+        | 'group_community_changed'
+        | 'reminder_sent'
+        | 'swap_approved';
       dispute_kind: 'debited_not_recorded' | 'double_payment' | 'wrong_amount' | 'other';
       dispute_status: 'open' | 'in_progress' | 'resolved' | 'rejected';
       earning_kind: 'membership_fee' | 'late_penalty' | 'reserved_turn';
@@ -1453,6 +1656,8 @@ export const Constants = {
         'community_created',
         'community_updated',
         'group_community_changed',
+        'reminder_sent',
+        'swap_approved',
       ],
       dispute_kind: ['debited_not_recorded', 'double_payment', 'wrong_amount', 'other'],
       dispute_status: ['open', 'in_progress', 'resolved', 'rejected'],

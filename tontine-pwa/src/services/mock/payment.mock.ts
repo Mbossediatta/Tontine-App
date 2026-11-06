@@ -14,7 +14,6 @@ import {
 import { currentUser, db, delay, newId, nowIso, persist, requireOnline, requireUser } from './db';
 import { recordAudit } from './audit';
 import { assertGroupOpen } from './platform';
-import { sendSmsToUser } from './sms';
 import { synchronize } from './clock';
 import {
   amountBreakdown,
@@ -256,8 +255,8 @@ export const mockPaymentService: PaymentService = {
 };
 
 /**
- * Relance (comme svc_reminder_prepare) : ceux qui n'ont pas payé et pas encore été relancés
- * aujourd'hui reçoivent le SMS « Retard » et une notification ; l'action est tracée.
+ * Relance (comme reminder_send) : ceux qui n'ont pas payé et pas encore été relancés
+ * aujourd'hui reçoivent une notification (push sur le téléphone) ; l'action est tracée.
  */
 function remind(roundId: string, userId?: string): number {
   const round = requireRound(roundId);
@@ -296,7 +295,6 @@ function remind(roundId: string, userId?: string): number {
   }
   for (const id of targets) {
     db.reminders.push({ roundId: round.id, userId: id, day: today });
-    if (db.preferences[id]?.reminders !== false) sendSmsToUser(id, 'reminder');
     notify(
       id,
       'reminder',

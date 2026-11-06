@@ -9,6 +9,7 @@ import {
   paymentService,
   reportService,
   roundService,
+  swapService,
 } from '@/services';
 import { demoLogin } from '@/services/mock/auth.mock';
 import { lastOtpFor } from '@/services/mock/otp';
@@ -223,6 +224,35 @@ describe('back-office du super administrateur', () => {
     await demoLogin('u-super');
     const audit = await reportService.auditLog();
     expect(audit.filter(({ entry }) => entry.action === 'reminder_sent')).toHaveLength(1);
+  }, 10_000);
+
+  it('échange de tour : accord du membre, validation de l’admin, parts échangées', async () => {
+    await demoLogin(MOUSSA);
+    const upcoming = (await roundService.list('g-famille')).filter(
+      (view) =>
+        view.round.status === 'upcoming' &&
+        view.round.recipientType !== 'platform' &&
+        view.beneficiaries[0]?.id !== MOUSSA,
+    );
+    const [a, b] = upcoming.filter(
+      (view, index) =>
+        upcoming.findIndex((other) => other.beneficiaries[0]?.id === view.beneficiaries[0]?.id) ===
+        index,
+    );
+    const requester = a?.beneficiaries[0]?.id ?? '';
+    const partner = b?.beneficiaries[0]?.id ?? '';
+    await demoLogin(requester);
+    await swapService.request(a?.round.id ?? '', b?.round.id ?? '', partner);
+    await demoLogin(partner);
+    const [swap] = await swapService.list('g-famille');
+    await swapService.respond(swap?.request.id ?? '', true);
+    await demoLogin(MOUSSA);
+    await swapService.decide(swap?.request.id ?? '', true);
+    const after = await roundService.list('g-famille');
+    const holder = (roundId?: string) =>
+      after.find((view) => view.round.id === roundId)?.beneficiaries.map((person) => person.id);
+    expect(holder(a?.round.id)).toContain(partner);
+    expect(holder(b?.round.id)).toContain(requester);
   }, 10_000);
 
   it('un membre peut avoir deux parts et reçoit deux tours avec une cotisation doublée', async () => {

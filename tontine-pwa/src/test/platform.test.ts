@@ -22,14 +22,16 @@ describe('rubriques du super administrateur', () => {
     await demoLogin('u-super');
   });
 
-  it('envoie une annonce, comptabilise ses SMS et conserve une trace d’audit', async () => {
+  it('envoie une annonce en notification (pas de SMS) et conserve une trace d’audit', async () => {
+    const smsBefore = (await communicationService.smsStats(30)).count;
     const count = await communicationService.announce(
       { kind: 'admins' },
       'Maintenance',
       'La plateforme sera indisponible dimanche.',
     );
     expect(count).toBeGreaterThan(0);
-    expect((await communicationService.smsStats(30)).count).toBeGreaterThan(0);
+    // Notification push seulement : aucun SMS n'est compté.
+    expect((await communicationService.smsStats(30)).count).toBe(smsBefore);
     expect(
       (await reportService.auditLog()).some(({ entry }) => entry.action === 'announcement_sent'),
     ).toBe(true);

@@ -454,3 +454,7 @@ verify_jwt = false
 # Notification de paiement PayTech : appelée sans session, vérifiée par signature.
 [functions.payments-ipn]
 verify_jwt = false
+
+# Notification push : appelée par la base (pg_net), vérifiée par le secret PUSH_SECRET.
+[functions.push-send]
+verify_jwt = false

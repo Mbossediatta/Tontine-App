@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(12);
+select plan(10);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000d2', 'd-admin@users.calebasse.invalid'),
@@ -38,44 +38,23 @@ insert into ids select 'r', id from public.rounds
 -- Ibou a payé (espèces) : il ne doit pas être relancé.
 select public.payment_record_cash((select id from ids where name = 'r'), '00000000-0000-0000-0000-0000000000d4');
 
-reset role;
-set local role service_role;
-
+-- Un autre admin ne relance pas ce groupe.
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000d5');
 select throws_ok(
-  $$select public.svc_reminder_prepare('00000000-0000-0000-0000-0000000000d5',
-      (select id from ids where name = 'r'))$$,
+  $$select public.reminder_send((select id from ids where name = 'r'))$$,
   '42501', null, 'an admin of another group cannot remind');
+
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000d2');
 select throws_ok(
-  $$select public.svc_reminder_prepare('00000000-0000-0000-0000-0000000000d2',
-      (select id from ids where name = 'r'), '00000000-0000-0000-0000-0000000000d4')$$,
+  $$select public.reminder_send((select id from ids where name = 'r'), '00000000-0000-0000-0000-0000000000d4')$$,
   '22023', 'Ce membre a déjà payé.', 'a member who paid is not reminded');
-
-create temp table res (j jsonb) on commit drop;
-grant all on res to service_role;
-insert into res select public.svc_reminder_prepare('00000000-0000-0000-0000-0000000000d2',
-  (select id from ids where name = 'r'));
-
-select is(
-  (select array_agg(t ->> 'firstName' order by t ->> 'firstName')
-   from res, jsonb_array_elements(j -> 'targets') t),
-  array['Awa', 'Moussa'], 'everyone who has not paid is reminded, not Ibou');
-select is(
-  (select t ->> 'language' from res, jsonb_array_elements(j -> 'targets') t
-   where t ->> 'firstName' = 'Awa'),
-  'wo', 'the member language comes back for the SMS');
-select is(
-  (select (t ->> 'amount')::int from res, jsonb_array_elements(j -> 'targets') t
-   where t ->> 'firstName' = 'Awa'),
-  5000, 'the amount due is returned');
-select is((select j ->> 'groupName' from res), 'Tontine relance', 'the group name is returned');
-
+select is(public.reminder_send((select id from ids where name = 'r')), 2,
+  'everyone who has not paid is reminded (Moussa and Awa), not Ibou');
 select throws_ok(
-  $$select public.svc_reminder_prepare('00000000-0000-0000-0000-0000000000d2',
-      (select id from ids where name = 'r'))$$,
+  $$select public.reminder_send((select id from ids where name = 'r'))$$,
   '23505', null, 'a second reminder the same day is refused');
 select throws_ok(
-  $$select public.svc_reminder_prepare('00000000-0000-0000-0000-0000000000d2',
-      (select id from ids where name = 'r'), '00000000-0000-0000-0000-0000000000d3')$$,
+  $$select public.reminder_send((select id from ids where name = 'r'), '00000000-0000-0000-0000-0000000000d3')$$,
   '23505', 'Ce membre a déjà été relancé aujourd’hui. Réessayez demain.',
   'one member cannot be reminded twice a day either');
 
@@ -83,13 +62,21 @@ reset role;
 select is(
   (select count(*)::int from public.notifications
    where user_id = '00000000-0000-0000-0000-0000000000d3' and type = 'reminder'),
-  1, 'the member gets one in-app reminder');
+  1, 'the member gets one reminder notification');
+select is(
+  (select body from public.notifications
+   where user_id = '00000000-0000-0000-0000-0000000000d3' and type = 'reminder'),
+  'Salaam Awa, sa cotisation ci « Tontine relance » dafa yéex. Lu nga war a fay : 5 000 FCFA.',
+  'the Wolof template is used for a Wolof member, fields filled');
+select is(
+  (select body from public.notifications
+   where user_id = '00000000-0000-0000-0000-0000000000d2' and type = 'reminder') like 'Bonjour Moussa,%',
+  true, 'French template for a French member');
 select is(
   (select count(*)::int from public.audit_log
    where action = 'reminder_sent' and group_id = (select id from ids where name = 'g')),
   1, 'the reminder is in the audit log');
-select is(public.svc_sms_template('late', 'wo') like 'Salaam%', true, 'Wolof template for Wolof members');
-select is(public.svc_sms_template('late', 'xx') like 'Bonjour%', true, 'French template by default');
+select is(private.render_template('late', 'xx', '{}') like 'Bonjour%', true, 'French template by default');
 
 select * from finish();
 rollback;

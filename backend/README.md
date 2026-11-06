@@ -70,7 +70,9 @@ Les migrations versionnées dans `supabase/migrations/` :
 | `…240000_parametres.sql` | `settings_get`, `settings_update` (validations ; clé secrète PayTech dans le coffre-fort Vault, seul l’indice reste lisible), `svc_paytech_keys` (Edge Functions) |
 | `…250000_finances_litiges_annonces.sql` | `payout_block`, `payout_unblock`, `admin_compensate`, litiges (`dispute_take`, `_record_payment`, `_refund`, `_reject`, ouverture automatique sur notification PayTech anormale), `svc_announcement` |
 | `…260000_conditions.sql` | Conditions d’utilisation : version des textes (augmentée quand ils changent), `terms_acceptances` (preuve en ajout seul : qui, version, date, appareil), `legal_terms` (sans session), `terms_status`, `terms_accept`, `svc_terms_due` et `svc_terms_accept` (création du PIN) |
-| `…270000_relances.sql` | Relance manuelle : `payment_reminders` (une relance par membre, par tour et par jour), `svc_reminder_prepare` (droits, membres à relancer, notification, audit `reminder_sent`), `svc_sms_template` (modèle dans la langue du membre) ; SMS envoyés par l’Edge Function `reminders-send` |
+| `…270000_relances.sql` | Relance manuelle : `payment_reminders` (une relance par membre, par tour et par jour), `reminder_send` (droits, membres à relancer, notification écrite avec le modèle « Retard » dans la langue du membre, audit `reminder_sent`), `private.render_template` ; pas de SMS |
+| `…280000_echanges.sql` | Échange de tour entre membres (exception voulue au verrouillage de l’ordre) : parts échangées sur `swap_requests`, `swap_request` (tours à venir, une demande en cours par part), `swap_respond` (accord du membre), `swap_decide` (admin : bénéficiaires et rangs échangés, audit `swap_approved`), `swap_cancel` |
+| `…290000_notifications_push.sql` | Notifications push : chaque notification créée part vers les téléphones abonnés du membre (déclencheur `notifications_push` → `pg_net` → Edge Function `push-send`, Web Push, préférences du membre respectées) |
 | `…200000_rythme_journalier.sql`, `…200100_duree_tour.sql` | Rythme de cotisation `daily`/`weekly`/`biweekly`/`monthly` et `turn_length` (durée d’un tour en périodes du rythme, choisie par l’admin ; un an au plus, deux ans en mensuel) |
 
 - RLS est activé sur toutes les tables (règles : étape 3 ci-dessous).
@@ -152,6 +154,14 @@ Comptes du seed : ceux de la simulation (super admin 770100101, admin 771234567,
   Ainsi, la connexion téléphone de Supabase (qui exige un fournisseur SMS intégré) n’est pas
   utilisée : les SMS passent par Orange.
 - **Jeton d’accès de 15 minutes**, renouvelé pendant l’utilisation.
+- **Notifications push, pas de SMS** : les rappels, annonces, paiements, échanges… arrivent
+  sur le téléphone comme une messagerie (Web Push). Seul le code de connexion part par SMS.
+  Réglage par environnement : clés `VAPID_*` et `PUSH_SECRET` dans les secrets des fonctions,
+  `VITE_VAPID_PUBLIC_KEY` dans le frontend, et dans le coffre-fort Vault de la base :
+  `select vault.create_secret('<adresse>/functions/v1/push-send', 'push_send_url');`
+  `select vault.create_secret('<même valeur que PUSH_SECRET>', 'push_send_secret');`
+  En local, l’adresse est `http://kong:8000/functions/v1/push-send` (à refaire après `npm run reset`).
+  Sur iPhone, le push n’arrive que si l’application est installée sur l’écran d’accueil.
 - **Secrets** : uniquement dans `supabase/functions/.env` (local) ou
   `npx supabase secrets set` (production). Jamais dans le code ni dans le dépôt.
 
@@ -164,8 +174,8 @@ Comptes du seed : ceux de la simulation (super admin 770100101, admin 771234567,
 | 3 | RLS : fonctions d’aide, politiques, vues, tests pgTAP | ✅ |
 | 4 | Connexion : code SMS (Orange) et PIN, profil, seed | ✅ côté serveur (branchement du frontend : avec les autres services) |
 | 5 | Groupes, communautés, adhésions, parts, tirage et ordre | ✅ groupes, communautés, adhésions, supervision (testés : `groupes.test.sql`, `communautes.test.sql`, et `npm run test:integration` côté frontend) ; tirage et ordre : avec l’étape 6 |
-| 6 | Cycle : démarrage, tours, verrouillage, échanges de tour | ✅ ordre, démarrage, tours, espèces, versement, période réservée, nouveau cycle (`cycle.test.sql` et `npm run test:integration`) ; échanges de tour : à faire |
-| 7 | Notifications : `notify`, `push-send`, abonnements | à faire |
+| 6 | Cycle : démarrage, tours, verrouillage, échanges de tour | ✅ ordre, démarrage, tours, espèces, versement, période réservée, nouveau cycle (`cycle.test.sql` et `npm run test:integration`) ; échanges de tour ✅ (`echanges.test.sql`) |
+| 7 | Notifications : `notify`, `push-send`, abonnements | ✅ push à chaque notification (chaîne testée en local) ; relances et annonces sans SMS ; à faire : essai sur un vrai téléphone (HTTPS) |
 | 8 | Tâche quotidienne `cron-daily` | à faire |
 | 9 | Paiements PayTech (frais payés par le membre), espèces, pénalités | ✅ circuit PayTech complet, testé sans clés (page simulée) ; espèces ✅ ; à faire : test avec les clés PayTech (env test), pénalités automatiques (étape 8) |
 | 10 | Versements (transfert PayTech ou manuel), revenus, rémunérations | à faire |

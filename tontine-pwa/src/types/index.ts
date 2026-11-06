@@ -184,6 +184,9 @@ export interface SwapRequest {
   partnerId: string;
   requesterRoundId: string;
   partnerRoundId: string;
+  /** Parts échangées : chacune prend le tour et le rang de l'autre. */
+  requesterMembershipId: string;
+  partnerMembershipId: string;
   status: SwapStatus;
   createdAt: string;
   decidedAt?: string;
@@ -234,7 +237,8 @@ export type AuditAction =
   | 'community_created'
   | 'community_updated'
   | 'group_community_changed'
-  | 'reminder_sent';
+  | 'reminder_sent'
+  | 'swap_approved';
 
 /** Entrée du journal d'audit : qui a fait quoi, quand, et sur quel groupe. */
 /**

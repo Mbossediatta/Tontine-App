@@ -64,7 +64,7 @@ export default function GroupDetailPage() {
             <Tabs items={TABS} value={tab} onChange={setTab} label="Sections du groupe" />
             <div role="tabpanel" className="animate-fade-in" key={tab}>
               {tab === 'tour' ? <CurrentRoundTab overview={overview} /> : null}
-              {tab === 'calendrier' ? <CalendarTab groupId={group.id} /> : null}
+              {tab === 'calendrier' ? <CalendarTab groupId={group.id} cycleActive={group.status === 'active'} /> : null}
               {tab === 'membres' ? <MembersTab groupId={group.id} /> : null}
               {tab === 'historique' ? <HistoryTab groupId={group.id} /> : null}
             </div>

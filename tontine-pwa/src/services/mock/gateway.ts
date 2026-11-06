@@ -5,7 +5,6 @@ import { formatAmount, fullName } from '@/lib/format';
 import { requireGroup, requireRound } from './access';
 import { db, delay, nowIso, persist, requireUser } from './db';
 import { notify, notifyManagers, refreshRound } from './lifecycle';
-import { sendSmsToUser } from './sms';
 import { recordPaymentEarnings } from './revenue';
 
 const CONFIRMATION_DELAY_MS = 4000;
@@ -70,7 +69,6 @@ export function applyPendingConfirmations(now: number = Date.now()): void {
       amount: payment.amount,
       at: payment.paidAt,
     });
-    sendSmsToUser(payment.userId, 'payment');
     // Le paiement remplace un éventuel statut « en retard » enregistré pour ce tour.
     db.payments = db.payments.filter(
       (p) => !(p.roundId === payment.roundId && p.userId === payment.userId && p.status === 'late'),

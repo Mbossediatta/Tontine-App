@@ -1,9 +1,8 @@
-// Annonce du super admin : notification à chaque destinataire (svc_announcement), puis un
-// SMS Orange (motif « announcement », coût suivi dans sms_log). Renvoie le nombre de
-// destinataires. Un SMS en échec n'annule pas l'annonce : il est compté à part.
+// Annonce du super admin : une notification à chaque destinataire (svc_announcement), qui
+// part aussi en notification push sur son téléphone (push-send). Pas de SMS. Renvoie le
+// nombre de destinataires.
 import { admin, checkBusiness, superAdminCaller } from '../_shared/db.ts';
 import { AppError, readJson, serve, stringField } from '../_shared/http.ts';
-import { sendSms } from '../_shared/orange-sms.ts';
 
 serve(async (req) => {
   const actor = await superAdminCaller(req, 'Annonce refusée (pas super administrateur)');
@@ -22,15 +21,5 @@ serve(async (req) => {
       p_message: message,
     }),
   ) as Array<{ id: string; phone: string }>;
-
-  let smsFailed = 0;
-  for (const recipient of recipients) {
-    try {
-      await sendSms(recipient.phone, `${title} : ${message}`, 'announcement', recipient.id);
-    } catch (error) {
-      smsFailed += 1;
-      console.error('SMS d’annonce non envoyé', error instanceof Error ? error.message : '');
-    }
-  }
-  return { count: recipients.length, smsFailed };
+  return { count: recipients.length };
 });

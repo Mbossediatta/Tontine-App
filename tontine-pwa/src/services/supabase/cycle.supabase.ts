@@ -1,7 +1,6 @@
 // Tours, paiements et échanges de tour sur Supabase.
-// Branchés : ordre des bénéficiaires, tours, statuts, paiements en espèces, versement
-// (backend/supabase/migrations/…_cycle.sql). Paiement en ligne PayTech, rappels SMS et
-// échanges de tour : étapes suivantes du backend, avec un message clair d'ici là.
+// Ordre des bénéficiaires, tours, statuts, paiements en espèces, versement (…_cycle.sql),
+// paiement en ligne PayTech, relances (…_relances.sql) et échanges de tour (…_echanges.sql).
 import { ServiceError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import type {
@@ -13,6 +12,8 @@ import type {
   Round,
   RoundPaymentRow,
   RoundView,
+  SwapStatus,
+  SwapView,
 } from '@/types';
 import type { PaymentService } from '../payment.service';
 import type { RoundService } from '../round.service';
@@ -33,9 +34,6 @@ import {
 } from './groupData';
 import { invoke, requireOnline, rows, rpc, sessionUserId } from './rpc';
 import type { SimulatedCheckout } from '../mock/gateway';
-
-const NOT_READY = (what: string) =>
-  new ServiceError(`${what} arrive avec l’étape suivante du serveur.`, 'conflict');
 
 /** Bénéficiaire affiché pour la période réservée au super admin. */
 const PLATFORM: PublicUser = { id: '', firstName: 'Calebasse', lastName: 'de l’Espoir' };
@@ -254,14 +252,15 @@ export function createSupabasePaymentService(): PaymentService {
       await rpc('payment_record_cash', { p_round: roundId, p_user: userId });
     },
 
-    // SMS « Retard » dans la langue du membre ; une relance par membre et par jour.
+    // Notification (et push) « Retard » dans la langue du membre ; une par membre et par jour.
     async remindLate(roundId) {
-      const reply = await invoke<{ count: number }>('reminders-send', { roundId });
-      return reply.count;
+      requireOnline();
+      return rpc<number>('reminder_send', { p_round: roundId });
     },
 
     async remindMember(roundId, userId) {
-      await invoke('reminders-send', { roundId, userId });
+      requireOnline();
+      await rpc('reminder_send', { p_round: roundId, p_user: userId });
     },
   };
 }
@@ -285,28 +284,85 @@ export const supabaseSimulatedCheckout = {
   },
 };
 
+interface SwapRow {
+  id: string;
+  group_id: string;
+  cycle: number;
+  requester_id: string;
+  partner_id: string;
+  requester_round_id: string;
+  partner_round_id: string;
+  requester_membership_id: string;
+  partner_membership_id: string;
+  status: SwapStatus;
+  created_at: string;
+  decided_at: string | null;
+}
+
+// Demande, accord du partenaire puis validation d'un admin (…_echanges.sql).
 export function createSupabaseSwapService(): SwapService {
   return {
     async list(groupId) {
-      const result = await supabase()
-        .from('swap_requests')
-        .select('id')
-        .eq('group_id', groupId)
-        .limit(1);
-      if (rows<{ id: string }>(result).length > 0) throw NOT_READY('L’affichage des échanges');
-      return [];
+      const ctx = await groupContext(groupId);
+      const group = ctx.groups[0];
+      if (!group) return [];
+      // Les règles d'accès ne renvoient que mes demandes, ou toutes pour un admin.
+      const swapRows = rows<SwapRow>(
+        await supabase()
+          .from('swap_requests')
+          .select('*')
+          .eq('group_id', groupId)
+          .eq('cycle', group.currentCycle)
+          .order('created_at', { ascending: false }),
+      );
+      const manager = canManage(ctx, group);
+      return swapRows.flatMap((row): SwapView[] => {
+        const requesterRound = ctx.rounds.find((round) => round.id === row.requester_round_id);
+        const partnerRound = ctx.rounds.find((round) => round.id === row.partner_round_id);
+        if (!requesterRound || !partnerRound) return [];
+        return [
+          {
+            request: {
+              id: row.id,
+              groupId: row.group_id,
+              cycle: row.cycle,
+              requesterId: row.requester_id,
+              partnerId: row.partner_id,
+              requesterRoundId: row.requester_round_id,
+              partnerRoundId: row.partner_round_id,
+              requesterMembershipId: row.requester_membership_id,
+              partnerMembershipId: row.partner_membership_id,
+              status: row.status,
+              createdAt: row.created_at,
+              decidedAt: row.decided_at ?? undefined,
+            },
+            requester: person(ctx, row.requester_id, manager),
+            partner: person(ctx, row.partner_id, manager),
+            requesterRound,
+            partnerRound,
+          },
+        ];
+      });
     },
-    async request() {
-      throw NOT_READY('L’échange de tour');
+    async request(myRoundId, partnerRoundId, partnerId) {
+      requireOnline();
+      await rpc('swap_request', {
+        p_my_round: myRoundId,
+        p_partner_round: partnerRoundId,
+        p_partner: partnerId,
+      });
     },
-    async respond() {
-      throw NOT_READY('L’échange de tour');
+    async respond(swapId, accept) {
+      requireOnline();
+      await rpc('swap_respond', { p_swap: swapId, p_accept: accept });
     },
-    async decide() {
-      throw NOT_READY('L’échange de tour');
+    async decide(swapId, approve) {
+      requireOnline();
+      await rpc('swap_decide', { p_swap: swapId, p_approve: approve });
     },
-    async cancel() {
-      throw NOT_READY('L’échange de tour');
+    async cancel(swapId) {
+      requireOnline();
+      await rpc('swap_cancel', { p_swap: swapId });
     },
   };
 }

@@ -62,9 +62,7 @@ export function groupsManagedBy(user: User): Group[] {
       )
       .map((m) => m.groupId),
   );
-  return db.groups.filter(
-    (g) => g.adminId === user.id || viaMembership.has(g.id),
-  );
+  return db.groups.filter((g) => g.adminId === user.id || viaMembership.has(g.id));
 }
 
 /** Nom de l'administrateur responsable d'un groupe. */
