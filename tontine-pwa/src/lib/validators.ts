@@ -83,6 +83,7 @@ export const createGroupSchema = z
       .min(2, 'Au moins 2 parts')
       .max(50, 'Au plus 50 parts'),
     paymentDueDay: requiredInt('Indiquez le jour limite').min(1, 'Jour invalide'),
+    paymentDueTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Heure invalide (HH:MM)'),
     startDate: z.string().min(1, 'Choisissez une date de démarrage'),
     latePenalty: z
       .number({ error: 'Montant invalide' })
@@ -148,6 +149,7 @@ export const CREATE_GROUP_STEPS = [
     'frequency',
     'turnLength',
     'paymentDueDay',
+    'paymentDueTime',
     'sharesPerRound',
     'membershipFeeAmount',
     'collectMembershipFee',
@@ -175,6 +177,7 @@ export const groupSettingsSchema = z
       .min(2, 'Au moins 2')
       .max(50, 'Au plus 50'),
     paymentDueDay: requiredInt('Indiquez le jour limite').min(1, 'Jour invalide'),
+    paymentDueTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Heure invalide (HH:MM)'),
     startDate: z.string().min(1, 'Choisissez une date de démarrage'),
     latePenalty: z
       .number({ error: 'Montant invalide' })

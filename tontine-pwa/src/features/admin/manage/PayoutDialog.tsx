@@ -26,6 +26,13 @@ export function PayoutDialog({ round, onClose }: { round: RoundView | null; onCl
       title="Reverser la cagnotte ?"
       confirmLabel="Confirmer le reversement"
     >
+      {round && round.round.status !== 'ready_for_payout' ? (
+        <p className="mb-3 rounded-control bg-amber-50 px-3 py-2 text-label text-amber-800">
+          Tous les membres n’ont pas payé. Le bénéficiaire reçoit ce qui a été réellement collecté ;
+          ce qui manque devient une dette des membres concernés, retenue sur leur cagnotte s’ils ne
+          remboursent pas.
+        </p>
+      ) : null}
       {round && beneficiary ? (
         <dl className="flex flex-col gap-2">
           <div className="flex justify-between gap-4">
@@ -57,7 +64,7 @@ export function PayoutDialog({ round, onClose }: { round: RoundView | null; onCl
             </div>
           ))}
           <div className="flex justify-between gap-4 border-t border-line pt-2 text-card-title">
-            <dt>Montant</dt>
+            <dt>{round.round.status === 'ready_for_payout' ? 'Montant' : 'Montant prévu'}</dt>
             <dd>
               <AmountText value={round.round.potAmount} className="font-bold text-green-700" />
             </dd>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { formatAmount, formatDate, fullName } from '@/lib/format';
+import { formatAmount, formatDate, formatDateTime, fullName } from '@/lib/format';
+import { payoutOpen } from '@/lib/tontine';
 import { useOnline } from '@/hooks/useOnline';
 import type { GroupOverview, RoundView } from '@/types';
 import { PayoutDialog } from '../manage/PayoutDialog';
@@ -17,7 +18,7 @@ interface NextPayoutCardProps {
 export function NextPayoutCard({ overview, round }: NextPayoutCardProps) {
   const [confirming, setConfirming] = useState(false);
   const online = useOnline();
-  const ready = round.round.status === 'ready_for_payout';
+  const ready = payoutOpen(round);
 
   return (
     <section className="flex flex-col gap-3 rounded-card bg-blue-700 p-5 text-white shadow-card">
@@ -44,7 +45,7 @@ export function NextPayoutCard({ overview, round }: NextPayoutCardProps) {
       {!ready ? (
         <p className="text-small text-blue-100">
           Possible quand toutes les parts auront payé ({overview.paidCount} /{' '}
-          {overview.activeShareCount}).
+          {overview.activeShareCount}), ou après l’heure limite ({formatDateTime(round.deadline)}).
         </p>
       ) : null}
       <PayoutDialog round={confirming ? round : null} onClose={() => setConfirming(false)} />

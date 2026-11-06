@@ -175,6 +175,88 @@ export type Database = {
           },
         ];
       };
+      debts: {
+        Row: {
+          amount: number;
+          created_at: string;
+          group_id: string;
+          id: string;
+          penalty_amount: number;
+          round_id: string;
+          settled_at: string | null;
+          settled_by: string | null;
+          settled_round_id: string | null;
+          settled_via: Database['public']['Enums']['debt_settlement'] | null;
+          status: Database['public']['Enums']['debt_status'];
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          amount: number;
+          created_at?: string;
+          group_id: string;
+          id?: string;
+          penalty_amount?: number;
+          round_id: string;
+          settled_at?: string | null;
+          settled_by?: string | null;
+          settled_round_id?: string | null;
+          settled_via?: Database['public']['Enums']['debt_settlement'] | null;
+          status?: Database['public']['Enums']['debt_status'];
+          user_id: string;
+        };
+        Update: {
+          amount?: number;
+          created_at?: string;
+          group_id?: string;
+          id?: string;
+          penalty_amount?: number;
+          round_id?: string;
+          settled_at?: string | null;
+          settled_by?: string | null;
+          settled_round_id?: string | null;
+          settled_via?: Database['public']['Enums']['debt_settlement'] | null;
+          status?: Database['public']['Enums']['debt_status'];
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'debts_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'debts_round_id_fkey';
+            columns: ['round_id'];
+            isOneToOne: false;
+            referencedRelation: 'rounds';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'debts_settled_by_fkey';
+            columns: ['settled_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'debts_settled_round_id_fkey';
+            columns: ['settled_round_id'];
+            isOneToOne: false;
+            referencedRelation: 'rounds';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'debts_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       dispute_events: {
         Row: {
           actor_id: string | null;
@@ -330,6 +412,7 @@ export type Database = {
           membership_fee_amount: number;
           name: string;
           payment_due_day: number;
+          payment_due_time: string;
           reserve_final_turn: boolean;
           shares_per_round: number;
           start_date: string;
@@ -358,6 +441,7 @@ export type Database = {
           membership_fee_amount?: number;
           name: string;
           payment_due_day: number;
+          payment_due_time?: string;
           reserve_final_turn?: boolean;
           shares_per_round?: number;
           start_date: string;
@@ -385,6 +469,7 @@ export type Database = {
           membership_fee_amount?: number;
           name?: string;
           payment_due_day?: number;
+          payment_due_time?: string;
           reserve_final_turn?: boolean;
           shares_per_round?: number;
           start_date?: string;
@@ -914,17 +999,20 @@ export type Database = {
           amount: number;
           membership_id: string;
           round_id: string;
+          withheld: number;
         };
         ComputedFields: never;
         Insert: {
           amount?: number;
           membership_id: string;
           round_id: string;
+          withheld?: number;
         };
         Update: {
           amount?: number;
           membership_id?: string;
           round_id?: string;
+          withheld?: number;
         };
         Relationships: [
           {
@@ -1253,6 +1341,7 @@ export type Database = {
         Args: { p_admin_ids: string[]; p_description: string; p_id: string; p_name: string };
         Returns: string;
       };
+      debt_record_payment: { Args: { p_debt: string }; Returns: undefined };
       dispute_record_payment: { Args: { p_dispute: string }; Returns: undefined };
       dispute_refund: {
         Args: { p_amount: number; p_dispute: string; p_note: string };
@@ -1277,6 +1366,7 @@ export type Database = {
         Returns: undefined;
       };
       group_round_statuses: { Args: { p_groups: string[] }; Returns: Json };
+      group_set_due_time: { Args: { p_group: string; p_time: string }; Returns: undefined };
       group_start: { Args: { p_group: string }; Returns: undefined };
       group_suspend: { Args: { p_group: string }; Returns: undefined };
       group_transfer: {
@@ -1306,6 +1396,7 @@ export type Database = {
           membership_fee_amount: number;
           name: string;
           payment_due_day: number;
+          payment_due_time: string;
           reserve_final_turn: boolean;
           shares_per_round: number;
           start_date: string;
@@ -1487,6 +1578,8 @@ export type Database = {
         | 'group_community_changed'
         | 'reminder_sent'
         | 'swap_approved';
+      debt_settlement: 'cash' | 'withheld';
+      debt_status: 'open' | 'settled';
       dispute_kind: 'debited_not_recorded' | 'double_payment' | 'wrong_amount' | 'other';
       dispute_status: 'open' | 'in_progress' | 'resolved' | 'rejected';
       earning_kind: 'membership_fee' | 'late_penalty' | 'reserved_turn';
@@ -1664,6 +1757,8 @@ export const Constants = {
         'reminder_sent',
         'swap_approved',
       ],
+      debt_settlement: ['cash', 'withheld'],
+      debt_status: ['open', 'settled'],
       dispute_kind: ['debited_not_recorded', 'double_payment', 'wrong_amount', 'other'],
       dispute_status: ['open', 'in_progress', 'resolved', 'rejected'],
       earning_kind: ['membership_fee', 'late_penalty', 'reserved_turn'],

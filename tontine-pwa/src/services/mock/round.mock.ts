@@ -12,7 +12,7 @@ import {
 import { currentUser, delay, persist, requireOnline, requireUser } from './db';
 import { recordAudit } from './audit';
 import { assertGroupOpen } from './platform';
-import { closeRound, cycleRounds, memberStatus, notify, paidCount } from './lifecycle';
+import { closeRound, cycleRounds, lateAfter, memberStatus, notify, paidCount } from './lifecycle';
 import { buildMemberViews, toPublicUser } from './views';
 
 function assertOrderEditable(groupId: string) {
@@ -79,6 +79,7 @@ export const mockRoundService: RoundService = {
         beneficiaries,
         beneficiaryShares,
         paidCount: paidCount(round),
+        deadline: lateAfter(round).toISOString(),
       };
     });
   },
@@ -145,8 +146,12 @@ export const mockRoundService: RoundService = {
     const members = activeMemberships(group.id);
     const allPaid = members.every((m) => memberStatus(round, m.userId) === 'paid');
     if (round.status === 'paid_out') throw new ServiceError('Cette cagnotte a déjà été reversée.');
-    if (!allPaid)
-      throw new ServiceError('Tous les membres doivent avoir payé avant le reversement.');
+    // Passé l'heure limite, le versement se fait quand même : les impayés deviennent des dettes.
+    if (!allPaid && lateAfter(round) > new Date()) {
+      throw new ServiceError(
+        'Tous les membres doivent avoir payé, ou l’heure limite doit être passée, avant le reversement.',
+      );
+    }
     if (round.recipientType !== 'platform') {
       const recipients = new Set(
         activeMemberships(group.id)

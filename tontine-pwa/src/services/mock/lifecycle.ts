@@ -1,6 +1,12 @@
 // Cycle de vie d'une tontine simulée : statuts de paiement, pénalités, ouverture et clôture des tours.
 import { ServiceError } from '@/lib/errors';
-import { computeDueDate, computePot, contributionPerTurn, roundOpenDate } from '@/lib/tontine';
+import {
+  computeDueDate,
+  computePot,
+  contributionPerTurn,
+  roundDeadline,
+  roundOpenDate,
+} from '@/lib/tontine';
 import { formatAmount } from '@/lib/format';
 import type { Group, PaymentStatus, Round } from '@/types';
 import { activeMemberships, requireGroup } from './access';
@@ -23,9 +29,11 @@ function hasPenalty(roundId: string, userId: string): boolean {
  * (Paramètres → Règles des tontines).
  */
 export function lateAfter(round: Round): Date {
-  const deadline = new Date(round.dueDate);
-  deadline.setDate(deadline.getDate() + db.settings.rules.graceDays);
-  return deadline;
+  return roundDeadline(
+    round.dueDate,
+    db.settings.rules.graceDays,
+    requireGroup(round.groupId).paymentDueTime,
+  );
 }
 
 /**
@@ -168,9 +176,8 @@ export function applyLatePenalties(now: Date = new Date()): boolean {
     for (const membership of activeMemberships(group.id)) {
       if (seenUsers.has(membership.userId)) continue;
       seenUsers.add(membership.userId);
-      const paid = db.payments.some(
-        (p) => p.roundId === round.id && p.userId === membership.userId && p.status === 'paid',
-      );
+      const paid =
+        roundPaid(round.id, membership.userId) >= roundTotal(group, round, membership.userId);
       if (paid || hasPenalty(round.id, membership.userId)) continue;
       db.penalties.push({
         id: newId('pen'),
@@ -280,6 +287,58 @@ export function createRounds(group: Group): void {
   if (group.reserveFinalTurn) makeRound(totalRounds, [], 'platform');
 }
 
+function fullNameOf(userId: string): string {
+  const user = db.users.find((item) => item.id === userId);
+  return user ? `${user.firstName} ${user.lastName}` : 'un membre';
+}
+
+/**
+ * Impayés au versement d'un tour (comme round_payout) : ce que chacun n'a pas versé
+ * (cotisation et pénalité) devient une dette, et il est prévenu.
+ */
+function recordDebts(round: Round, group: Group): void {
+  const seen = new Set<string>();
+  for (const membership of activeMemberships(group.id)) {
+    if (seen.has(membership.userId)) continue;
+    seen.add(membership.userId);
+    const shares = activeMemberships(group.id).filter((m) => m.userId === membership.userId).length;
+    const paid = db.payments.filter(
+      (p) => p.roundId === round.id && p.userId === membership.userId && p.status === 'paid',
+    );
+    const amount = Math.max(
+      0,
+      contributionPerTurn(group) * shares -
+        paid.reduce((sum, p) => sum + (p.contributionAmount ?? p.amount), 0),
+    );
+    const penaltyAmount = Math.max(
+      0,
+      penaltyFor(round.id, membership.userId) -
+        paid.reduce((sum, p) => sum + (p.latePenaltyAmount ?? 0), 0),
+    );
+    if (amount + penaltyAmount <= 0) continue;
+    if (db.debts.some((debt) => debt.roundId === round.id && debt.userId === membership.userId)) {
+      continue;
+    }
+    db.debts.push({
+      id: newId('debt'),
+      groupId: group.id,
+      roundId: round.id,
+      userId: membership.userId,
+      amount,
+      penaltyAmount,
+      status: 'open',
+      createdAt: nowIso(),
+    });
+    notify(
+      membership.userId,
+      'debt',
+      'Cotisation impayée',
+      `${group.name} : la cagnotte du tour ${round.number} a été versée sans votre cotisation. Vous devez ${formatAmount(amount + penaltyAmount)} ; sans remboursement, ce montant sera retenu sur votre cagnotte.`,
+      `/groupes/${group.id}`,
+    );
+  }
+}
+
 /** Clôture le tour reversé, ouvre le suivant du même cycle ou termine le groupe. */
 export function closeRound(round: Round): void {
   const group = requireGroup(round.groupId);
@@ -289,26 +348,66 @@ export function closeRound(round: Round): void {
   if (round.recipientType === 'platform') {
     recordReservedTurnEarning(round, group);
   } else {
+    recordDebts(round, group);
     const recipients = memberships.filter((membership) =>
       round.beneficiaryMembershipIds
         ? round.beneficiaryMembershipIds.includes(membership.id)
         : membership.userId === round.beneficiaryId,
     );
-    const shareAmount = Math.floor(round.potAmount / Math.max(1, recipients.length));
-    let remainder = round.potAmount - shareAmount * recipients.length;
+    // Les bénéficiaires se partagent ce qui a réellement été collecté (comme round_payout).
+    const collected = db.payments
+      .filter((p) => p.roundId === round.id && p.status === 'paid')
+      .reduce((sum, p) => sum + (p.contributionAmount ?? p.amount), 0);
+    const shareAmount = Math.floor(collected / Math.max(1, recipients.length));
+    let remainder = collected - shareAmount * recipients.length;
     const amounts = new Map<string, number>();
     for (const membership of recipients) {
       const amount = shareAmount + (remainder > 0 ? 1 : 0);
       remainder = Math.max(0, remainder - 1);
       amounts.set(membership.userId, (amounts.get(membership.userId) ?? 0) + amount);
     }
+    // Dettes d'un bénéficiaire : retenues sur sa part.
+    const withheld = new Map<string, number>();
+    for (const [userId, amount] of amounts) {
+      const open = db.debts.filter(
+        (debt) => debt.groupId === group.id && debt.userId === userId && debt.status === 'open',
+      );
+      const owed = open.reduce((sum, debt) => sum + debt.amount + debt.penaltyAmount, 0);
+      if (owed <= 0) continue;
+      const taken = Math.min(amount, owed);
+      amounts.set(userId, amount - taken);
+      withheld.set(userId, taken);
+      const penalties = open.reduce((sum, debt) => sum + debt.penaltyAmount, 0);
+      if (penalties > 0) {
+        db.platformEarnings.push({
+          id: newId('earn'),
+          groupId: group.id,
+          roundId: round.id,
+          kind: 'late_penalty',
+          amount: penalties,
+          at: nowIso(),
+        });
+      }
+      for (const debt of open) {
+        debt.status = 'settled';
+        debt.settledVia = 'withheld';
+        debt.settledAt = nowIso();
+      }
+      notifyManagers(
+        group.id,
+        'debt',
+        'Dette retenue',
+        `${group.name} : ${formatAmount(owed)} retenus sur la cagnotte de ${fullNameOf(userId)} (tour ${round.number}) pour rembourser ses impayés : à reverser aux bénéficiaires des tours concernés.`,
+      );
+    }
     round.beneficiaryAmounts = Object.fromEntries(amounts);
     for (const [userId, amount] of amounts) {
+      const kept = withheld.get(userId) ?? 0;
       notify(
         userId,
         'payout',
         'Cagnotte reçue',
-        `Vous avez reçu ${formatAmount(amount)} de ${group.name}.`,
+        `Vous avez reçu ${formatAmount(amount)} de ${group.name}${kept > 0 ? ` (${formatAmount(kept)} retenus pour vos impayés)` : ''}.`,
         `/groupes/${group.id}`,
       );
     }

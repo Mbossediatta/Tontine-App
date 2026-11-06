@@ -88,6 +88,35 @@ export function maxDueDay(frequency: Frequency): number {
  * arrondi au franc supérieur. Le pourcentage vient des paramètres de la plateforme
  * (payment.feePercent) ; c'est le serveur qui fait foi.
  */
+/**
+ * Moment où un membre qui n'a pas tout payé passe en retard (comme private.round_deadline) :
+ * jour limite du tour à l'heure limite du groupe (heure de Dakar = UTC), plus le délai de grâce.
+ */
+export function roundDeadline(dueDate: string, graceDays: number, dueTime = '23:59'): Date {
+  const deadline = new Date(`${dueDate.slice(0, 10)}T${dueTime}:00Z`);
+  deadline.setUTCDate(deadline.getUTCDate() + graceDays);
+  return deadline;
+}
+
+/**
+ * La cagnotte peut être versée : tout le monde a payé (tour « prêt »), ou l'heure limite
+ * est passée (les impayés deviennent alors des dettes).
+ */
+export function payoutOpen(
+  view: { round: { status: string }; deadline: string },
+  now: Date = new Date(),
+): boolean {
+  return (
+    view.round.status === 'ready_for_payout' ||
+    (view.round.status === 'open' && new Date(view.deadline) <= now)
+  );
+}
+
+/** « à 12h00 » : heure limite affichée, rien pour la fin de journée par défaut. */
+export function dueTimeLabel(dueTime?: string): string {
+  return dueTime && dueTime !== '23:59' ? ` à ${dueTime.replace(':', 'h')}` : '';
+}
+
 export function serviceFee(amount: number, feePercent: number): number {
   if (amount <= 0 || feePercent <= 0) return 0;
   return Math.ceil((amount * feePercent) / 100);

@@ -11,6 +11,7 @@ import { paymentService } from '@/services';
 import type { GroupOverview, PaymentStatus, RoundPaymentRow, RoundView } from '@/types';
 import { useRoundPayments } from '../queries';
 import { CashPaymentDialog } from './CashPaymentDialog';
+import { DebtsCard } from './DebtsCard';
 
 /** Colonnes sur écran large : membre · statut · moyen · date · référence. */
 const COLUMNS =
@@ -289,6 +290,7 @@ export function PaymentsTab({ overview }: { overview: GroupOverview }) {
           );
         }}
       </AsyncContent>
+      <DebtsCard groupId={overview.group.id} />
       {round ? (
         <CashPaymentDialog
           open={cashOpen}

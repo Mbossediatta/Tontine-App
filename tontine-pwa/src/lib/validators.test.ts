@@ -19,6 +19,7 @@ const validGroup: CreateGroupValues = {
   frequency: 'daily',
   maxMembers: 10,
   paymentDueDay: 10,
+  paymentDueTime: '12:00',
   startDate: '2026-12-01',
   attributionMode: 'random',
   joinPolicy: 'invite',

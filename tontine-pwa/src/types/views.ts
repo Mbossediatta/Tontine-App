@@ -1,5 +1,6 @@
 // Vues composées renvoyées par les services (données prêtes à afficher).
 import type {
+  Debt,
   AttributionMode,
   AuditEntry,
   SecurityEvent,
@@ -99,6 +100,14 @@ export interface RoundView {
   beneficiaries: PublicUser[];
   beneficiaryShares: Array<{ user: PublicUser; shareCount: number; amount: number }>;
   paidCount: number;
+  /** Heure limite du tour (date limite, heure limite du groupe, délai de grâce), ISO. */
+  deadline: string;
+}
+
+export interface DebtView {
+  debt: Debt;
+  user: PublicUser;
+  roundNumber: number;
 }
 
 export interface RoundPaymentRow {
@@ -193,6 +202,8 @@ export interface CreateGroupInput {
   frequency: Frequency;
   maxMembers: number;
   paymentDueDay: number;
+  /** Heure limite (« HH:MM », heure de Dakar) ; par défaut 23:59. */
+  paymentDueTime?: string;
   startDate: string;
   attributionMode: AttributionMode;
   latePenalty?: number;

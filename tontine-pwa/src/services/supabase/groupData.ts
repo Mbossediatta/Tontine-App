@@ -33,6 +33,7 @@ export interface GroupRow {
   frequency: Group['frequency'];
   max_members: number;
   payment_due_day: number;
+  payment_due_time: string;
   start_date: string;
   attribution_mode: Group['attributionMode'];
   late_penalty: number | null;
@@ -106,7 +107,7 @@ interface ProfileRow {
 }
 
 export const GROUP_COLUMNS =
-  'id, community_id, join_policy, name, description, contribution_amount, turn_length, shares_per_round, membership_fee_amount, reserve_final_turn, frequency, max_members, payment_due_day, start_date, attribution_mode, late_penalty, status, invite_code, created_by, admin_id, member_status_visibility, current_cycle, archived_at';
+  'id, community_id, join_policy, name, description, contribution_amount, turn_length, shares_per_round, membership_fee_amount, reserve_final_turn, frequency, max_members, payment_due_day, payment_due_time, start_date, attribution_mode, late_penalty, status, invite_code, created_by, admin_id, member_status_visibility, current_cycle, archived_at';
 
 export function toGroup(row: GroupRow): Group {
   return {
@@ -123,6 +124,7 @@ export function toGroup(row: GroupRow): Group {
     frequency: row.frequency,
     maxMembers: row.max_members,
     paymentDueDay: row.payment_due_day,
+    paymentDueTime: row.payment_due_time?.slice(0, 5),
     startDate: new Date(`${row.start_date.slice(0, 10)}T00:00:00Z`).toISOString(),
     attributionMode: row.attribution_mode,
     latePenalty: row.late_penalty ?? undefined,

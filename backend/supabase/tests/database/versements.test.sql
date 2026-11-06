@@ -54,7 +54,7 @@ select public.payment_record_cash(pg_temp.id('r'), '00000000-0000-0000-0000-0000
 reset role;
 select is(pg_temp.due(), 300, 'three days are left after paying three more');
 select is(
-  (select array_agg(contribution_amount order by created_at) from public.payments
+  (select array_agg(contribution_amount order by contribution_amount) from public.payments
    where round_id = pg_temp.id('r') and user_id = '00000000-0000-0000-0000-0000000000f3'),
   array[100, 300], 'each installment is its own payment');
 

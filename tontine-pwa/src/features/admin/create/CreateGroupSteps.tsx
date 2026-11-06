@@ -245,6 +245,13 @@ export function StepRules() {
         />
       )}
       <Input
+        label="Heure limite de paiement (heure de Dakar)"
+        type="time"
+        hint="Le jour limite, après cette heure (et le délai de grâce), le membre passe en retard et la pénalité s’applique."
+        error={errors.paymentDueTime?.message}
+        {...register('paymentDueTime')}
+      />
+      <Input
         label="Parts bénéficiaires payées par tour"
         type="number"
         min={1}
@@ -368,6 +375,7 @@ export function StepSummary() {
     ['Parts payées par tour', v.sharesPerRound],
     ['Parts du groupe', v.maxMembers],
     ['Démarrage', v.startDate ? formatDate(v.startDate) : '—'],
+    ['Heure limite', v.paymentDueTime ? v.paymentDueTime.replace(':', 'h') : '—'],
     ['Pénalité de retard', v.latePenalty ? <AmountText key="p" value={v.latePenalty} /> : 'Aucune'],
     [
       'Frais d’adhésion',

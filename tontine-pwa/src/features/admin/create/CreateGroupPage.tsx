@@ -35,6 +35,7 @@ export default function CreateGroupPage() {
       description: '',
       frequency: 'daily',
       paymentDueDay: 1,
+      paymentDueTime: '23:59',
       startDate: format(startOfMonth(addMonths(new Date(), 1)), 'yyyy-MM-dd'),
       attributionMode: 'random',
       turnLength: 10,

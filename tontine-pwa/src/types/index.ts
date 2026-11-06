@@ -61,6 +61,8 @@ export interface Group {
   /** Nombre total de parts du groupe (une personne peut occuper plusieurs places). */
   maxMembers: number;
   paymentDueDay: number;
+  /** Heure limite de paiement (« HH:MM », heure de Dakar) le jour de l'échéance. */
+  paymentDueTime?: string;
   startDate: string; // ISO
   attributionMode: AttributionMode;
   latePenalty?: number;
@@ -170,6 +172,25 @@ export interface Penalty {
   userId: string;
   amount: number;
   appliedAt: string;
+}
+
+/**
+ * Impayé d'un membre quand la cagnotte d'un tour a été versée sans lui : il le rembourse
+ * (espèces), sinon il est retenu sur sa propre cagnotte.
+ */
+export interface Debt {
+  id: string;
+  groupId: string;
+  roundId: string;
+  userId: string;
+  /** Cotisation manquante, due aux bénéficiaires du tour. */
+  amount: number;
+  /** Pénalité impayée, revenu de la plateforme. */
+  penaltyAmount: number;
+  status: 'open' | 'settled';
+  settledVia?: 'cash' | 'withheld';
+  createdAt: string;
+  settledAt?: string;
 }
 
 export type SwapStatus =

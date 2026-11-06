@@ -47,6 +47,7 @@ export function SettingsTab({ overview }: { overview: GroupOverview }) {
       frequency: group.frequency,
       maxMembers: group.maxMembers,
       paymentDueDay: group.paymentDueDay,
+      paymentDueTime: group.paymentDueTime ?? '23:59',
       startDate: format(new Date(group.startDate), 'yyyy-MM-dd'),
       latePenalty: group.latePenalty,
     },
@@ -58,7 +59,11 @@ export function SettingsTab({ overview }: { overview: GroupOverview }) {
       groupService.update(
         group.id,
         locked
-          ? { name: values.name, description: values.description }
+          ? {
+              name: values.name,
+              description: values.description,
+              paymentDueTime: values.paymentDueTime,
+            }
           : { ...values, startDate: new Date(values.startDate).toISOString() },
       ),
     success: 'Réglages enregistrés',
@@ -128,6 +133,14 @@ export function SettingsTab({ overview }: { overview: GroupOverview }) {
               {...register('paymentDueDay', numeric)}
             />
           )}
+          {/* Modifiable même après le démarrage (vaut pour les prochaines échéances). */}
+          <Input
+            label="Heure limite de paiement (heure de Dakar)"
+            type="time"
+            hint="Le jour limite, après cette heure (et le délai de grâce), le membre passe en retard et la pénalité s’applique."
+            error={errors.paymentDueTime?.message}
+            {...register('paymentDueTime')}
+          />
           <Input
             label="Parts bénéficiaires payées par tour"
             type="number"

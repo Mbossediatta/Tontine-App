@@ -30,6 +30,7 @@ export const queryKeys = {
   myTransactions: ['payments', 'mine', 'all'] as const,
   receipt: (paymentId: string) => ['payments', 'receipt', paymentId] as const,
   swaps: (groupId: string) => ['swaps', groupId] as const,
+  debts: (groupId: string) => ['debts', groupId] as const,
   notifications: ['notifications'] as const,
   preferences: ['notifications', 'preferences'] as const,
   dashboard: ['admin', 'dashboard'] as const,

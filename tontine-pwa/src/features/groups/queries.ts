@@ -55,6 +55,14 @@ export function useSwaps(groupId: string, enabled = true) {
   });
 }
 
+/** Impayés devenus dettes : tous pour un admin du groupe, les miens pour un membre. */
+export function useDebts(groupId: string) {
+  return useQuery({
+    queryKey: queryKeys.debts(groupId),
+    queryFn: () => paymentService.listDebts(groupId),
+  });
+}
+
 export function useInvitePreview(code: string) {
   return useQuery({
     queryKey: queryKeys.invite(code),

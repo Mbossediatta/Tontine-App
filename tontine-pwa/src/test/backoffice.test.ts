@@ -12,6 +12,7 @@ import {
   swapService,
 } from '@/services';
 import { demoLogin } from '@/services/mock/auth.mock';
+import { simulateDeadlinePassed } from '@/services/mock/clock';
 import { lastOtpFor } from '@/services/mock/otp';
 import { resetDatabase } from '@/services/mock/db';
 import { duesOf } from '@/features/member/dues';
@@ -304,6 +305,53 @@ describe('back-office du super administrateur', () => {
     const paid = (await paymentService.listForRound(roundId)).find((r) => r.user.id === other);
     expect(paid?.status).toBe('paid');
     await expect(paymentService.recordCash(roundId, other, 1)).rejects.toThrow(/déjà payé/);
+  }, 15_000);
+
+  it('impayé à l’heure limite : pénalité, versement quand même, dette remboursée', async () => {
+    await demoLogin(MOUSSA);
+    const group = await groupService.create({
+      communityId: 'c-ouakam',
+      name: 'Tontine Retards',
+      contributionAmount: 1000,
+      frequency: 'monthly',
+      turnLength: 1,
+      maxMembers: 2,
+      paymentDueDay: 5,
+      paymentDueTime: '12:00',
+      latePenalty: 500,
+      startDate: new Date(Date.now() + 86_400_000).toISOString(),
+      attributionMode: 'manual',
+    });
+    await membershipService.addByPhone(group.id, '772345678');
+    const members = (await membershipService.list(group.id)).filter(
+      (member) => member.membership.status === 'active',
+    );
+    // Moussa d'abord : il reçoit le tour 1 ; l'autre membre ne paie pas.
+    const ordered = [...members].sort((a) => (a.user.id === MOUSSA ? -1 : 1));
+    await roundService.setManualOrder(
+      group.id,
+      ordered.map((member) => member.membership.id),
+    );
+    await groupService.start(group.id);
+    const roundId = (await groupService.get(group.id)).currentRound?.id ?? '';
+    const other = ordered[1]?.user.id ?? '';
+    await paymentService.recordCash(roundId, MOUSSA);
+    await expect(roundService.payout(roundId)).rejects.toThrow(/heure limite/);
+
+    // L'heure limite passe : pénalité d'office, puis versement malgré l'impayé.
+    await simulateDeadlinePassed(roundId);
+    const late = (await paymentService.listForRound(roundId)).find((r) => r.user.id === other);
+    expect(late).toMatchObject({ status: 'late', penalty: 500 });
+    await roundService.payout(roundId);
+    const [debt] = await paymentService.listDebts(group.id);
+    expect(debt?.debt).toMatchObject({ userId: other, amount: 1000, penaltyAmount: 500 });
+
+    // Le membre voit sa dette ; l'admin enregistre le remboursement en espèces.
+    await demoLogin(other);
+    expect(await paymentService.listDebts(group.id)).toHaveLength(1);
+    await demoLogin(MOUSSA);
+    await paymentService.recordDebtPayment(debt?.debt.id ?? '');
+    expect((await paymentService.listDebts(group.id))[0]?.debt.status).toBe('settled');
   }, 15_000);
 
   it('un membre peut avoir deux parts et reçoit deux tours avec une cotisation doublée', async () => {

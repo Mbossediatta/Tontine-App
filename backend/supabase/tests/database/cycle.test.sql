@@ -77,7 +77,7 @@ select throws_ok($$select public.order_draw((select id from ids where name = 'g'
 
 -- Tour 1 : paiements en espèces, puis versement à Awa.
 select throws_ok($$select public.round_payout(pg_temp.round_of(1))$$,
-  '22023', 'Tous les membres doivent avoir payé avant le reversement.', 'no payout before everyone paid');
+  '22023', 'Tous les membres doivent avoir payé, ou l’heure limite doit être passée, avant le reversement.', 'no payout before everyone paid');
 select lives_ok($$select public.payment_record_cash(pg_temp.round_of(1), '00000000-0000-0000-0000-0000000000c3')$$,
   'cash payment from Awa');
 select throws_ok($$select public.payment_record_cash(pg_temp.round_of(1), '00000000-0000-0000-0000-0000000000c3')$$,

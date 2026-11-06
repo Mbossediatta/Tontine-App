@@ -14,6 +14,7 @@ import type {
   NotificationPreferences,
   Payment,
   PlatformEarning,
+  Debt,
   Penalty,
   SwapRequest,
   Round,
@@ -51,6 +52,8 @@ export interface MockDatabase {
   platformEarnings: PlatformEarning[];
   adminCompensations: AdminCompensation[];
   penalties: Penalty[];
+  /** Impayés devenus dettes au versement d'un tour. */
+  debts: Debt[];
   swapRequests: SwapRequest[];
   notifications: AppNotification[];
   preferences: Record<string, NotificationPreferences>;
@@ -108,6 +111,7 @@ export function createSeed(now: Date = new Date()): MockDatabase {
     adminCompensations: [],
     notifications: seedNotifications(now),
     swapRequests: [],
+    debts: [],
     preferences: {},
     pushSubscriptions: {},
     pendingConfirmations: {},

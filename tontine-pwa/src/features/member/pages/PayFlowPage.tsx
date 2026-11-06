@@ -5,7 +5,7 @@ import { useMyGroups } from '@/features/groups/queries';
 import { useOnline } from '@/hooks/useOnline';
 import { cn } from '@/lib/cn';
 import { errorMessage } from '@/lib/errors';
-import { serviceFee } from '@/lib/tontine';
+import { dueTimeLabel, serviceFee } from '@/lib/tontine';
 import { paymentService } from '@/services';
 import type { Frequency, InitiatePaymentInput } from '@/types';
 import { deadlineLabel, duesOf, periodLabel, shortDate, type Due } from '../dues';
@@ -391,6 +391,7 @@ export default function PayFlowPage() {
                 {selected.overview.group.name} ·{' '}
                 <AmountDisplay value={selected.amount} className="text-slate-900" /> avant le{' '}
                 {shortDate(selected.round.dueDate)}
+                {dueTimeLabel(selected.overview.group.paymentDueTime)}
               </p>
             ) : null}
             {selected && periodsLeft(selected) > 1 ? (

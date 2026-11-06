@@ -7,6 +7,7 @@ import {
   activeMemberships,
   assertCanManage,
   assertCanView,
+  canManage,
   membershipOf,
   requireGroup,
   requireRound,
@@ -58,6 +59,61 @@ export const mockPaymentService: PaymentService = {
         totalAmount: roundTotal(group, round, membership.userId),
       };
     });
+  },
+
+  async listDebts(groupId) {
+    await delay();
+    synchronize();
+    const user = currentUser();
+    const group = requireGroup(groupId);
+    const manager = canManage(group, user);
+    return db.debts
+      .filter((debt) => debt.groupId === groupId && (manager || debt.userId === user.id))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map((debt) => ({
+        debt,
+        user: toPublicUser(requireUser(debt.userId), manager),
+        roundNumber: requireRound(debt.roundId).number,
+      }));
+  },
+
+  async recordDebtPayment(debtId) {
+    requireOnline();
+    await delay();
+    const debt = db.debts.find((item) => item.id === debtId);
+    if (!debt) throw new ServiceError('Cette dette n’existe pas.', 'not_found');
+    const group = requireGroup(debt.groupId);
+    const actor = currentUser();
+    assertCanManage(group, actor);
+    if (debt.status !== 'open') throw new ServiceError('Cette dette est déjà réglée.');
+    debt.status = 'settled';
+    debt.settledVia = 'cash';
+    debt.settledAt = nowIso();
+    if (debt.penaltyAmount > 0) {
+      db.platformEarnings.push({
+        id: newId('earn'),
+        groupId: group.id,
+        roundId: debt.roundId,
+        kind: 'late_penalty',
+        amount: debt.penaltyAmount,
+        at: nowIso(),
+      });
+    }
+    const round = requireRound(debt.roundId);
+    recordAudit(
+      actor,
+      'cash_recorded',
+      `a enregistré le remboursement de ${formatAmount(debt.amount + debt.penaltyAmount)} de ${fullName(requireUser(debt.userId))} (impayé du tour ${round.number}) — ${group.name}`,
+      group.id,
+    );
+    notify(
+      debt.userId,
+      'debt',
+      'Dette remboursée',
+      `${group.name} : votre remboursement de ${formatAmount(debt.amount + debt.penaltyAmount)} (tour ${round.number}) est enregistré.`,
+      `/groupes/${group.id}`,
+    );
+    persist();
   },
 
   async myTransactions() {

@@ -1,4 +1,5 @@
 import type {
+  DebtView,
   InitiatePaymentInput,
   InitiatePaymentResult,
   MyGroupHistory,
@@ -17,6 +18,10 @@ export interface PaymentService {
   getReceipt(paymentId: string): Promise<PaymentReceipt>;
   /** Espèces reçues : quelques jours (ou périodes) du tour, ou tout le reste sans `periods`. */
   recordCash(roundId: string, userId: string, periods?: number): Promise<void>;
+  /** Impayés devenus dettes : tous pour un admin du groupe, les miens pour un membre. */
+  listDebts(groupId: string): Promise<DebtView[]>;
+  /** Remboursement d'une dette reçu en espèces (admin du groupe). */
+  recordDebtPayment(debtId: string): Promise<void>;
   /** Envoie un rappel aux retardataires ; renvoie le nombre de personnes relancées. */
   remindLate(roundId: string): Promise<number>;
   /** Envoie un rappel à un seul membre qui n'a pas encore payé. */

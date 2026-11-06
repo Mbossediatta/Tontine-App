@@ -2,7 +2,7 @@
 // Ordre des bénéficiaires, tours, statuts, paiements en espèces, versement (…_cycle.sql),
 // paiement en ligne PayTech, relances (…_relances.sql) et échanges de tour (…_echanges.sql).
 import { ServiceError } from '@/lib/errors';
-import { contributionPerTurn } from '@/lib/tontine';
+import { contributionPerTurn, roundDeadline } from '@/lib/tontine';
 import { supabase } from '@/lib/supabase';
 import type {
   InitiatePaymentResult,
@@ -99,6 +99,11 @@ function roundView(ctx: GroupContext, round: Round, manager: boolean): RoundView
     beneficiaries,
     beneficiaryShares,
     paidCount: paidCountOf(ctx, round),
+    deadline: roundDeadline(
+      round.dueDate,
+      ctx.graceDays,
+      ctx.groups.find((group) => group.id === round.groupId)?.paymentDueTime,
+    ).toISOString(),
   };
 }
 
@@ -142,6 +147,19 @@ export function createSupabaseRoundService(): RoundService {
       await rpc('round_payout', { p_round: roundId });
     },
   };
+}
+
+interface DebtRow {
+  id: string;
+  group_id: string;
+  round_id: string;
+  user_id: string;
+  amount: number;
+  penalty_amount: number;
+  status: 'open' | 'settled';
+  settled_via: 'cash' | 'withheld' | null;
+  created_at: string;
+  settled_at: string | null;
 }
 
 export function createSupabasePaymentService(): PaymentService {
@@ -271,6 +289,44 @@ export function createSupabasePaymentService(): PaymentService {
         p_user: userId,
         p_periods: periods ?? null,
       });
+    },
+
+    async listDebts(groupId) {
+      const ctx = await groupContext(groupId);
+      const group = ctx.groups[0];
+      if (!group) return [];
+      // Les règles d'accès ne renvoient que mes dettes, ou toutes pour un admin du groupe.
+      const debtRows = rows<DebtRow>(
+        await supabase()
+          .from('debts')
+          .select(
+            'id, group_id, round_id, user_id, amount, penalty_amount, status, settled_via, created_at, settled_at',
+          )
+          .eq('group_id', groupId)
+          .order('created_at', { ascending: false }),
+      );
+      const manager = canManage(ctx, group);
+      return debtRows.map((row) => ({
+        debt: {
+          id: row.id,
+          groupId: row.group_id,
+          roundId: row.round_id,
+          userId: row.user_id,
+          amount: row.amount,
+          penaltyAmount: row.penalty_amount,
+          status: row.status,
+          settledVia: row.settled_via ?? undefined,
+          createdAt: row.created_at,
+          settledAt: row.settled_at ?? undefined,
+        },
+        user: person(ctx, row.user_id, manager),
+        roundNumber: ctx.rounds.find((round) => round.id === row.round_id)?.number ?? 0,
+      }));
+    },
+
+    async recordDebtPayment(debtId) {
+      requireOnline();
+      await rpc('debt_record_payment', { p_debt: debtId });
     },
 
     // Notification (et push) « Retard » dans la langue du membre ; une par membre et par jour.

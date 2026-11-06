@@ -86,12 +86,18 @@ export function createSupabaseGroupService(): GroupService {
     async create(input) {
       requireOnline();
       const id = await rpc<string>('group_create', { p: toPayload(input) });
+      if (input.paymentDueTime) {
+        await rpc('group_set_due_time', { p_group: id, p_time: input.paymentDueTime });
+      }
       return readGroup(id);
     },
 
     async update(groupId, input: UpdateGroupInput) {
       requireOnline();
       await rpc('group_update', { p_group: groupId, p: toPayload(input) });
+      if (input.paymentDueTime) {
+        await rpc('group_set_due_time', { p_group: groupId, p_time: input.paymentDueTime });
+      }
       return readGroup(groupId);
     },
 

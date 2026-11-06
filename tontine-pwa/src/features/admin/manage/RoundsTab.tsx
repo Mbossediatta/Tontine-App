@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Banknote } from 'lucide-react';
 import { AmountText, RoundProgress, RoundTimeline } from '@/components/domain';
+import { formatDateTime } from '@/lib/format';
+import { payoutOpen } from '@/lib/tontine';
 import { OnlineButton } from '@/components/layout/OnlineButton';
 import { AsyncContent, Card, CardTitle } from '@/components/ui';
 import { useRounds, useSwaps } from '@/features/groups/queries';
@@ -47,7 +49,7 @@ export function RoundsTab({ overview }: { overview: GroupOverview }) {
                   <OnlineButton
                     variant="primary"
                     block
-                    disabled={current.round.status !== 'ready_for_payout'}
+                    disabled={!payoutOpen(current)}
                     onClick={() => setPayoutRound(current)}
                     icon={<Banknote className="h-5 w-5" aria-hidden="true" />}
                   >
@@ -56,7 +58,9 @@ export function RoundsTab({ overview }: { overview: GroupOverview }) {
                 )}
                 {current.round.status !== 'ready_for_payout' ? (
                   <p className="text-label text-muted">
-                    Disponible quand tous les membres auront payé.
+                    {payoutOpen(current)
+                      ? 'Heure limite passée : vous pouvez verser ce qui a été collecté ; les impayés deviendront des dettes.'
+                      : `Disponible quand tous les membres auront payé, ou après l’heure limite (${formatDateTime(current.deadline)}).`}
                   </p>
                 ) : null}
               </Card>

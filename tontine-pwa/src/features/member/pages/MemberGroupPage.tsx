@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useGroup, useMembers, useRounds, useSwaps } from '@/features/groups/queries';
+import { useDebts, useGroup, useMembers, useRounds, useSwaps } from '@/features/groups/queries';
 import { SwapList } from '@/features/groups/SwapList';
 import { SwapRequestDialog } from '@/features/groups/SwapRequestDialog';
 import { useCurrentUser } from '@/hooks/useAuth';
@@ -217,6 +217,7 @@ export default function MemberGroupPage() {
   const rounds = useRounds(id);
   const members = useMembers(id);
   const swaps = useSwaps(id, group.data?.group.status === 'active');
+  const debts = useDebts(id);
   const [swapTarget, setSwapTarget] = useState<RoundView | null>(null);
 
   if (group.isPending) {
@@ -272,6 +273,26 @@ export default function MemberGroupPage() {
           </Button>
         ) : null}
       </header>
+
+      {(() => {
+        // Impayés : la cagnotte d'un tour a été versée sans ma cotisation.
+        const mine = (debts.data ?? []).filter(
+          ({ debt }) => debt.status === 'open' && debt.userId === user.id,
+        );
+        if (mine.length === 0) return null;
+        const total = mine.reduce((sum, { debt }) => sum + debt.amount + debt.penaltyAmount, 0);
+        return (
+          <Card className="border-amber-300 bg-amber-50 px-4 py-3">
+            <p className="text-[15px] font-semibold text-amber-900">
+              Impayé : <AmountDisplay value={total} />
+            </p>
+            <p className="text-[13px] text-amber-900">
+              Tour {mine.map(({ roundNumber }) => roundNumber).join(', ')} versé sans ta cotisation.
+              Rembourse ton administrateur ; sinon ce montant sera retenu sur ta cagnotte.
+            </p>
+          </Card>
+        );
+      })()}
 
       <section aria-labelledby="facts">
         <SectionHeader id="facts" title="Le groupe" />
