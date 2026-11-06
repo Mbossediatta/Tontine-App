@@ -218,61 +218,69 @@ export function PaymentsTab({ overview }: { overview: GroupOverview }) {
                 <span>Action</span>
               </div>
               <ul className="divide-y divide-line">
-                {visible.map(({ user, status, payment, penalty, shareCount }) => (
-                  // Téléphone : une carte par membre (nom + statut, montant, puis
-                  // moyen · date · référence). Écran large : une ligne en colonnes.
-                  <li
-                    key={user.id}
-                    className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-3 text-label ${COLUMNS}`}
-                  >
-                    <div className="min-w-0 font-medium text-ink">
-                      <span className="block truncate">{fullName(user)}</span>
-                      {shareCount > 1 ? (
-                        <span className="block text-small text-muted">{shareCount} parts</span>
-                      ) : null}
-                      {payment && status === 'paid' ? (
-                        <span className="block text-muted">
-                          <AmountText value={payment.amount} />
-                        </span>
-                      ) : penalty > 0 ? (
-                        <span className="block text-danger">
-                          + <AmountText value={penalty} /> de pénalité
-                        </span>
-                      ) : null}
-                    </div>
-                    <span className="justify-self-end md:justify-self-auto">
-                      <StatusBadge status={status} />
-                    </span>
-                    {/* Sur téléphone, ces trois infos tiennent sur une ligne, en gris. */}
-                    <span className="col-span-2 text-small text-muted md:col-span-1 md:text-label md:text-ink">
-                      {payment && status !== 'late' ? paymentMethodLabel(payment.method) : '—'}
-                      <span className="md:hidden">
-                        {payment?.paidAt ? ` · ${formatDate(payment.paidAt)}` : ''}
-                        {payment?.providerRef ? ` · ${payment.providerRef}` : ''}
+                {visible.map(
+                  ({ user, status, payment, penalty, shareCount, paidAmount, totalAmount }) => (
+                    // Téléphone : une carte par membre (nom + statut, montant, puis
+                    // moyen · date · référence). Écran large : une ligne en colonnes.
+                    <li
+                      key={user.id}
+                      className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-3 text-label ${COLUMNS}`}
+                    >
+                      <div className="min-w-0 font-medium text-ink">
+                        <span className="block truncate">{fullName(user)}</span>
+                        {shareCount > 1 ? (
+                          <span className="block text-small text-muted">{shareCount} parts</span>
+                        ) : null}
+                        {payment && status === 'paid' ? (
+                          <span className="block text-muted">
+                            <AmountText value={paidAmount || payment.amount} />
+                          </span>
+                        ) : paidAmount > 0 ? (
+                          // Paiement par versements : ce qui est déjà versé sur le total du tour.
+                          <span className="block text-blue-700">
+                            Versé : <AmountText value={paidAmount} /> /{' '}
+                            <AmountText value={totalAmount} />
+                          </span>
+                        ) : penalty > 0 ? (
+                          <span className="block text-danger">
+                            + <AmountText value={penalty} /> de pénalité
+                          </span>
+                        ) : null}
+                      </div>
+                      <span className="justify-self-end md:justify-self-auto">
+                        <StatusBadge status={status} />
                       </span>
-                    </span>
-                    <span className="hidden text-ink md:block">
-                      {payment?.paidAt ? formatDate(payment.paidAt) : '—'}
-                    </span>
-                    <span className="hidden truncate text-muted md:block">
-                      {payment?.providerRef ?? '—'}
-                    </span>
-                    <span className="col-span-2 md:col-span-1 md:justify-self-end">
-                      {round?.status === 'open' &&
-                      (status === 'pending' || status === 'late' || status === 'failed') ? (
-                        <OnlineButton
-                          size="sm"
-                          variant="ghost"
-                          loading={remindMember.isPending}
-                          onClick={() => remindMember.mutate(user.id)}
-                          icon={<BellRing className="h-4 w-4" aria-hidden="true" />}
-                        >
-                          Relancer
-                        </OnlineButton>
-                      ) : null}
-                    </span>
-                  </li>
-                ))}
+                      {/* Sur téléphone, ces trois infos tiennent sur une ligne, en gris. */}
+                      <span className="col-span-2 text-small text-muted md:col-span-1 md:text-label md:text-ink">
+                        {payment && status !== 'late' ? paymentMethodLabel(payment.method) : '—'}
+                        <span className="md:hidden">
+                          {payment?.paidAt ? ` · ${formatDate(payment.paidAt)}` : ''}
+                          {payment?.providerRef ? ` · ${payment.providerRef}` : ''}
+                        </span>
+                      </span>
+                      <span className="hidden text-ink md:block">
+                        {payment?.paidAt ? formatDate(payment.paidAt) : '—'}
+                      </span>
+                      <span className="hidden truncate text-muted md:block">
+                        {payment?.providerRef ?? '—'}
+                      </span>
+                      <span className="col-span-2 md:col-span-1 md:justify-self-end">
+                        {round?.status === 'open' &&
+                        (status === 'pending' || status === 'late' || status === 'failed') ? (
+                          <OnlineButton
+                            size="sm"
+                            variant="ghost"
+                            loading={remindMember.isPending}
+                            onClick={() => remindMember.mutate(user.id)}
+                            icon={<BellRing className="h-4 w-4" aria-hidden="true" />}
+                          >
+                            Relancer
+                          </OnlineButton>
+                        ) : null}
+                      </span>
+                    </li>
+                  ),
+                )}
               </ul>
               {visible.length === 0 ? (
                 <p className="py-6 text-center text-muted">Aucun paiement avec ce statut.</p>

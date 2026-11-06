@@ -293,6 +293,8 @@ describe('back-office du super administrateur', () => {
     await paymentService.recordCash(roundId, other, 3);
     const row = (await paymentService.listForRound(roundId)).find((r) => r.user.id === other);
     expect(row?.status).not.toBe('paid');
+    // L'admin voit ce qui est déjà versé sur le total du tour.
+    expect(row).toMatchObject({ paidAmount: 2000, totalAmount: 3500 });
     await demoLogin(other);
     expect((await groupService.get(group.id)).myAmountDue).toBe(1500);
 

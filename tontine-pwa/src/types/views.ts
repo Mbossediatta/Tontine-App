@@ -109,6 +109,10 @@ export interface RoundPaymentRow {
   shareCount: number;
   /** Pénalité de retard appliquée à ce membre pour ce tour. */
   penalty: number;
+  /** Déjà versé sur le tour (paiement par versements), hors frais d'adhésion. */
+  paidAmount: number;
+  /** Total du tour pour ce membre : cotisation de ses parts sur tout le tour, plus pénalité. */
+  totalAmount: number;
 }
 
 export interface PaymentHistoryItem {

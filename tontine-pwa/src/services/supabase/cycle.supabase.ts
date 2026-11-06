@@ -2,6 +2,7 @@
 // Ordre des bénéficiaires, tours, statuts, paiements en espèces, versement (…_cycle.sql),
 // paiement en ligne PayTech, relances (…_relances.sql) et échanges de tour (…_echanges.sql).
 import { ServiceError } from '@/lib/errors';
+import { contributionPerTurn } from '@/lib/tontine';
 import { supabase } from '@/lib/supabase';
 import type {
   InitiatePaymentResult,
@@ -164,12 +165,23 @@ export function createSupabasePaymentService(): PaymentService {
         const payments = ctx.payments.filter(
           (payment) => payment.roundId === roundId && payment.userId === userId,
         );
+        const paid = payments.filter((payment) => payment.status === 'paid');
+        const penalty = penaltyFor(ctx, roundId, userId);
         return {
           user: person(ctx, userId, true),
           status: memberStatus(ctx, round, userId),
-          payment: payments.find((payment) => payment.status === 'paid') ?? payments.at(-1),
+          // Le dernier versement réussi, sinon le dernier essai.
+          payment: paid.at(-1) ?? payments.at(-1),
           shareCount,
-          penalty: penaltyFor(ctx, roundId, userId),
+          penalty,
+          paidAmount: paid.reduce(
+            (sum, payment) =>
+              sum +
+              (payment.contributionAmount ?? payment.amount) +
+              (payment.latePenaltyAmount ?? 0),
+            0,
+          ),
+          totalAmount: contributionPerTurn(group) * shareCount + penalty,
         };
       });
     },

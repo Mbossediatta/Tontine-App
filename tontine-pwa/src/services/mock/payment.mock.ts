@@ -22,6 +22,8 @@ import {
   notifyManagers,
   penaltyFor,
   refreshRound,
+  roundPaid,
+  roundTotal,
 } from './lifecycle';
 import { toPublicUser } from './views';
 import { recordPaymentEarnings } from './revenue';
@@ -44,12 +46,16 @@ export const mockPaymentService: PaymentService = {
       const payments = db.payments.filter(
         (p) => p.roundId === roundId && p.userId === membership.userId,
       );
+      const paid = payments.filter((p) => p.status === 'paid');
       return {
         user: toPublicUser(requireUser(membership.userId), true),
         status: memberStatus(round, membership.userId),
-        payment: payments.find((p) => p.status === 'paid') ?? payments[payments.length - 1],
+        // Le dernier versement réussi, sinon le dernier essai.
+        payment: paid[paid.length - 1] ?? payments[payments.length - 1],
         shareCount: shareCounts.get(membership.userId) ?? 1,
         penalty: penaltyFor(roundId, membership.userId),
+        paidAmount: roundPaid(roundId, membership.userId),
+        totalAmount: roundTotal(group, round, membership.userId),
       };
     });
   },
