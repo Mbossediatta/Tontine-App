@@ -123,6 +123,13 @@ describe('parcours', () => {
     expect(await screen.findByRole('heading', { name: 'Historique' }, TIMEOUT)).toBeInTheDocument();
     expect(screen.getByLabelText('Période')).toBeInTheDocument();
     expect(screen.getByLabelText('Groupe')).toBeInTheDocument();
+    // Chaque cotisation payée a son icône de reçu, qui ouvre le PDF.
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window);
+    URL.createObjectURL = vi.fn(() => 'blob:recu');
+    const [receipt] = await screen.findAllByRole('button', { name: /^Voir le reçu/ }, TIMEOUT);
+    fireEvent.click(receipt as HTMLElement);
+    expect(open).toHaveBeenCalledWith('blob:recu', '_blank');
+    open.mockRestore();
   }, 10_000);
 
   it('indique la communauté dans la liste des groupes du membre', async () => {

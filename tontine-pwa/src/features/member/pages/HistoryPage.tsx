@@ -1,13 +1,17 @@
 import { useMemo, useState } from 'react';
 import { format, isSameMonth, startOfMonth, subMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowDownLeft, ArrowUpRight, Download } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Download, Eye, ReceiptText } from 'lucide-react';
 import { useShowMore } from '@/features/admin/components/useShowMore';
-import { downloadPaymentReceipt } from '@/features/payments/receipts';
+import {
+  downloadPaymentReceipt,
+  openPaymentReceipt,
+  type PaymentReceiptData,
+} from '@/features/payments/receipts';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { cn } from '@/lib/cn';
 import { formatDateTime, fullName, paymentMethodLabel } from '@/lib/format';
-import type { MyTransaction } from '@/types';
+import type { MyTransaction, User } from '@/types';
 import { useMyTransactions } from '../queries';
 import { shortDate } from '../dues';
 import { AmountDisplay } from '../ui/AmountDisplay';
@@ -53,17 +57,46 @@ function byMonth(items: MyTransaction[]): Array<{ month: string; items: MyTransa
   return groups;
 }
 
-/** Une ligne : sens (versé / reçu), libellé, date, montant, statut s'il n'est pas « réussi ». */
-function TransactionRow({ item, onOpen }: { item: MyTransaction; onOpen: () => void }) {
+/** Reçu d'une cotisation payée (null pour une cagnotte reçue ou un paiement non abouti). */
+function receiptOf(item: MyTransaction, user: User): PaymentReceiptData | null {
+  if (item.kind !== 'contribution' || item.payment.status !== 'paid') return null;
+  return {
+    paymentId: item.payment.id,
+    payerName: fullName(user),
+    payerPhone: user.phone,
+    groupName: item.groupName,
+    cycle: item.cycle,
+    roundNumber: item.roundNumber,
+    amount: item.payment.amount,
+    serviceFee: item.payment.serviceFeeAmount,
+    method: item.payment.method,
+    providerRef: item.payment.providerRef,
+    paidAt: item.payment.paidAt ?? item.date,
+  };
+}
+
+/**
+ * Une ligne : sens (versé / reçu), libellé, date, montant, statut s'il n'est pas « réussi » ;
+ * pour une cotisation payée, l'icône du reçu l'affiche directement.
+ */
+function TransactionRow({
+  item,
+  receipt,
+  onOpen,
+}: {
+  item: MyTransaction;
+  receipt: PaymentReceiptData | null;
+  onOpen: () => void;
+}) {
   const payout = item.kind === 'payout';
   const status = item.kind === 'contribution' ? item.payment.status : 'paid';
   const amount = item.kind === 'payout' ? item.amount : item.payment.amount;
   return (
-    <li>
+    <li className="flex items-center">
       <button
         type="button"
         onClick={onOpen}
-        className="flex min-h-[64px] w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 hover:bg-slate-50 active:bg-slate-100"
+        className="flex min-h-[64px] min-w-0 flex-1 items-center gap-3 py-3 pl-4 pr-2 text-left transition-colors duration-150 hover:bg-slate-50 active:bg-slate-100"
       >
         <span
           aria-hidden="true"
@@ -95,6 +128,19 @@ function TransactionRow({ item, onOpen }: { item: MyTransaction; onOpen: () => v
           {status !== 'paid' ? <StatusPill status={status} /> : null}
         </span>
       </button>
+      {receipt ? (
+        <button
+          type="button"
+          onClick={() => openPaymentReceipt(receipt)}
+          aria-label={`Voir le reçu : ${item.groupName}, tour ${item.roundNumber}`}
+          className="mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-blue-700 transition-colors duration-150 hover:bg-blue-50 active:bg-blue-100"
+        >
+          <ReceiptText className="h-5 w-5" aria-hidden="true" />
+        </button>
+      ) : (
+        // Même largeur que l'icône : les montants restent alignés.
+        <span className="mr-2 w-11 shrink-0" aria-hidden="true" />
+      )}
     </li>
   );
 }
@@ -103,22 +149,7 @@ function TransactionRow({ item, onOpen }: { item: MyTransaction; onOpen: () => v
 function TransactionSheet({ item, onClose }: { item: MyTransaction | null; onClose: () => void }) {
   const user = useCurrentUser();
   if (!item) return null;
-  const receipt =
-    item.kind === 'contribution' && item.payment.status === 'paid'
-      ? {
-          paymentId: item.payment.id,
-          payerName: fullName(user),
-          payerPhone: user.phone,
-          groupName: item.groupName,
-          cycle: item.cycle,
-          roundNumber: item.roundNumber,
-          amount: item.payment.amount,
-          serviceFee: item.payment.serviceFeeAmount,
-          method: item.payment.method,
-          providerRef: item.payment.providerRef,
-          paidAt: item.payment.paidAt ?? item.date,
-        }
-      : null;
+  const receipt = receiptOf(item, user);
   const rows: Array<[string, string]> = [
     ['Groupe', `${item.groupName} · tour ${item.roundNumber}`],
     ['Date', formatDateTime(item.date)],
@@ -151,14 +182,24 @@ function TransactionSheet({ item, onClose }: { item: MyTransaction | null; onClo
           ))}
         </dl>
         {receipt ? (
-          <Button
-            variant="secondary"
-            block
-            icon={<Download className="h-4 w-4" aria-hidden="true" />}
-            onClick={() => downloadPaymentReceipt(receipt)}
-          >
-            Télécharger le reçu
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="secondary"
+              block
+              icon={<Eye className="h-4 w-4" aria-hidden="true" />}
+              onClick={() => openPaymentReceipt(receipt)}
+            >
+              Voir le reçu
+            </Button>
+            <Button
+              variant="secondary"
+              block
+              icon={<Download className="h-4 w-4" aria-hidden="true" />}
+              onClick={() => downloadPaymentReceipt(receipt)}
+            >
+              Télécharger le reçu
+            </Button>
+          </div>
         ) : null}
       </div>
     </BottomSheet>
@@ -170,6 +211,7 @@ function TransactionSheet({ item, onClose }: { item: MyTransaction | null; onClo
  * par période, avec le total cotisé et le total reçu sur la sélection.
  */
 export default function HistoryPage() {
+  const user = useCurrentUser();
   const query = useMyTransactions();
   const [groupId, setGroupId] = useState('');
   const [period, setPeriod] = useState<Period>('12m');
@@ -278,7 +320,12 @@ export default function HistoryPage() {
               <Card>
                 <ul className="divide-y divide-slate-200">
                   {items.map((item) => (
-                    <TransactionRow key={item.id} item={item} onOpen={() => setOpen(item)} />
+                    <TransactionRow
+                      key={item.id}
+                      item={item}
+                      receipt={receiptOf(item, user)}
+                      onOpen={() => setOpen(item)}
+                    />
                   ))}
                 </ul>
               </Card>

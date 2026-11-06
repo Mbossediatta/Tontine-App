@@ -112,3 +112,17 @@ export function downloadPdf(bytes: Uint8Array, filename: string): void {
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+/** Ouvre le fichier dans un nouvel onglet (visionneuse du téléphone) ; à défaut, le télécharge. */
+export function openPdf(bytes: Uint8Array, filename: string): void {
+  const blob = new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const opened = window.open(url, '_blank');
+  if (!opened) {
+    URL.revokeObjectURL(url);
+    downloadPdf(bytes, filename);
+    return;
+  }
+  // L'onglet a le temps de charger le fichier avant que l'adresse soit libérée.
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}

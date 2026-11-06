@@ -1,5 +1,5 @@
 // Reçus PDF : cotisation payée et cagnotte reçue.
-import { buildPdf, downloadPdf, type PdfItem, type Rgb } from '@/lib/pdf';
+import { buildPdf, downloadPdf, openPdf, type PdfItem, type Rgb } from '@/lib/pdf';
 import {
   formatAmount,
   formatDate,
@@ -126,6 +126,11 @@ export interface PaymentReceiptData {
 /** Reçu d'une cotisation payée. */
 export function downloadPaymentReceipt(data: PaymentReceiptData): void {
   downloadPdf(buildPaymentReceipt(data), paymentReceiptFileName(data));
+}
+
+/** Affiche le reçu d'une cotisation payée (visionneuse PDF du téléphone). */
+export function openPaymentReceipt(data: PaymentReceiptData): void {
+  openPdf(buildPaymentReceipt(data), paymentReceiptFileName(data));
 }
 
 /** Nom du fichier du reçu : « recu-tontine-famille-tour-3.pdf ». */
