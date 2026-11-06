@@ -4,6 +4,24 @@ import { App } from '@/app/App';
 import { hideSplash } from '@/app/splash';
 import '@/styles/index.css';
 
+/**
+ * Après une mise à jour, un écran encore ouvert peut demander un morceau de l'ancienne
+ * version, qui n'existe plus sur le serveur : on recharge une fois pour prendre la nouvelle
+ * (au plus une fois toutes les 30 secondes, pour ne jamais boucler).
+ */
+window.addEventListener('vite:preloadError', (event) => {
+  const key = 'calebasse.reloadAfterUpdate';
+  try {
+    const last = Number(sessionStorage.getItem(key) ?? 0);
+    if (Date.now() - last < 30_000) return;
+    sessionStorage.setItem(key, String(Date.now()));
+  } catch {
+    // Stockage indisponible : on recharge quand même une fois.
+  }
+  event.preventDefault();
+  window.location.reload();
+});
+
 async function removeStaleDevelopmentWorker(): Promise<void> {
   if (!import.meta.env.DEV || !('serviceWorker' in navigator)) return;
 
