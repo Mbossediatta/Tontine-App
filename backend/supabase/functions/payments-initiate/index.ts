@@ -3,7 +3,7 @@
 // paiement. Sans clés PayTech, en local seulement : page de paiement simulée de l'appli.
 import { requireEnv } from '../_shared/crypto.ts';
 import { admin, caller, check, checkBusiness } from '../_shared/db.ts';
-import { AppError, readJson, serve, stringField } from '../_shared/http.ts';
+import { AppError, readJson, serve, stringField, TOO_MANY } from '../_shared/http.ts';
 import { payTechEnv, requestPayment, simulationAllowed, TARGET_PAYMENT } from '../_shared/paytech.ts';
 
 interface Prepared {
@@ -22,6 +22,15 @@ serve(async (req) => {
   const roundId = stringField(body, 'roundId');
   const method = stringField(body, 'method') as keyof typeof TARGET_PAYMENT;
   if (!(method in TARGET_PAYMENT)) throw new AppError('Choisissez Wave, Orange Money ou Free Money.');
+  // Anti-abus : au plus 10 essais de paiement en ligne par personne et par heure.
+  const { count: recent } = await admin()
+    .from('payments')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', profile.id)
+    .neq('method', 'cash')
+    .gte('created_at', new Date(Date.now() - 3_600_000).toISOString());
+  if ((recent ?? 0) >= 10) throw TOO_MANY('Trop de tentatives de paiement. Réessayez dans une heure.');
+
   // Versement de quelques jours (ou périodes) du tour ; absent : tout le reste du tour.
   const periods = body.periods === undefined || body.periods === null ? null : Number(body.periods);
   if (periods !== null && (!Number.isInteger(periods) || periods < 1)) {
