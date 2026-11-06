@@ -998,20 +998,35 @@ export type Database = {
         Row: {
           amount: number;
           membership_id: string;
+          received_at: string | null;
           round_id: string;
+          sent_at: string | null;
+          sent_by: string | null;
+          sent_method: Database['public']['Enums']['payout_method'] | null;
+          sent_ref: string | null;
           withheld: number;
         };
         ComputedFields: never;
         Insert: {
           amount?: number;
           membership_id: string;
+          received_at?: string | null;
           round_id: string;
+          sent_at?: string | null;
+          sent_by?: string | null;
+          sent_method?: Database['public']['Enums']['payout_method'] | null;
+          sent_ref?: string | null;
           withheld?: number;
         };
         Update: {
           amount?: number;
           membership_id?: string;
+          received_at?: string | null;
           round_id?: string;
+          sent_at?: string | null;
+          sent_by?: string | null;
+          sent_method?: Database['public']['Enums']['payout_method'] | null;
+          sent_ref?: string | null;
           withheld?: number;
         };
         Relationships: [
@@ -1027,6 +1042,13 @@ export type Database = {
             columns: ['round_id'];
             isOneToOne: false;
             referencedRelation: 'rounds';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'round_beneficiaries_sent_by_fkey';
+            columns: ['sent_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
             referencedColumns: ['id'];
           },
         ];
@@ -1342,6 +1364,18 @@ export type Database = {
         Returns: string;
       };
       debt_record_payment: { Args: { p_debt: string }; Returns: undefined };
+      dispute_open: {
+        Args: {
+          p_amount: number;
+          p_description: string;
+          p_group: string;
+          p_kind: Database['public']['Enums']['dispute_kind'];
+          p_method: Database['public']['Enums']['payment_method'];
+          p_provider_ref: string;
+          p_round: string;
+        };
+        Returns: string;
+      };
       dispute_record_payment: { Args: { p_dispute: string }; Returns: undefined };
       dispute_refund: {
         Args: { p_amount: number; p_dispute: string; p_note: string };
@@ -1434,7 +1468,18 @@ export type Database = {
         Returns: undefined;
       };
       payout_block: { Args: { p_reason: string; p_round: string }; Returns: undefined };
+      payout_confirm_received: { Args: { p_round: string }; Returns: undefined };
+      payout_mark_sent: {
+        Args: {
+          p_method: Database['public']['Enums']['payout_method'];
+          p_ref: string;
+          p_round: string;
+          p_user: string;
+        };
+        Returns: undefined;
+      };
       payout_unblock: { Args: { p_round: string }; Returns: undefined };
+      platform_health: { Args: Record<PropertyKey, never>; Returns: Json };
       public_profiles: {
         Args: { ids: string[] };
         Returns: {
@@ -1577,10 +1622,16 @@ export type Database = {
         | 'community_updated'
         | 'group_community_changed'
         | 'reminder_sent'
-        | 'swap_approved';
+        | 'swap_approved'
+        | 'payout_sent';
       debt_settlement: 'cash' | 'withheld';
       debt_status: 'open' | 'settled';
-      dispute_kind: 'debited_not_recorded' | 'double_payment' | 'wrong_amount' | 'other';
+      dispute_kind:
+        | 'debited_not_recorded'
+        | 'double_payment'
+        | 'wrong_amount'
+        | 'other'
+        | 'payout_not_received';
       dispute_status: 'open' | 'in_progress' | 'resolved' | 'rejected';
       earning_kind: 'membership_fee' | 'late_penalty' | 'reserved_turn';
       frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly';
@@ -1756,10 +1807,17 @@ export const Constants = {
         'group_community_changed',
         'reminder_sent',
         'swap_approved',
+        'payout_sent',
       ],
       debt_settlement: ['cash', 'withheld'],
       debt_status: ['open', 'settled'],
-      dispute_kind: ['debited_not_recorded', 'double_payment', 'wrong_amount', 'other'],
+      dispute_kind: [
+        'debited_not_recorded',
+        'double_payment',
+        'wrong_amount',
+        'other',
+        'payout_not_received',
+      ],
       dispute_status: ['open', 'in_progress', 'resolved', 'rejected'],
       earning_kind: ['membership_fee', 'late_penalty', 'reserved_turn'],
       frequency: ['daily', 'weekly', 'biweekly', 'monthly'],

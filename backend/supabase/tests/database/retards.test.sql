@@ -1,15 +1,17 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(31);
+select plan(34);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000a2', 'r-admin@users.calebasse.invalid'),
   ('00000000-0000-0000-0000-0000000000a3', 'r-awa@users.calebasse.invalid'),
-  ('00000000-0000-0000-0000-0000000000a4', 'r-ibou@users.calebasse.invalid');
+  ('00000000-0000-0000-0000-0000000000a4', 'r-ibou@users.calebasse.invalid'),
+  ('00000000-0000-0000-0000-0000000000a1', 'r-super@users.calebasse.invalid');
 insert into public.profiles (id, first_name, last_name, phone, global_role, payout_phone) values
   ('00000000-0000-0000-0000-0000000000a2', 'Moussa', 'Diop', '770000982', 'admin', '770000982'),
   ('00000000-0000-0000-0000-0000000000a3', 'Awa', 'Fall', '770000983', 'user', '770000983'),
-  ('00000000-0000-0000-0000-0000000000a4', 'Ibou', 'Sarr', '770000984', 'user', '770000984');
+  ('00000000-0000-0000-0000-0000000000a4', 'Ibou', 'Sarr', '770000984', 'user', '770000984'),
+  ('00000000-0000-0000-0000-0000000000a1', 'Super', 'Admin', '770000981', 'super_admin', null);
 insert into public.communities (id, name) values ('00000000-0000-0000-0000-0000000000ac', 'Test retards');
 insert into public.community_admins (community_id, admin_id)
 values ('00000000-0000-0000-0000-0000000000ac', '00000000-0000-0000-0000-0000000000a2');
@@ -160,6 +162,17 @@ select is(
   (select count(*)::int from public.notifications
    where user_id = '00000000-0000-0000-0000-0000000000a2' and title = 'Cagnotte signalée non reçue'),
   1, 'the group admin is told about a payout not received');
+
+-- Tableau de bord du super admin.
+set local role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a2');
+select throws_ok('select public.platform_health()', '42501', null, 'only the super admin sees the platform health');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
+create temp table health on commit drop as select public.platform_health() as h;
+select cmp_ok((select (h ->> 'transfersToSend')::int from health), '>=', 2,
+  'validated pots not yet sent are counted (rounds 1 and 3)');
+select cmp_ok((select (h ->> 'openDisputes')::int from health), '>=', 1, 'open claims are counted');
+reset role;
 
 select * from finish();
 rollback;

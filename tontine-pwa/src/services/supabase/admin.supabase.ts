@@ -234,6 +234,20 @@ function transactionDate(payment: PaymentRow): number {
   return new Date(payment.created_at || payment.paid_at || 0).getTime();
 }
 
+/** Santé de la plateforme (platform_health), calculée par le serveur. */
+interface PlatformHealth {
+  lateMembers: number;
+  lateAmount: number;
+  lateByGroup: Array<{ groupId: string; name: string; count: number }>;
+  penaltiesThisMonth: number;
+  penaltyCountThisMonth: number;
+  openDebts: number;
+  openDebtAmount: number;
+  transfersToSend: number;
+  transfersAwaiting: number;
+  openDisputes: number;
+}
+
 export function createSupabaseAdminService(): AdminService {
   async function createAdmin(input: AccountInput): Promise<void> {
     await invoke(
@@ -509,56 +523,20 @@ export function createSupabaseAdminService(): AdminService {
       });
     }
 
-    const settings = settingsResult.data as { rules?: { graceDays?: number } } | null;
-    const graceDays = settings?.rules?.graceDays ?? 0;
-    let lateAmount = 0;
-    for (const group of groups.filter((item) => item.status === 'active')) {
-      const round = rounds.find(
-        (item) =>
-          item.group_id === group.id &&
-          (item.status === 'open' || item.status === 'ready_for_payout'),
-      );
-      if (!round) continue;
-
-      const lateMembers = [
-        ...new Set(
-          (membershipsByGroup.get(group.id) ?? []).map((membership) => membership.user_id),
-        ),
-      ].filter((userId) => {
-        const memberPayments = paymentsByRoundUser.get(`${round.id}:${userId}`) ?? [];
-        const hasPaid = memberPayments.some((payment) => payment.status === 'paid');
-        const hasPenalty = (penaltiesByRound.get(round.id) ?? []).some(
-          (penalty) => penalty.user_id === userId,
-        );
-        const lateAfter = new Date(round.due_date);
-        lateAfter.setDate(lateAfter.getDate() + graceDays);
-        return !hasPaid && (hasPenalty || lateAfter < now);
+    // Retards, pénalités, dettes et cagnottes à envoyer : calculés par le serveur avec les
+    // règles de paiement (versements, heure limite, délai de grâce).
+    const health = await rpc<PlatformHealth>('platform_health');
+    const lateAmount = health.lateAmount;
+    for (const late of health.lateByGroup) {
+      const group = groups.find((item) => item.id === late.groupId);
+      const groupAdmin = group ? users.get(group.admin_id) : undefined;
+      alerts.push({
+        id: `late-${late.groupId}`,
+        tone: 'warning',
+        title: `${late.name} : ${plural(late.count, 'membre')} en retard`,
+        detail: `Admin : ${groupAdmin ? fullName(groupAdmin) : '—'}`,
+        link: `/admin/groupes/${late.groupId}`,
       });
-
-      for (const userId of lateMembers) {
-        const memberShareCount = membershipCountsByGroupUser.get(`${group.id}:${userId}`) ?? 0;
-        const memberPenalty = (penaltiesByRound.get(round.id) ?? [])
-          .filter((penalty) => penalty.user_id === userId)
-          .reduce((sum, penalty) => sum + penalty.amount, 0);
-        const membershipFee = earningsByGroupUser.has(`${group.id}:${userId}`)
-          ? 0
-          : group.membership_fee_amount;
-        lateAmount +=
-          group.contribution_amount * group.turn_length * memberShareCount +
-          memberPenalty +
-          membershipFee;
-      }
-
-      if (lateMembers.length > 0) {
-        const groupAdmin = users.get(group.admin_id);
-        alerts.push({
-          id: `late-${group.id}`,
-          tone: 'warning',
-          title: `${group.name} : ${plural(lateMembers.length, 'membre')} en retard`,
-          detail: `Admin : ${groupAdmin ? fullName(groupAdmin) : '—'}`,
-          link: `/admin/groupes/${group.id}`,
-        });
-      }
     }
 
     for (const group of groups) {
@@ -650,6 +628,14 @@ export function createSupabaseAdminService(): AdminService {
         expectedThisMonth: thisMonth?.expected ?? 0,
         onTimeRate: dueCount > 0 ? Math.round((onTimeCount / dueCount) * 100) : null,
         lateAmount,
+        lateMembers: health.lateMembers,
+        penaltiesThisMonth: health.penaltiesThisMonth,
+        penaltyCountThisMonth: health.penaltyCountThisMonth,
+        openDebts: health.openDebts,
+        openDebtAmount: health.openDebtAmount,
+        transfersToSend: health.transfersToSend,
+        transfersAwaiting: health.transfersAwaiting,
+        openDisputes: health.openDisputes,
         monthly,
         alerts,
         admins: adminPerformance,

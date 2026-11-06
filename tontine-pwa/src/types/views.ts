@@ -359,6 +359,19 @@ export interface SuperAdminDashboard {
   onTimeRate: number | null;
   /** Somme restant due par les membres en retard (cotisation + pénalité). */
   lateAmount: number;
+  /** Membres en retard sur le tour en cours de leurs groupes. */
+  lateMembers: number;
+  /** Pénalités posées ce mois-ci (montant et nombre). */
+  penaltiesThisMonth: number;
+  penaltyCountThisMonth: number;
+  /** Impayés devenus dettes, pas encore remboursés. */
+  openDebts: number;
+  openDebtAmount: number;
+  /** Cagnottes validées dont l'argent reste à envoyer, ou dont la réception n'est pas confirmée. */
+  transfersToSend: number;
+  transfersAwaiting: number;
+  /** Réclamations ouvertes ou en cours. */
+  openDisputes: number;
   /** Les 6 derniers mois, du plus ancien au mois en cours. */
   monthly: MonthlyCollection[];
   alerts: PlatformAlert[];

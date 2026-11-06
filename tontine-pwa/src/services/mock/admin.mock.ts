@@ -125,6 +125,28 @@ function todoFor(group: Group): TodoItem[] {
 
 // --- Service ------------------------------------------------------------------
 
+/** Pénalités du mois, dettes, cagnottes à envoyer, réclamations (comme platform_health). */
+function platformHealth(now: Date) {
+  const penalties = db.penalties.filter((penalty) => isSameMonth(new Date(penalty.appliedAt), now));
+  const openDebts = db.debts.filter((debt) => debt.status === 'open');
+  const transfers = db.rounds
+    .filter((round) => round.status === 'paid_out' && round.recipientType !== 'platform')
+    .flatMap((round) =>
+      Object.keys(round.beneficiaryAmounts ?? {}).map((userId) => round.transfers?.[userId]),
+    );
+  return {
+    penaltiesThisMonth: penalties.reduce((sum, penalty) => sum + penalty.amount, 0),
+    penaltyCountThisMonth: penalties.length,
+    openDebts: openDebts.length,
+    openDebtAmount: openDebts.reduce((sum, debt) => sum + debt.amount + debt.penaltyAmount, 0),
+    transfersToSend: transfers.filter((transfer) => !transfer).length,
+    transfersAwaiting: transfers.filter((transfer) => transfer && !transfer.receivedAt).length,
+    openDisputes: db.disputes.filter(
+      (dispute) => dispute.status === 'open' || dispute.status === 'in_progress',
+    ).length,
+  };
+}
+
 export const mockAdminService: AdminService = {
   async dashboard() {
     await delay();
@@ -227,10 +249,12 @@ export const mockAdminService: AdminService = {
       });
     }
     let lateAmount = 0;
+    let lateMembers = 0;
     for (const group of db.groups.filter((g) => g.status === 'active')) {
       const round = currentRoundOf(group.id);
       const late = round ? lateOnRound(group, round, now) : [];
       lateAmount += late.reduce((sum, l) => sum + l.amount, 0);
+      lateMembers += late.length;
       if (late.length > 0) {
         alerts.push({
           id: `late-${group.id}`,
@@ -276,6 +300,8 @@ export const mockAdminService: AdminService = {
       expectedThisMonth: thisMonth?.expected ?? 0,
       onTimeRate: dueCount > 0 ? Math.round((onTimeCount / dueCount) * 100) : null,
       lateAmount,
+      lateMembers,
+      ...platformHealth(now),
       monthly,
       alerts,
       admins: admins.map((user) => adminPerformance(user, now)),

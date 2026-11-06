@@ -1,7 +1,18 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarCheck, Coins, Plus, Users, UsersRound } from 'lucide-react';
+import {
+  AlarmClock,
+  CalendarCheck,
+  Coins,
+  Gavel,
+  HandCoins,
+  LifeBuoy,
+  Plus,
+  Send,
+  Users,
+  UsersRound,
+} from 'lucide-react';
 import { OnlineButton } from '@/components/layout/OnlineButton';
 import { AsyncContent, PageSkeleton } from '@/components/ui';
 import { formatAmount, formatMonth, plural } from '@/lib/format';
@@ -95,6 +106,47 @@ export function SuperAdminDashboard() {
                     : 'Aucun retard en cours'
                 }
                 hintTone={data.lateAmount > 0 ? 'warning' : 'positive'}
+              />
+            </section>
+
+            {/* Suivi des impayés et de l'argent qui sort (calculé par le serveur). */}
+            <section
+              className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 lg:grid-cols-5"
+              aria-label="Retards, dettes et versements"
+            >
+              <StatCard
+                label="Membres en retard"
+                value={data.lateMembers}
+                icon={<AlarmClock className={iconClass} aria-hidden="true" />}
+                hint={data.lateAmount > 0 ? `${formatAmount(data.lateAmount)} dus` : 'Aucun retard'}
+                hintTone={data.lateMembers > 0 ? 'warning' : 'positive'}
+              />
+              <StatCard
+                label="Pénalités ce mois"
+                value={formatAmount(data.penaltiesThisMonth)}
+                icon={<Gavel className={iconClass} aria-hidden="true" />}
+                hint={plural(data.penaltyCountThisMonth, 'pénalité posée', 'pénalités posées')}
+              />
+              <StatCard
+                label="Impayés (dettes)"
+                value={formatAmount(data.openDebtAmount)}
+                icon={<HandCoins className={iconClass} aria-hidden="true" />}
+                hint={plural(data.openDebts, 'dette à rembourser', 'dettes à rembourser')}
+                hintTone={data.openDebts > 0 ? 'warning' : 'muted'}
+              />
+              <StatCard
+                label="Cagnottes à envoyer"
+                value={data.transfersToSend}
+                icon={<Send className={iconClass} aria-hidden="true" />}
+                hint={`${data.transfersAwaiting} en attente de confirmation`}
+                hintTone={data.transfersToSend > 0 ? 'warning' : 'muted'}
+              />
+              <StatCard
+                label="Réclamations"
+                value={data.openDisputes}
+                icon={<LifeBuoy className={iconClass} aria-hidden="true" />}
+                hint={data.openDisputes > 0 ? 'À traiter dans Litiges' : 'Aucune en cours'}
+                hintTone={data.openDisputes > 0 ? 'warning' : 'positive'}
               />
             </section>
 
