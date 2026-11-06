@@ -132,6 +132,10 @@ export function buildOverview(group: Group, viewer: User): GroupOverview {
       myStatus && myStatus !== 'paid' && current ? amountDue(group, current, viewer.id) : 0,
       db.settings.payment.feePercent,
     ),
+    myPeriodAmount:
+      group.contributionAmount *
+      activeMemberships(group.id).filter((m) => m.userId === viewer.id).length,
+    feePercent: db.settings.payment.feePercent,
     myTurn: myTurnForUser,
     orderIsSet: members.length > 0 && members.every((m) => typeof m.payoutOrder === 'number'),
   };

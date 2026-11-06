@@ -433,9 +433,13 @@ export function hasPaidMembershipFee(ctx: GroupContext, groupId: string, userId:
 
 export function amountDue(ctx: GroupContext, group: Group, round: Round, userId: string): number {
   const shares = activeMemberships(ctx, group.id).filter((m) => m.userId === userId).length;
-  const perShare = contributionPerTurn(group);
+  const total = contributionPerTurn(group) * shares + penaltyFor(ctx, round.id, userId);
+  // Versements déjà réussis sur ce tour (paiement par jours ou par périodes).
+  const paid = ctx.payments
+    .filter((p) => p.roundId === round.id && p.userId === userId && p.status === 'paid')
+    .reduce((sum, p) => sum + (p.contributionAmount ?? p.amount) + (p.latePenaltyAmount ?? 0), 0);
   const fee = hasPaidMembershipFee(ctx, group.id, userId) ? 0 : (group.membershipFeeAmount ?? 0);
-  return perShare * shares + penaltyFor(ctx, round.id, userId) + fee;
+  return Math.max(0, total - paid) + fee;
 }
 
 export function person(ctx: GroupContext, userId: string, withPhone: boolean): PublicUser {
@@ -524,6 +528,9 @@ export function buildOverview(ctx: GroupContext, group: Group): GroupOverview {
         : 0,
     myPenalty: current && isActiveMember ? penaltyFor(ctx, current.id, viewerId) : 0,
     myServiceFee: serviceFee(due, ctx.feePercent),
+    myPeriodAmount:
+      group.contributionAmount * members.filter((item) => item.userId === viewerId).length,
+    feePercent: ctx.feePercent,
     myTurn: myTurnForUser,
     orderIsSet: members.length > 0 && members.every((m) => typeof m.payoutOrder === 'number'),
   };

@@ -1338,7 +1338,10 @@ export type Database = {
       order_draw: { Args: { p_group: string }; Returns: undefined };
       order_set: { Args: { p_group: string; p_memberships: string[] }; Returns: undefined };
       payment_receipt: { Args: { p_payment: string }; Returns: Json };
-      payment_record_cash: { Args: { p_round: string; p_user: string }; Returns: undefined };
+      payment_record_cash: {
+        Args: { p_periods?: number; p_round: string; p_user: string };
+        Returns: undefined;
+      };
       payout_block: { Args: { p_reason: string; p_round: string }; Returns: undefined };
       payout_unblock: { Args: { p_round: string }; Returns: undefined };
       public_profiles: {
@@ -1402,6 +1405,7 @@ export type Database = {
       svc_payment_prepare: {
         Args: {
           p_method: Database['public']['Enums']['payment_method'];
+          p_periods?: number;
           p_round: string;
           p_user: string;
         };

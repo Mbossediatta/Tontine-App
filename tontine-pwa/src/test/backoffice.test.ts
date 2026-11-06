@@ -263,6 +263,47 @@ describe('back-office du super administrateur', () => {
     expect(holder(b?.round.id)).toContain(requester);
   }, 10_000);
 
+  it('paiement par versements : le tour est payé quand le total est atteint', async () => {
+    await demoLogin(MOUSSA);
+    const group = await groupService.create({
+      communityId: 'c-ouakam',
+      name: 'Tontine Journalière',
+      contributionAmount: 500,
+      frequency: 'daily',
+      turnLength: 7,
+      maxMembers: 2,
+      paymentDueDay: 1,
+      startDate: new Date(Date.now() + 86_400_000).toISOString(),
+      attributionMode: 'manual',
+    });
+    await membershipService.addByPhone(group.id, '772345678');
+    const members = (await membershipService.list(group.id)).filter(
+      (member) => member.membership.status === 'active',
+    );
+    await roundService.setManualOrder(
+      group.id,
+      members.map((member) => member.membership.id),
+    );
+    await groupService.start(group.id);
+    const roundId = (await groupService.get(group.id)).currentRound?.id ?? '';
+    const other = members.find((member) => member.user.id !== MOUSSA)?.user.id ?? '';
+
+    // 500 par jour sur 7 jours : 3 500. Un jour, puis trois jours en espèces.
+    await paymentService.recordCash(roundId, other, 1);
+    await paymentService.recordCash(roundId, other, 3);
+    const row = (await paymentService.listForRound(roundId)).find((r) => r.user.id === other);
+    expect(row?.status).not.toBe('paid');
+    await demoLogin(other);
+    expect((await groupService.get(group.id)).myAmountDue).toBe(1500);
+
+    // Le reste : le tour est payé.
+    await demoLogin(MOUSSA);
+    await paymentService.recordCash(roundId, other);
+    const paid = (await paymentService.listForRound(roundId)).find((r) => r.user.id === other);
+    expect(paid?.status).toBe('paid');
+    await expect(paymentService.recordCash(roundId, other, 1)).rejects.toThrow(/déjà payé/);
+  }, 15_000);
+
   it('un membre peut avoir deux parts et reçoit deux tours avec une cotisation doublée', async () => {
     await demoLogin('u-admin2');
     await membershipService.addByPhone('g-bureau', '781234567');

@@ -137,7 +137,7 @@ export const mockPaymentService: PaymentService = {
     };
   },
 
-  async initiatePayment({ roundId, method }) {
+  async initiatePayment({ roundId, method, periods }) {
     requireOnline();
     await delay();
     const user = currentUser();
@@ -150,7 +150,7 @@ export const mockPaymentService: PaymentService = {
     if (round.status !== 'open') throw new ServiceError('Ce tour n’accepte plus de paiement.');
     const status = memberStatus(round, user.id);
     if (status === 'paid') throw new ServiceError('Vous avez déjà payé ce tour.', 'conflict');
-    const breakdown = amountBreakdown(group, round, user.id);
+    const breakdown = amountBreakdown(group, round, user.id, periods);
     const payment = {
       id: newId('pay'),
       roundId,
@@ -190,7 +190,7 @@ export const mockPaymentService: PaymentService = {
     };
   },
 
-  async recordCash(roundId, userId) {
+  async recordCash(roundId, userId, periods) {
     requireOnline();
     await delay();
     const round = requireRound(roundId);
@@ -201,7 +201,7 @@ export const mockPaymentService: PaymentService = {
     if (round.status !== 'open') throw new ServiceError('Ce tour n’accepte plus de paiement.');
     const status = memberStatus(round, userId);
     if (status === 'paid') throw new ServiceError('Ce membre a déjà payé.');
-    const breakdown = amountBreakdown(group, round, userId);
+    const breakdown = amountBreakdown(group, round, userId, periods);
     const amount = breakdown.amount;
     db.payments.push({
       id: newId('pay'),

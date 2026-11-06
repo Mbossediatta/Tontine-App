@@ -1,4 +1,5 @@
 // Cycle de vie d'une tontine simulée : statuts de paiement, pénalités, ouverture et clôture des tours.
+import { ServiceError } from '@/lib/errors';
 import { computeDueDate, computePot, contributionPerTurn, roundOpenDate } from '@/lib/tontine';
 import { formatAmount } from '@/lib/format';
 import type { Group, PaymentStatus, Round } from '@/types';
@@ -27,20 +28,63 @@ export function lateAfter(round: Round): Date {
   return deadline;
 }
 
-/** Statut de paiement d'un membre pour un tour (un paiement « payé » l'emporte). */
+/**
+ * Total du tour pour une personne : cotisation de toutes ses parts sur la durée du tour,
+ * plus ses pénalités (comme private.round_total).
+ */
+export function roundTotal(group: Group, round: Round, userId: string): number {
+  const shareCount = activeMemberships(group.id).filter((m) => m.userId === userId).length;
+  return contributionPerTurn(group) * shareCount + penaltyFor(round.id, userId);
+}
+
+/** Déjà versé sur le tour : cotisation et pénalité des versements réussis. */
+export function roundPaid(roundId: string, userId: string): number {
+  return db.payments
+    .filter((p) => p.roundId === roundId && p.userId === userId && p.status === 'paid')
+    .reduce(
+      (sum, p) =>
+        sum +
+        (p.contributionAmount === undefined
+          ? p.amount - (p.membershipFeeAmount ?? 0)
+          : p.contributionAmount + (p.latePenaltyAmount ?? 0)),
+      0,
+    );
+}
+
+/**
+ * Statut de paiement d'un membre pour un tour : « payé » quand ses versements atteignent
+ * le total du tour, « en retard » si ce n'est pas le cas à la date limite (+ grâce).
+ */
 export function memberStatus(round: Round, userId: string, now: Date = new Date()): PaymentStatus {
   const payments = db.payments.filter((p) => p.roundId === round.id && p.userId === userId);
-  if (payments.some((p) => p.status === 'paid')) return 'paid';
+  const total = roundTotal(requireGroup(round.groupId), round, userId);
+  if (total > 0 && roundPaid(round.id, userId) >= total) return 'paid';
   if (hasPenalty(round.id, userId) || lateAfter(round) < now) return 'late';
   const last = payments[payments.length - 1];
   if (last?.status === 'failed') return 'failed';
   return 'pending';
 }
 
-export function amountBreakdown(group: Group, round: Round, userId: string) {
+/**
+ * Montants d'un versement (comme private.installment) : `periods` périodes du rythme pour
+ * toutes mes parts, ou tout le reste du tour. Les frais d'adhésion partent avec le premier
+ * versement, la pénalité avec celui qui termine le tour.
+ */
+export function amountBreakdown(group: Group, round: Round, userId: string, periods?: number) {
   const shareCount = activeMemberships(group.id).filter((m) => m.userId === userId).length;
-  const contributionAmount = contributionPerTurn(group) * shareCount;
-  const latePenaltyAmount = penaltyFor(round.id, userId);
+  const perPeriod = group.contributionAmount * shareCount;
+  const paid = db.payments.filter(
+    (p) => p.roundId === round.id && p.userId === userId && p.status === 'paid',
+  );
+  const paidContribution = paid.reduce((sum, p) => sum + (p.contributionAmount ?? p.amount), 0);
+  const paidPenalty = paid.reduce((sum, p) => sum + (p.latePenaltyAmount ?? 0), 0);
+  const rest = Math.max(0, contributionPerTurn(group) * shareCount - paidContribution);
+  if (periods !== undefined && (periods < 1 || periods > group.turnLength)) {
+    throw new ServiceError('Nombre de jours ou de périodes invalide.');
+  }
+  const contributionAmount = periods === undefined ? rest : Math.min(rest, perPeriod * periods);
+  const latePenaltyAmount =
+    contributionAmount >= rest ? Math.max(0, penaltyFor(round.id, userId) - paidPenalty) : 0;
   const membershipFee = hasPaidMembershipFee(group.id, userId)
     ? 0
     : (group.membershipFeeAmount ?? 0);
@@ -52,7 +96,7 @@ export function amountBreakdown(group: Group, round: Round, userId: string) {
   };
 }
 
-/** Montant dû par une personne pour toutes ses parts d'un tour, pénalité incluse. */
+/** Reste à payer par une personne sur un tour (toutes ses parts, pénalité incluse). */
 export function amountDue(group: Group, round: Round, userId: string): number {
   return amountBreakdown(group, round, userId).amount;
 }

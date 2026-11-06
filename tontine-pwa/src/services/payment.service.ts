@@ -15,7 +15,8 @@ export interface PaymentService {
   initiatePayment(input: InitiatePaymentInput): Promise<InitiatePaymentResult>;
   /** Statut à jour d'un paiement (interrogé après le retour de l'agrégateur). */
   getReceipt(paymentId: string): Promise<PaymentReceipt>;
-  recordCash(roundId: string, userId: string): Promise<void>;
+  /** Espèces reçues : quelques jours (ou périodes) du tour, ou tout le reste sans `periods`. */
+  recordCash(roundId: string, userId: string, periods?: number): Promise<void>;
   /** Envoie un rappel aux retardataires ; renvoie le nombre de personnes relancées. */
   remindLate(roundId: string): Promise<number>;
   /** Envoie un rappel à un seul membre qui n'a pas encore payé. */

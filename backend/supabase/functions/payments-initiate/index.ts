@@ -22,9 +22,19 @@ serve(async (req) => {
   const roundId = stringField(body, 'roundId');
   const method = stringField(body, 'method') as keyof typeof TARGET_PAYMENT;
   if (!(method in TARGET_PAYMENT)) throw new AppError('Choisissez Wave, Orange Money ou Free Money.');
+  // Versement de quelques jours (ou périodes) du tour ; absent : tout le reste du tour.
+  const periods = body.periods === undefined || body.periods === null ? null : Number(body.periods);
+  if (periods !== null && (!Number.isInteger(periods) || periods < 1)) {
+    throw new AppError('Nombre de jours invalide.');
+  }
 
   const prepared = checkBusiness(
-    await admin().rpc('svc_payment_prepare', { p_user: profile.id, p_round: roundId, p_method: method }),
+    await admin().rpc('svc_payment_prepare', {
+      p_user: profile.id,
+      p_round: roundId,
+      p_method: method,
+      p_periods: periods,
+    }),
   ) as Prepared;
   const payment = encodeURIComponent(prepared.paymentId);
 

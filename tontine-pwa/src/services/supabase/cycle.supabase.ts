@@ -240,10 +240,10 @@ export function createSupabasePaymentService(): PaymentService {
       return [...contributions, ...payouts].sort((a, b) => b.date.localeCompare(a.date));
     },
 
-    async initiatePayment({ roundId, method }) {
+    async initiatePayment({ roundId, method, periods }) {
       return invoke<InitiatePaymentResult>(
         'payments-initiate',
-        { roundId, method },
+        { roundId, method, periods },
         'Le service de paiement est indisponible pour le moment. Réessayez dans quelques minutes.',
       );
     },
@@ -252,9 +252,13 @@ export function createSupabasePaymentService(): PaymentService {
       return rpc<PaymentReceipt>('payment_receipt', { p_payment: paymentId });
     },
 
-    async recordCash(roundId, userId) {
+    async recordCash(roundId, userId, periods) {
       requireOnline();
-      await rpc('payment_record_cash', { p_round: roundId, p_user: userId });
+      await rpc('payment_record_cash', {
+        p_round: roundId,
+        p_user: userId,
+        p_periods: periods ?? null,
+      });
     },
 
     // Notification (et push) « Retard » dans la langue du membre ; une par membre et par jour.

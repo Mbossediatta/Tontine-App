@@ -287,6 +287,7 @@ export function PaymentsTab({ overview }: { overview: GroupOverview }) {
           onClose={() => setCashOpen(false)}
           roundId={round.id}
           rows={paymentsQuery.data ?? []}
+          group={overview.group}
         />
       ) : null}
     </div>

@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { ChevronLeft, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, Minus, Plus, ShieldCheck } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useMyGroups } from '@/features/groups/queries';
 import { useOnline } from '@/hooks/useOnline';
 import { cn } from '@/lib/cn';
 import { errorMessage } from '@/lib/errors';
+import { serviceFee } from '@/lib/tontine';
 import { paymentService } from '@/services';
-import type { InitiatePaymentInput } from '@/types';
+import type { Frequency, InitiatePaymentInput } from '@/types';
 import { deadlineLabel, duesOf, periodLabel, shortDate, type Due } from '../dues';
 import { AmountDisplay } from '../ui/AmountDisplay';
 import { BottomAction } from '../ui/BottomAction';
@@ -83,27 +84,84 @@ function ChoiceRow({
   );
 }
 
-/** Récapitulatif avant paiement, en tableau compact. */
-/** Montant débité : la cotisation (et ses compléments) plus les frais de paiement. */
-const totalToPay = (due: Due) => due.amount + due.overview.myServiceFee;
+/** « 1 jour », « 3 semaines »… : périodes du rythme de cotisation. */
+const PERIOD_WORDS: Record<Frequency, [string, string]> = {
+  daily: ['jour', 'jours'],
+  weekly: ['semaine', 'semaines'],
+  biweekly: ['quinzaine', 'quinzaines'],
+  monthly: ['mois', 'mois'],
+};
+const periodsLabel = (frequency: Frequency, count: number) =>
+  `${count} ${PERIOD_WORDS[frequency][count > 1 ? 1 : 0]}`;
 
-function Summary({ due, method }: { due: Due; method: Method }) {
+/** Montants d'un versement (même calcul que le serveur, private.installment). */
+interface Installment {
+  contribution: number;
+  penalty: number;
+  fee: number;
+  serviceFee: number;
+  /** Montant débité : versement plus frais de paiement. */
+  total: number;
+}
+
+/** Cotisation qui reste à verser sur le tour (hors pénalité et frais d'adhésion). */
+const restOf = (due: Due) =>
+  due.overview.myAmountDue - due.overview.myPenalty - due.overview.myMembershipFeeDue;
+
+/** Périodes restant à payer : 1 quand le tour se paie d'un coup. */
+const periodsLeft = (due: Due) =>
+  due.overview.myPeriodAmount > 0 ? Math.ceil(restOf(due) / due.overview.myPeriodAmount) : 1;
+
+/**
+ * Versement de `periods` périodes (toutes mes parts), ou tout le reste du tour si null.
+ * Les frais d'adhésion partent avec le premier versement, la pénalité avec le dernier.
+ */
+function installmentOf(due: Due, periods: number | null): Installment {
   const { overview } = due;
-  const contribution = overview.myAmountDue - overview.myPenalty - overview.myMembershipFeeDue;
+  const rest = restOf(due);
+  const contribution = periods === null ? rest : Math.min(rest, periods * overview.myPeriodAmount);
+  const penalty = contribution >= rest ? overview.myPenalty : 0;
+  const fee = overview.myMembershipFeeDue;
+  const fees = serviceFee(contribution + penalty + fee, overview.feePercent);
+  return {
+    contribution,
+    penalty,
+    fee,
+    serviceFee: fees,
+    total: contribution + penalty + fee + fees,
+  };
+}
+
+/** Récapitulatif avant paiement, en tableau compact. */
+function Summary({
+  due,
+  method,
+  part,
+  periods,
+}: {
+  due: Due;
+  method: Method;
+  part: Installment;
+  periods: number | null;
+}) {
+  const { overview } = due;
   const rows: Array<[string, React.ReactNode]> = [
     ['Groupe', overview.group.name],
     ['Période', periodLabel(overview, due.round)],
-    ['Cotisation', <AmountDisplay key="c" value={contribution} />],
   ];
-  if (overview.myPenalty > 0) {
-    rows.push(['Pénalité de retard', <AmountDisplay key="p" value={overview.myPenalty} />]);
+  if (periods !== null && part.contribution < restOf(due)) {
+    rows.push(['Versement', periodsLabel(overview.group.frequency, periods)]);
   }
-  if (overview.myMembershipFeeDue > 0) {
-    rows.push(['Frais d’adhésion', <AmountDisplay key="f" value={overview.myMembershipFeeDue} />]);
+  rows.push(['Cotisation', <AmountDisplay key="c" value={part.contribution} />]);
+  if (part.penalty > 0) {
+    rows.push(['Pénalité de retard', <AmountDisplay key="p" value={part.penalty} />]);
   }
-  if (overview.myServiceFee > 0) {
+  if (part.fee > 0) {
+    rows.push(['Frais d’adhésion', <AmountDisplay key="f" value={part.fee} />]);
+  }
+  if (part.serviceFee > 0) {
     // Frais du service de paiement (PayTech) : payés par le membre, hors cagnotte.
-    rows.push(['Frais de paiement', <AmountDisplay key="s" value={overview.myServiceFee} />]);
+    rows.push(['Frais de paiement', <AmountDisplay key="s" value={part.serviceFee} />]);
   }
   rows.push(['Moyen', METHODS.find((m) => m.id === method)?.name ?? '']);
   return (
@@ -121,11 +179,75 @@ function Summary({ due, method }: { due: Due; method: Method }) {
         <div className="flex min-h-[56px] items-center justify-between gap-4 px-4 py-2">
           <dt className="text-[15px] font-semibold">Total</dt>
           <dd>
-            <AmountDisplay value={totalToPay(due)} size="md" />
+            <AmountDisplay value={part.total} size="md" />
           </dd>
         </div>
       </dl>
     </Card>
+  );
+}
+
+/**
+ * Combien payer : tout le reste du tour, ou une partie (quelques jours, semaines…). Le
+ * membre est « payé » quand ses versements atteignent le total du tour.
+ */
+function AmountChoice({
+  due,
+  periods,
+  onChange,
+}: {
+  due: Due;
+  periods: number | null;
+  onChange: (periods: number | null) => void;
+}) {
+  const { frequency } = due.overview.group;
+  const left = periodsLeft(due);
+  const partial = periods ?? 1;
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="mb-2 text-[15px] font-semibold">Combien veux-tu payer ?</legend>
+      <ChoiceRow name="amount" checked={periods === null} onChange={() => onChange(null)}>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-semibold">Tout le reste</span>
+          <span className="block text-[13px] text-slate-600">{periodsLabel(frequency, left)}</span>
+        </span>
+        <AmountDisplay value={installmentOf(due, null).contribution} />
+      </ChoiceRow>
+      <ChoiceRow name="amount" checked={periods !== null} onChange={() => onChange(partial)}>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-semibold">Une partie</span>
+          <span className="block text-[13px] text-slate-600">
+            {periodsLabel(frequency, partial)} maintenant, le reste plus tard
+          </span>
+        </span>
+        <AmountDisplay value={installmentOf(due, partial).contribution} />
+      </ChoiceRow>
+      {periods !== null ? (
+        <div className="flex items-center justify-center gap-4 py-1">
+          <button
+            type="button"
+            aria-label="Un de moins"
+            disabled={periods <= 1}
+            onClick={() => onChange(periods - 1)}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 text-slate-700 hover:border-blue-700 disabled:opacity-40"
+          >
+            <Minus className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <span className="min-w-[96px] text-center text-[15px] font-semibold" aria-live="polite">
+            {periodsLabel(frequency, periods)}
+          </span>
+          <button
+            type="button"
+            aria-label="Un de plus"
+            disabled={periods >= left - 1}
+            onClick={() => onChange(periods + 1)}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 text-slate-700 hover:border-blue-700 disabled:opacity-40"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      ) : null}
+    </fieldset>
   );
 }
 
@@ -144,6 +266,8 @@ export default function PayFlowPage() {
   // Cotisation choisie : celle demandée dans l'adresse, ou la seule due.
   const [roundId, setRoundId] = useState<string | null>(requested);
   const [method, setMethod] = useState<Method>('wave');
+  // Versement choisi : null = tout le reste du tour.
+  const [periods, setPeriods] = useState<number | null>(null);
   const [step, setStep] = useState<Step | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string>();
@@ -182,6 +306,7 @@ export default function PayFlowPage() {
     dues.find((d) => d.round.id === roundId) ?? (dues.length === 1 ? dues[0] : undefined);
   // Étape de départ : on saute le choix si la cotisation est déjà connue.
   const current: Step = step ?? (selected ? 2 : 1);
+  const part = selected ? installmentOf(selected, periods) : undefined;
 
   const pay = async () => {
     if (!selected) return;
@@ -191,6 +316,7 @@ export default function PayFlowPage() {
       const { checkoutUrl } = await paymentService.initiatePayment({
         roundId: selected.round.id,
         method,
+        periods: periods ?? undefined,
       });
       // Page sécurisée du service de paiement ; il nous renverra sur la page de résultat.
       // Cet aller-retour recharge l'appli : la marque évite qu'elle redemande le PIN.
@@ -233,7 +359,10 @@ export default function PayFlowPage() {
                 key={due.round.id}
                 name="due"
                 checked={selected?.round.id === due.round.id}
-                onChange={() => setRoundId(due.round.id)}
+                onChange={() => {
+                  setRoundId(due.round.id);
+                  setPeriods(null);
+                }}
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[15px] font-semibold">
@@ -264,6 +393,11 @@ export default function PayFlowPage() {
                 {shortDate(selected.round.dueDate)}
               </p>
             ) : null}
+            {selected && periodsLeft(selected) > 1 ? (
+              <div className="mb-4">
+                <AmountChoice due={selected} periods={periods} onChange={setPeriods} />
+              </div>
+            ) : null}
             {METHODS.map((m) => (
               <ChoiceRow
                 key={m.id}
@@ -282,7 +416,12 @@ export default function PayFlowPage() {
 
         {current === 3 && selected ? (
           <>
-            <Summary due={selected} method={method} />
+            <Summary
+              due={selected}
+              method={method}
+              part={part ?? installmentOf(selected, null)}
+              periods={periods}
+            />
             <p className="flex items-start gap-2 text-[13px] leading-5 text-slate-600">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-green-700" aria-hidden="true" />
               Tu vas valider le paiement sur la page sécurisée de{' '}
@@ -307,7 +446,7 @@ export default function PayFlowPage() {
           <Button block loading={sending} disabled={!online} onClick={() => void pay()}>
             {online ? (
               <>
-                Payer <AmountDisplay value={selected ? totalToPay(selected) : 0} />
+                Payer <AmountDisplay value={part?.total ?? 0} />
               </>
             ) : (
               'Connexion requise pour payer'

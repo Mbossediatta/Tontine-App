@@ -67,6 +67,13 @@ export interface GroupOverview {
   myPenalty: number;
   /** Frais de paiement (PayTech) à ajouter à myAmountDue, payés par le membre. */
   myServiceFee: number;
+  /**
+   * Cotisation d'une période du rythme (jour, semaine…) pour toutes mes parts : unité d'un
+   * versement quand je paie mon tour en plusieurs fois.
+   */
+  myPeriodAmount: number;
+  /** Pourcentage des frais de paiement (Paramètres), pour chiffrer un versement. */
+  feePercent: number;
   /** Mon tour de bénéficiaire, s'il n'est pas encore reversé. */
   myTurn?: Round;
   orderIsSet: boolean;
@@ -215,6 +222,8 @@ export interface SwapView {
 export interface InitiatePaymentInput {
   roundId: string;
   method: Exclude<PaymentMethod, 'cash'>;
+  /** Versement de quelques jours (ou périodes) du tour ; absent : tout le reste du tour. */
+  periods?: number;
 }
 
 export interface InitiatePaymentResult {
