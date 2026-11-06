@@ -118,6 +118,14 @@ describe('back-office du super administrateur', () => {
     });
     expect(group.communityId).toBe('c-ouakam');
     expect(group.adminId).toBe(FATOU);
+
+    // L'admin confié gère sans cotiser ; « Je participe » l'inscrit sans code.
+    await demoLogin(FATOU);
+    const before = await groupService.get(group.id);
+    expect(before.myMembershipStatus).toBeUndefined();
+    const { user } = await authService.getSession();
+    await membershipService.addByPhone(group.id, user?.phone ?? '', 1);
+    expect((await groupService.get(group.id)).myMembershipStatus).toBe('active');
   }, 10_000);
 
   it('un admin de communauté peut confier le groupe qu’il crée à un autre admin', async () => {

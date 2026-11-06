@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserMinus } from 'lucide-react';
+import { HandCoins, UserMinus } from 'lucide-react';
 import { MemberRow } from '@/components/domain';
 import { OnlineButton } from '@/components/layout/OnlineButton';
 import { AsyncContent, Card, CardTitle, ConfirmDialog } from '@/components/ui';
@@ -21,6 +21,11 @@ export function MembersAdminTab({ overview }: { overview: GroupOverview }) {
   const isOwner = overview.myRole === 'owner' || user.globalRole === 'super_admin';
   const isDraft = group.status === 'draft';
 
+  // Un admin qui gère ce groupe sans y cotiser peut s'y inscrire lui-même, sans code.
+  const join = useAction({
+    action: () => membershipService.addByPhone(group.id, user.phone, 1),
+    success: 'Vous participez à ce groupe',
+  });
   const remove = useAction({
     action: (membershipId: string) => membershipService.remove(membershipId),
     success: 'Membre retiré',
@@ -37,6 +42,27 @@ export function MembersAdminTab({ overview }: { overview: GroupOverview }) {
         return (
           <div className="flex flex-col gap-3">
             <PendingRequests requests={pending} full={active.length >= group.maxMembers} />
+            {isDraft &&
+            user.globalRole === 'admin' &&
+            !active.some((member) => member.user.id === user.id) &&
+            active.length < group.maxMembers ? (
+              <Card className="flex flex-col gap-3">
+                <CardTitle>Participer vous aussi</CardTitle>
+                <p className="text-label text-muted">
+                  Vous gérez ce groupe sans y cotiser. Vous pouvez y prendre une part comme les
+                  autres membres : vous cotiserez à chaque tour et recevrez la cagnotte à votre
+                  tour.
+                </p>
+                <OnlineButton
+                  block
+                  loading={join.isPending}
+                  onClick={() => join.mutate()}
+                  icon={<HandCoins className="h-5 w-5" aria-hidden="true" />}
+                >
+                  Je participe à ce groupe
+                </OnlineButton>
+              </Card>
+            ) : null}
             {isDraft ? (
               <AddMemberForm
                 groupId={group.id}
