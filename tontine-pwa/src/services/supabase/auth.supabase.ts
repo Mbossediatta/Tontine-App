@@ -142,7 +142,10 @@ export function createSupabaseAuthService(bridge: SessionBridge): AuthService {
   return {
     async getSession() {
       const { data } = await supabase().auth.getSession();
-      const { data: settings } = await supabase().rpc('public_settings');
+      // public_settings est réservé aux connectés : sans session, délai par défaut.
+      const { data: settings } = data.session
+        ? await supabase().rpc('public_settings')
+        : { data: null };
       const lockAfterMinutes =
         (settings as { security?: { inactivityLockMinutes?: number } } | null)?.security
           ?.inactivityLockMinutes ?? DEFAULT_LOCK_MINUTES;
