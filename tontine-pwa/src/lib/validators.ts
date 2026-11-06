@@ -66,9 +66,10 @@ export const createGroupSchema = z
   .object({
     name: groupNameSchema,
     description: groupDescriptionSchema,
+    // Minimum et maximum : réglés par le super admin (Paramètres → Règles), vérifiés par le serveur.
     contributionAmount: requiredInt('Indiquez le montant de la cotisation').min(
-      500,
-      'Montant minimum : 500 FCFA',
+      1,
+      'Indiquez un montant positif',
     ),
     turnLength: requiredInt('Indiquez la durée d’un tour').min(1, 'Au moins 1'),
     sharesPerRound: requiredInt('Indiquez le nombre de parts par tour').min(1).max(50),
@@ -163,7 +164,7 @@ export const groupSettingsSchema = z
   .object({
     name: groupNameSchema,
     description: groupDescriptionSchema,
-    contributionAmount: requiredInt('Indiquez le montant').min(500, 'Montant minimum : 500 FCFA'),
+    contributionAmount: requiredInt('Indiquez le montant').min(1, 'Indiquez un montant positif'),
     turnLength: requiredInt('Indiquez la durée d’un tour').min(1, 'Au moins 1'),
     sharesPerRound: requiredInt('Indiquez les parts par tour').min(1).max(50),
     membershipFeeAmount: requiredInt('Indiquez les frais').min(0),

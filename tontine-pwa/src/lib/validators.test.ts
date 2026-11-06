@@ -72,14 +72,14 @@ describe('createGroupSchema', () => {
     );
   });
 
-  it('exige une cotisation entière d’au moins 500 FCFA', () => {
-    expect(createGroupSchema.safeParse({ ...validGroup, contributionAmount: 499 }).success).toBe(
+  it('exige une cotisation entière et positive (bornes : Paramètres, vérifiées par le serveur)', () => {
+    expect(createGroupSchema.safeParse({ ...validGroup, contributionAmount: 0 }).success).toBe(
       false,
     );
     expect(createGroupSchema.safeParse({ ...validGroup, contributionAmount: 1000.5 }).success).toBe(
       false,
     );
-    expect(createGroupSchema.safeParse({ ...validGroup, contributionAmount: 500 }).success).toBe(
+    expect(createGroupSchema.safeParse({ ...validGroup, contributionAmount: 100 }).success).toBe(
       true,
     );
   });
