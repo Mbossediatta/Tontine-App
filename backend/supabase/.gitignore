@@ -9,3 +9,4 @@
 
 # Secrets locaux des Edge Functions (modèle : functions/.env.example)
 functions/.env
+functions/.env.production
