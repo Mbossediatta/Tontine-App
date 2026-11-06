@@ -284,6 +284,72 @@ interface DisputeRow {
 
 export function createSupabaseDisputeService(): DisputeService {
   return {
+    async open(input) {
+      requireOnline();
+      await rpc('dispute_open', {
+        p_group: input.groupId,
+        p_round: input.roundId ?? null,
+        p_kind: input.kind,
+        p_amount: input.amount,
+        p_method: input.method ?? null,
+        p_provider_ref: input.providerRef ?? null,
+        p_description: input.description,
+      });
+    },
+
+    async listMine() {
+      // Les règles d'accès ne renvoient que mes réclamations.
+      const disputeRows = rows<DisputeRow>(
+        await supabase()
+          .from('disputes')
+          .select(
+            'id, user_id, group_id, round_id, payment_id, provider_ref, method, kind, description, amount, status, refund_amount, refund_validated_at, refund_validated_by, created_at, dispute_events (actor_id, text, at)',
+          )
+          .order('created_at', { ascending: false }),
+      );
+      const groupIds = [...new Set(disputeRows.map((row) => row.group_id))];
+      const roundIds = [...new Set(disputeRows.flatMap((row) => row.round_id ?? []))];
+      const [groupsResult, roundsResult] = await Promise.all([
+        groupIds.length
+          ? supabase().from('groups').select('id, name').in('id', groupIds)
+          : Promise.resolve({ data: [], error: null }),
+        roundIds.length
+          ? supabase().from('rounds').select('id, number').in('id', roundIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      const groupNames = new Map(
+        rows<{ id: string; name: string }>(groupsResult).map((group) => [group.id, group.name]),
+      );
+      const roundNumbers = new Map(
+        rows<{ id: string; number: number }>(roundsResult).map((round) => [round.id, round.number]),
+      );
+      return disputeRows.map((row) => {
+        const history = [...row.dispute_events]
+          .sort((a, b) => a.at.localeCompare(b.at))
+          .map((event) => ({ at: event.at, actorId: event.actor_id ?? '', text: event.text }));
+        return {
+          dispute: {
+            id: row.id,
+            userId: row.user_id,
+            groupId: row.group_id,
+            roundId: row.round_id ?? undefined,
+            paymentId: row.payment_id ?? undefined,
+            providerRef: row.provider_ref ?? undefined,
+            method: row.method ?? undefined,
+            kind: row.kind,
+            description: row.description,
+            amount: row.amount,
+            status: row.status,
+            createdAt: row.created_at,
+            history,
+          },
+          groupName: groupNames.get(row.group_id) ?? '—',
+          roundNumber: row.round_id ? roundNumbers.get(row.round_id) : undefined,
+          history,
+        };
+      });
+    },
+
     async list(): Promise<DisputeView[]> {
       const [{ ctx, nameOf }, result] = await Promise.all([
         superAdminData(),

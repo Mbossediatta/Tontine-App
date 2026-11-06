@@ -21,6 +21,7 @@ export const disputeKindLabel = {
   debited_not_recorded: 'Débit non enregistré',
   double_payment: 'Double paiement',
   wrong_amount: 'Montant incorrect',
+  payout_not_received: 'Cagnotte non reçue',
   other: 'Autre réclamation',
 } as const;
 

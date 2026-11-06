@@ -1,5 +1,6 @@
 // Vues composées renvoyées par les services (données prêtes à afficher).
 import type {
+  DisputeKind,
   Debt,
   AttributionMode,
   AuditEntry,
@@ -417,6 +418,27 @@ export interface Reconciliation {
 }
 
 /** Litige avec le contexte nécessaire à son traitement. */
+/** Réclamation ouverte par un membre depuis l'application. */
+export interface OpenDisputeInput {
+  groupId: string;
+  roundId?: string;
+  kind: DisputeKind;
+  /** Montant en jeu (FCFA). */
+  amount: number;
+  method?: PaymentMethod;
+  /** Référence de la transaction (Wave, Orange Money), si le membre l'a. */
+  providerRef?: string;
+  description: string;
+}
+
+/** Une de mes réclamations et son suivi. */
+export interface MyDispute {
+  dispute: Dispute;
+  groupName: string;
+  roundNumber?: number;
+  history: DisputeEvent[];
+}
+
 export interface DisputeView {
   dispute: Dispute;
   user: PublicUser;

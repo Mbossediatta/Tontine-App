@@ -24,6 +24,7 @@ const MemberNotificationsPage = lazy(
 const MemberProfilePage = lazy(() => import('@/features/member/pages/MemberProfilePage'));
 const PayFlowPage = lazy(() => import('@/features/member/pages/PayFlowPage'));
 const HistoryPage = lazy(() => import('@/features/member/pages/HistoryPage'));
+const ClaimsPage = lazy(() => import('@/features/member/pages/ClaimsPage'));
 const JoinPage = lazy(() => import('@/features/groups/JoinPage'));
 const PayPage = lazy(() => import('@/features/payments/PayPage'));
 const SimulationPage = lazy(() => import('@/features/payments/SimulationPage'));
@@ -135,6 +136,7 @@ export const routes: RouteObject[] = [
           },
           { path: '/payer', element: <PayFlowPage /> },
           { path: '/historique', element: <HistoryPage /> },
+          { path: '/reclamation', element: <ClaimsPage /> },
           { path: '/rejoindre/:code', element: <JoinPage /> },
           {
             path: '/notifications',

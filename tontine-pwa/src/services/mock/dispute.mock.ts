@@ -66,6 +66,75 @@ function toView(dispute: Dispute): DisputeView {
 }
 
 export const mockDisputeService: DisputeService = {
+  async open(input) {
+    requireOnline();
+    await delay();
+    const user = currentUser();
+    const group = requireGroup(input.groupId);
+    if (!db.memberships.some((m) => m.groupId === group.id && m.userId === user.id)) {
+      throw new ServiceError('Vous ne faites pas partie de ce groupe.', 'forbidden');
+    }
+    const description = input.description.trim();
+    if (description.length < 5 || description.length > 1000) {
+      throw new ServiceError('Expliquez le problème en quelques mots (5 à 1 000 caractères).');
+    }
+    const ongoing = db.disputes.filter(
+      (d) => d.userId === user.id && (d.status === 'open' || d.status === 'in_progress'),
+    );
+    if (ongoing.length >= 5) {
+      throw new ServiceError(
+        'Vous avez déjà 5 réclamations en cours : attendez leur traitement.',
+        'conflict',
+      );
+    }
+    db.disputes.push({
+      id: newId('dis'),
+      userId: user.id,
+      groupId: group.id,
+      roundId: input.roundId,
+      providerRef: input.providerRef?.trim() || undefined,
+      method: input.method,
+      kind: input.kind,
+      description,
+      amount: input.amount,
+      status: 'open',
+      createdAt: nowIso(),
+      history: [
+        {
+          at: nowIso(),
+          actorId: user.id,
+          text: `Réclamation ouverte par le membre : ${description}`,
+        },
+      ],
+    });
+    for (const admin of db.users.filter((u) => u.globalRole === 'super_admin')) {
+      notify(
+        admin.id,
+        'dispute',
+        'Nouvelle réclamation',
+        `${fullName(user)} (${group.name}) : ${description.slice(0, 200)}`,
+        '/admin/litiges',
+      );
+    }
+    persist();
+  },
+
+  async listMine() {
+    await delay();
+    const user = currentUser();
+    return db.disputes
+      .filter((d) => d.userId === user.id)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map((dispute) => ({
+        dispute,
+        groupName: db.groups.find((g) => g.id === dispute.groupId)?.name ?? '—',
+        roundNumber: dispute.roundId
+          ? db.rounds.find((r) => r.id === dispute.roundId)?.number
+          : undefined,
+        history: dispute.history,
+      }));
+  },
+
   async list() {
     await delay();
     synchronize();

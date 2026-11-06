@@ -312,7 +312,8 @@ export interface AuditEntry {
 }
 
 /** Motif d'une réclamation de membre. */
-export type DisputeKind = 'debited_not_recorded' | 'double_payment' | 'wrong_amount' | 'other';
+export type DisputeKind =
+  'debited_not_recorded' | 'double_payment' | 'wrong_amount' | 'payout_not_received' | 'other';
 /** Avancement d'un litige. */
 export type DisputeStatus = 'open' | 'in_progress' | 'resolved' | 'rejected';
 

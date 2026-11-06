@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { format, isSameMonth, startOfMonth, subMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ArrowDownLeft, ArrowUpRight, Download, Eye, ReceiptText } from 'lucide-react';
@@ -201,6 +202,13 @@ function TransactionSheet({ item, onClose }: { item: MyTransaction | null; onClo
             </Button>
           </div>
         ) : null}
+        {/* Un souci avec ce paiement : réclamation préremplie (groupe concerné). */}
+        <Link
+          to={`/reclamation?groupe=${item.groupId}`}
+          className="text-center text-[13px] font-semibold text-blue-700 underline"
+        >
+          Signaler un problème
+        </Link>
       </div>
     </BottomSheet>
   );

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
-import { Camera, ChevronRight, KeyRound, LogOut, Wallet } from 'lucide-react';
+import { Camera, ChevronRight, KeyRound, LifeBuoy, LogOut, Wallet } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Toggle } from '@/components/ui';
 import { useLogout } from '@/features/auth/useLogout';
 import { useNotificationPreferences } from '@/features/notifications/queries';
@@ -130,6 +131,7 @@ function LanguagePicker() {
 
 export default function MemberProfilePage() {
   const user = useCurrentUser();
+  const navigate = useNavigate();
   const logout = useLogout();
   const [editing, setEditing] = useState(false);
   const [changingPin, setChangingPin] = useState(false);
@@ -190,6 +192,12 @@ export default function MemberProfilePage() {
               label="Recevoir la cagnotte"
               value={payoutLabel}
               onClick={() => setPayout(true)}
+            />
+            <SettingRow
+              icon={<LifeBuoy className="h-5 w-5" />}
+              label="Réclamation"
+              value="Paiement absent, cagnotte non reçue…"
+              onClick={() => navigate('/reclamation')}
             />
           </ul>
         </Card>

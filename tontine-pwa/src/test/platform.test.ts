@@ -75,6 +75,26 @@ describe('rubriques du super administrateur', () => {
     ).not.toBe('blocked');
   }, 10_000);
 
+  it('un membre ouvre une réclamation, le super admin la reçoit dans les litiges', async () => {
+    await demoLogin('u-p1');
+    await expect(
+      disputeService.open({ groupId: 'g-famille', kind: 'other', amount: 0, description: 'ok' }),
+    ).rejects.toThrow(/quelques mots/);
+    await disputeService.open({
+      groupId: 'g-famille',
+      kind: 'payout_not_received',
+      amount: 50_000,
+      method: 'wave',
+      providerRef: 'TX-9',
+      description: 'Ma cagnotte est marquée envoyée mais je n’ai rien reçu.',
+    });
+    const [mine] = await disputeService.listMine();
+    expect(mine?.dispute).toMatchObject({ kind: 'payout_not_received', status: 'open' });
+    expect(mine?.groupName).toBe('Tontine Famille');
+    await demoLogin('u-super');
+    expect((await disputeService.list()).some((d) => d.dispute.id === mine?.dispute.id)).toBe(true);
+  }, 10_000);
+
   it('charge les litiges et produit un rapport borné aux dates sélectionnées', async () => {
     const disputes = await disputeService.list();
     expect(disputes.length).toBeGreaterThan(0);

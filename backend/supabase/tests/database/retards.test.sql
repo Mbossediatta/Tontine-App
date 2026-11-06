@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(26);
+select plan(31);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000a2', 'r-admin@users.calebasse.invalid'),
@@ -140,6 +140,26 @@ select is(
   (select sent_ref || '/' || (received_at is not null)::text from public.round_beneficiaries
    where round_id = pg_temp.id('r2')),
   'TX-123/true', 'the transfer is tracked until reception');
+
+-- Réclamation d'un membre : ouverte par lui, visible de lui seul (et du super admin).
+set local role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a3');
+select throws_ok(
+  $$select public.dispute_open(pg_temp.id('g'), pg_temp.id('r2'), 'payout_not_received', 1500, null, null, 'ok')$$,
+  '22023', null, 'a claim needs a short explanation');
+insert into ids select 'claim', public.dispute_open(pg_temp.id('g'), pg_temp.id('r2'),
+  'payout_not_received', 1500, null, 'TX-123', 'Je n’ai pas reçu l’argent sur mon Wave.');
+select is((select kind::text || '/' || status::text from public.disputes where id = pg_temp.id('claim')),
+  'payout_not_received/open', 'the member opens a claim');
+select is((select count(*)::int from public.dispute_events where dispute_id = pg_temp.id('claim')),
+  1, 'the claim starts its history');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a4');
+select is((select count(*)::int from public.disputes), 0, 'other members do not see the claim');
+reset role;
+select is(
+  (select count(*)::int from public.notifications
+   where user_id = '00000000-0000-0000-0000-0000000000a2' and title = 'Cagnotte signalée non reçue'),
+  1, 'the group admin is told about a payout not received');
 
 select * from finish();
 rollback;
