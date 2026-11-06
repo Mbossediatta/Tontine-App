@@ -82,11 +82,14 @@ function MemberPage({ member, other }: { member: ReactNode; other: ReactNode }) 
   return user.globalRole === 'user' ? member : other;
 }
 
-/** Accueil : le super admin n'a pas d'espace membre, il arrive sur son tableau de bord. */
+/**
+ * Accueil : les administrateurs arrivent sur leur tableau de bord (l'espace membre d'un
+ * admin est sur /espace-membre ; le super admin n'en a pas).
+ */
 function HomeRoute() {
   const user = useCurrentUser();
-  if (user.globalRole === 'super_admin') return <Navigate to="/admin" replace />;
-  return <MemberPage member={<MemberHomePage />} other={<HomePage />} />;
+  if (user.globalRole !== 'user') return <Navigate to="/admin" replace />;
+  return <MemberHomePage />;
 }
 
 const mockOnly: RouteObject[] = env.useMocks ? [{ path: '/demo-ui', element: <DemoUiPage /> }] : [];
@@ -147,6 +150,7 @@ export const routes: RouteObject[] = [
             element: <RequireRole roles={['admin', 'super_admin']} />,
             children: [
               { path: '/admin', element: <AdminDashboardPage /> },
+              { path: '/espace-membre', element: <HomePage /> },
               { path: '/admin/mes-groupes', element: <AdminGroupsPage /> },
               { path: '/admin/cotisations', element: <AdminContributionsPage /> },
               { path: '/admin/groupes/nouveau', element: <CreateGroupPage /> },

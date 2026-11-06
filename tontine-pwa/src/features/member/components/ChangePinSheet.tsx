@@ -54,7 +54,8 @@ export function ChangePinSheet({ open, onClose }: { open: boolean; onClose: () =
       setError(undefined);
       setStage('next');
     } else if (stage === 'next') {
-      if (isWeakPin(pin)) return fail('Ce code est trop simple (1234, 0000…). Choisis-en un autre.', 'next');
+      if (isWeakPin(pin))
+        return fail('Ce code est trop simple (1234, 0000…). Choisis-en un autre.', 'next');
       setNext(pin);
       setPin('');
       setError(undefined);

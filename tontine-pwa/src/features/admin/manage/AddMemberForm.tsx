@@ -8,13 +8,7 @@ import { addByPhoneSchema, type AddByPhoneValues } from '@/lib/validators';
 import { membershipService } from '@/services';
 
 /** Ajoute une personne, ou une part supplémentaire si elle est déjà inscrite. */
-export function AddMemberForm({
-  groupId,
-  maxShares,
-}: {
-  groupId: string;
-  maxShares: number;
-}) {
+export function AddMemberForm({ groupId, maxShares }: { groupId: string; maxShares: number }) {
   const {
     control,
     handleSubmit,

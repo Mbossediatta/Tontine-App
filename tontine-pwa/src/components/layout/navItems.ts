@@ -46,7 +46,12 @@ const DASHBOARD: NavItem = {
   primary: true,
 };
 const HOME: NavItem = { to: '/', label: 'Accueil', labelKey: 'nav.home', icon: Home };
-const ADMIN_HOME: NavItem = { ...HOME, label: 'Espace membre', labelKey: undefined };
+const ADMIN_HOME: NavItem = {
+  ...HOME,
+  to: '/espace-membre',
+  label: 'Espace membre',
+  labelKey: undefined,
+};
 const GROUPS: NavItem = { to: '/groupes', label: 'Groupes', labelKey: 'nav.groups', icon: Users };
 const MEMBER_PAY: NavItem = {
   to: '/payer',

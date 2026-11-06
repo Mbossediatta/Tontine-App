@@ -278,9 +278,32 @@ describe('parcours', () => {
     );
   }, 10_000);
 
+  it('propose à l’admin de participer au groupe qu’on lui a confié', async () => {
+    await demoLogin('u-super');
+    await groupService.create({
+      communityId: 'c-ouakam',
+      name: 'Tontine Confiée Test',
+      contributionAmount: 2500,
+      frequency: 'monthly',
+      turnLength: 1,
+      maxMembers: 4,
+      paymentDueDay: 5,
+      startDate: new Date(Date.now() + 2 * 86_400_000).toISOString(),
+      attributionMode: 'random',
+      adminId: 'u-admin2',
+    });
+    await loginAs('u-admin2');
+    renderAt('/espace-membre');
+    expect(
+      await screen.findByText('Participer à un groupe que vous gérez', {}, TIMEOUT),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Tontine Confiée Test')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Je participe/ })).toBeInTheDocument();
+  }, 10_000);
+
   it('adapte l’espace membre de l’admin au layout admin sans cloche en double', async () => {
     await loginAs('u-admin1');
-    renderAt('/');
+    renderAt('/espace-membre');
     expect(
       await screen.findByRole('heading', { name: 'Espace membre' }, TIMEOUT),
     ).toBeInTheDocument();

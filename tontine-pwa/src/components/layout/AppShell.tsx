@@ -30,7 +30,7 @@ export function AppShell() {
   const isAdminRole = user?.globalRole === 'admin' || user?.globalRole === 'super_admin';
   const isAdminArea =
     pathname.startsWith('/admin') ||
-    (user?.globalRole === 'admin' && pathname === '/') ||
+    (user?.globalRole === 'admin' && pathname === '/espace-membre') ||
     (isAdminRole && (pathname === '/profil' || pathname === '/notifications'));
 
   // Les espaces d'administration partagent la barre du haut : compte et notifications.

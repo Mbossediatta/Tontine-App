@@ -75,7 +75,8 @@ export function OverviewTab({ overview, onGoTo }: OverviewTabProps) {
             <p className="font-semibold text-ink">Avant de démarrer</p>
             <ul className="flex flex-col gap-1 text-label text-ink">
               <li>
-                {isFull ? '✓' : '•'} Toutes les parts attribuées ({activeShareCount} / {group.maxMembers}){' '}
+                {isFull ? '✓' : '•'} Toutes les parts attribuées ({activeShareCount} /{' '}
+                {group.maxMembers}){' '}
                 {!isFull ? (
                   <button
                     type="button"

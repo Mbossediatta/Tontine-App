@@ -26,7 +26,16 @@ const VARIANTS: Record<MemberButtonVariant, string> = {
 
 /** Bouton de l'espace membre : 48 px de haut, coins de 8 px, retour visuel au toucher. */
 export const Button = forwardRef<HTMLButtonElement, MemberButtonProps>(function Button(
-  { variant = 'primary', loading = false, icon, block = false, disabled, className, children, ...rest },
+  {
+    variant = 'primary',
+    loading = false,
+    icon,
+    block = false,
+    disabled,
+    className,
+    children,
+    ...rest
+  },
   ref,
 ) {
   return (

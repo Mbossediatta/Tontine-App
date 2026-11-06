@@ -8,8 +8,15 @@ import type { GroupOverview } from '@/types';
 export function CurrentRoundTab({ overview }: { overview: GroupOverview }) {
   const navigate = useNavigate();
   const user = useCurrentUser();
-  const { group, currentRound, currentBeneficiary, paidCount, activeMemberCount, activeShareCount, myStatus } =
-    overview;
+  const {
+    group,
+    currentRound,
+    currentBeneficiary,
+    paidCount,
+    activeMemberCount,
+    activeShareCount,
+    myStatus,
+  } = overview;
 
   if (group.status === 'draft') {
     return (
@@ -83,9 +90,8 @@ export function CurrentRoundTab({ overview }: { overview: GroupOverview }) {
         ) : null}
         {overview.myMembershipFeeDue > 0 ? (
           <p className="text-label text-muted">
-            Frais d’adhésion (une seule fois) :{' '}
-            <AmountText value={overview.myMembershipFeeDue} /> · inclus dans votre prochain
-            paiement.
+            Frais d’adhésion (une seule fois) : <AmountText value={overview.myMembershipFeeDue} /> ·
+            inclus dans votre prochain paiement.
           </p>
         ) : null}
         {currentRound.status === 'ready_for_payout' && !platformPeriod ? (

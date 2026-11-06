@@ -38,7 +38,9 @@ export function EmptyState({ title, description, action, className }: EmptyState
     >
       <CalabashShape className="h-10 w-16 text-green-400" />
       <p className="text-[15px] font-semibold text-slate-900">{title}</p>
-      {description ? <p className="max-w-xs text-[13px] leading-5 text-slate-600">{description}</p> : null}
+      {description ? (
+        <p className="max-w-xs text-[13px] leading-5 text-slate-600">{description}</p>
+      ) : null}
       {action ? <div className="mt-1 w-full max-w-xs">{action}</div> : null}
     </div>
   );
@@ -47,7 +49,10 @@ export function EmptyState({ title, description, action, className }: EmptyState
 /** Message d'erreur de chargement, avec « Réessayer ». */
 export function ErrorBlock({ onRetry }: { onRetry: () => void }) {
   return (
-    <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white px-6 py-8 text-center">
+    <div
+      role="alert"
+      className="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white px-6 py-8 text-center"
+    >
       <p className="text-[15px] font-semibold text-slate-900">Impossible de charger les données</p>
       <p className="text-[13px] text-slate-600">Vérifie ta connexion, puis réessaie.</p>
       <button

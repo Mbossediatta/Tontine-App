@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { Bell, Plus, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { UnreadCount } from '@/components/layout/UnreadDot';
-import { Button, EmptyState, ErrorState, PageSkeleton } from '@/components/ui';
+import { Button, Card, CardTitle, EmptyState, ErrorState, PageSkeleton } from '@/components/ui';
+import { ParticipateButton } from '@/features/admin/manage/ParticipateButton';
+import { canParticipate } from '@/features/admin/manage/participation';
+import { useAdminDashboard } from '@/features/admin/queries';
 import { PushPromptCard } from '@/features/notifications/PushPromptCard';
 import { useUnreadCount } from '@/features/notifications/queries';
 import { useCurrentUser } from '@/hooks/useAuth';
@@ -10,6 +13,33 @@ import { formatMonth } from '@/lib/format';
 import { JoinGroupDialog } from './JoinGroupDialog';
 import { DueList, NextTurnCard, SummaryCard } from './HomeSections';
 import { useMyGroups } from './queries';
+
+/**
+ * Groupes que l'admin gère sans y cotiser et qu'il peut encore rejoindre (avant le
+ * démarrage) : une part en un geste, sans code.
+ */
+function GroupsToJoin() {
+  const dashboard = useAdminDashboard();
+  const groups = dashboard.data?.groups.filter(canParticipate) ?? [];
+  if (groups.length === 0) return null;
+  return (
+    <Card className="flex flex-col gap-3">
+      <CardTitle>Participer à un groupe que vous gérez</CardTitle>
+      <p className="text-label text-muted">
+        Vous gérez ces groupes sans y cotiser. Prenez-y une part comme les autres membres : vous
+        cotiserez à chaque tour et recevrez la cagnotte à votre tour.
+      </p>
+      <ul className="flex flex-col divide-y divide-line">
+        {groups.map(({ group }) => (
+          <li key={group.id} className="flex items-center justify-between gap-3 py-2">
+            <span className="min-w-0 truncate font-bold text-ink">{group.name}</span>
+            <ParticipateButton groupId={group.id} />
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
 
 export default function HomePage() {
   const user = useCurrentUser();
@@ -27,9 +57,7 @@ export default function HomePage() {
       {isAdmin ? (
         <header className="flex flex-col gap-2">
           <h1 className="font-display text-page-title text-blue-900">Espace membre</h1>
-          <p className="text-body text-muted">
-            Vos cotisations et vos tours · {adminMonth}
-          </p>
+          <p className="text-body text-muted">Vos cotisations et vos tours · {adminMonth}</p>
         </header>
       ) : (
         <header className="-mx-page -mt-4 flex items-center justify-between bg-white px-page py-4 shadow-card sm:-mx-page-sm sm:px-page-sm lg:mx-0 lg:mt-0 lg:rounded-card lg:px-6">
@@ -44,6 +72,8 @@ export default function HomePage() {
           </Link>
         </header>
       )}
+
+      {isAdmin ? <GroupsToJoin /> : null}
 
       {query.isPending ? (
         <PageSkeleton />

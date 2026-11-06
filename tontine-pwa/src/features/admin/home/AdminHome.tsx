@@ -226,8 +226,8 @@ export function AdminHome() {
                           <GroupStatusBadge status={group.status} />
                         </span>
                         <span className="text-small text-muted">
-                          {plural(overview.activeMemberCount, 'personne')} · {overview.activeShareCount}{' '}
-                          parts
+                          {plural(overview.activeMemberCount, 'personne')} ·{' '}
+                          {overview.activeShareCount} parts
                           {group.status !== 'draft' ? ` · Cycle ${group.currentCycle}` : ''}
                         </span>
                         {overview.currentRound ? (

@@ -84,8 +84,7 @@ export function ContributionsCard({ overview }: { overview: GroupOverview }) {
           </h2>
           <p className="text-label text-muted">
             {plural(overview.activeMemberCount, 'personne')} · {overview.activeShareCount} parts ·{' '}
-            {groupContributionLabel(group)} · période {round.number} sur{' '}
-            {overview.totalRounds}
+            {groupContributionLabel(group)} · période {round.number} sur {overview.totalRounds}
           </p>
         </div>
         {isOpen ? (

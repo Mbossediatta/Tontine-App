@@ -3,9 +3,7 @@ import { cn } from '@/lib/cn';
 
 /** Carte : fond blanc, bordure fine, coins de 12 px, pas d'ombre. */
 export function Card({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div className={cn('rounded-xl border border-slate-200 bg-white', className)} {...rest} />
-  );
+  return <div className={cn('rounded-xl border border-slate-200 bg-white', className)} {...rest} />;
 }
 
 /** Titre de section, avec une action discrète à droite (« Tout voir »). */

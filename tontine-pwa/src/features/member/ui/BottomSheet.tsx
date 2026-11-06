@@ -56,7 +56,10 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {/* Poignée : indique sur téléphone que la feuille vient du bas. */}
-        <span className="mx-auto mt-2 h-1 w-10 rounded-full bg-slate-300 sm:hidden" aria-hidden="true" />
+        <span
+          className="mx-auto mt-2 h-1 w-10 rounded-full bg-slate-300 sm:hidden"
+          aria-hidden="true"
+        />
         <div className="flex items-center justify-between gap-3 px-4 pb-2 pt-2 sm:pt-4">
           <h2 id={titleId} className="text-[18px] font-bold text-slate-900">
             {title}
