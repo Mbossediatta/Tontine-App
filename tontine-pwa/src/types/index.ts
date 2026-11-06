@@ -233,7 +233,8 @@ export type AuditAction =
   | 'admin_compensated'
   | 'community_created'
   | 'community_updated'
-  | 'group_community_changed';
+  | 'group_community_changed'
+  | 'reminder_sent';
 
 /** Entrée du journal d'audit : qui a fait quoi, quand, et sur quel groupe. */
 /**

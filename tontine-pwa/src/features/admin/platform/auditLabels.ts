@@ -32,6 +32,7 @@ export const auditActions: Record<AuditAction, { label: string; category: AuditC
   refund_validated: { label: 'Remboursement validé', category: 'money' },
   dispute_updated: { label: 'Litige mis à jour', category: 'money' },
   admin_compensated: { label: 'Admin rémunéré', category: 'money' },
+  reminder_sent: { label: 'Relance de cotisation', category: 'money' },
   admin_added: { label: 'Admin ajouté', category: 'admins' },
   admin_updated: { label: 'Admin modifié', category: 'admins' },
   admin_suspended: { label: 'Admin suspendu', category: 'admins' },

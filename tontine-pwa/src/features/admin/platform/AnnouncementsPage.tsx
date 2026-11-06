@@ -6,7 +6,6 @@ import { formatDateTime } from '@/lib/format';
 import { queryKeys, useAction } from '@/lib/query';
 import { communicationService, groupService } from '@/services';
 import { PageFrame, QueryState, Stat } from './PlatformUi';
-import { money } from './labels';
 
 const smsKindLabels = {
   otp: 'Connexion',
@@ -46,7 +45,7 @@ export function AnnouncementsPage() {
   return (
     <PageFrame
       title="Notifications et annonces"
-      subtitle="Diffusez un message ciblé et consultez les coûts d’envoi des SMS."
+      subtitle="Diffusez un message ciblé et suivez les SMS envoyés."
     >
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <Card className="flex flex-col gap-4">
@@ -100,7 +99,7 @@ export function AnnouncementsPage() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <CardTitle>Suivi des SMS</CardTitle>
-              <p className="mt-1 text-label text-muted">Volume et coût des messages envoyés.</p>
+              <p className="mt-1 text-label text-muted">Nombre de messages envoyés, par type.</p>
             </div>
             <Select
               label="Période"
@@ -116,17 +115,13 @@ export function AnnouncementsPage() {
           <QueryState query={sms}>
             {sms.data ? (
               <>
-                <div className="grid grid-cols-2 gap-3">
-                  <Stat label="SMS envoyés" value={sms.data.count} />
-                  <Stat label="Coût total" value={money(sms.data.cost)} />
-                </div>
+                {/* Pas de coût affiché : le tarif dépend du contrat Orange (voir la facture). */}
+                <Stat label="SMS envoyés" value={sms.data.count} />
                 <ul className="divide-y divide-line">
                   {sms.data.byKind.map((item) => (
                     <li key={item.kind} className="flex justify-between gap-3 py-2">
                       <span>{smsKindLabels[item.kind]}</span>
-                      <span className="text-muted">
-                        {item.count} · {money(item.cost)}
-                      </span>
+                      <span className="tabular-nums text-muted">{item.count}</span>
                     </li>
                   ))}
                 </ul>

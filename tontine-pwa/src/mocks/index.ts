@@ -74,6 +74,8 @@ export interface MockDatabase {
   secrets: PlatformSecrets;
   /** Acceptations des conditions (preuve : qui, quelle version, quand), en ajout seul. */
   termsAcceptances: Array<{ userId: string; version: number; acceptedAt: string }>;
+  /** Relances de cotisation (une par membre, par tour et par jour). */
+  reminders: Array<{ roundId: string; userId: string; day: string }>;
 }
 
 export function createSeed(now: Date = new Date()): MockDatabase {
@@ -117,6 +119,7 @@ export function createSeed(now: Date = new Date()): MockDatabase {
     smsLog: seedSms(users, now),
     settings: seedSettings(),
     secrets: seedSecrets(),
+    reminders: [],
     // Les comptes de démonstration ont déjà accepté la 1re version.
     termsAcceptances: users.map((user) => ({
       userId: user.id,

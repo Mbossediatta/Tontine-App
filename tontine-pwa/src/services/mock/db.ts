@@ -4,8 +4,8 @@ import { ServiceError } from '@/lib/errors';
 import { createSeed, type MockDatabase } from '@/mocks';
 import type { User } from '@/types';
 
-// v10 : acceptations des conditions d'utilisation.
-const DB_KEY = 'tontine.mock.db.v10';
+// v11 : relances de cotisation (une par jour).
+const DB_KEY = 'tontine.mock.db.v11';
 const SESSION_KEY = 'tontine.mock.session.v1';
 const PENDING_PHONE_KEY = 'tontine.mock.pendingPhone.v1';
 

@@ -7,6 +7,7 @@ import {
   memberService,
   membershipService,
   paymentService,
+  reportService,
   roundService,
 } from '@/services';
 import { demoLogin } from '@/services/mock/auth.mock';
@@ -210,6 +211,18 @@ describe('back-office du super administrateur', () => {
     await expect(
       paymentService.remindMember(currentRound?.id ?? '', 'u-not-a-member'),
     ).rejects.toThrow(/ne fait pas partie de ce groupe/);
+  }, 10_000);
+
+  it('relance : une seule par membre et par jour, tracée au journal', async () => {
+    await demoLogin(MOUSSA);
+    const { currentRound } = await groupService.get('g-famille');
+    const roundId = currentRound?.id ?? '';
+    const count = await paymentService.remindLate(roundId);
+    expect(count).toBeGreaterThan(0);
+    await expect(paymentService.remindLate(roundId)).rejects.toThrow(/déjà été relancés/);
+    await demoLogin('u-super');
+    const audit = await reportService.auditLog();
+    expect(audit.filter(({ entry }) => entry.action === 'reminder_sent')).toHaveLength(1);
   }, 10_000);
 
   it('un membre peut avoir deux parts et reçoit deux tours avec une cotisation doublée', async () => {

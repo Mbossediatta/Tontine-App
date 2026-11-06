@@ -245,50 +245,77 @@ export const mockPaymentService: PaymentService = {
   async remindLate(roundId) {
     requireOnline();
     await delay();
-    const round = requireRound(roundId);
-    const group = requireGroup(round.groupId);
-    assertCanManage(group, currentUser());
-    const lateUsers = new Set(
-      activeMemberships(group.id)
-        .filter((membership) => {
-          const status = memberStatus(round, membership.userId);
-          return status === 'late' || status === 'pending' || status === 'failed';
-        })
-        .map((membership) => membership.userId),
-    );
-    for (const userId of lateUsers) {
-      sendSmsToUser(userId, 'reminder');
-      notify(
-        userId,
-        'reminder',
-        'Rappel de cotisation',
-        `${group.name} : merci de payer votre cotisation du tour ${round.number}.`,
-        `/groupes/${group.id}`,
-      );
-    }
-    persist();
-    return lateUsers.size;
+    return remind(roundId);
   },
 
   async remindMember(roundId, userId) {
     requireOnline();
     await delay();
-    const round = requireRound(roundId);
-    const group = requireGroup(round.groupId);
-    assertCanManage(group, currentUser());
+    await remind(roundId, userId);
+  },
+};
+
+/**
+ * Relance (comme svc_reminder_prepare) : ceux qui n'ont pas payé et pas encore été relancés
+ * aujourd'hui reçoivent le SMS « Retard » et une notification ; l'action est tracée.
+ */
+function remind(roundId: string, userId?: string): number {
+  const round = requireRound(roundId);
+  const group = requireGroup(round.groupId);
+  const actor = currentUser();
+  assertCanManage(group, actor);
+  const today = nowIso().slice(0, 10);
+  const remindedToday = (id: string) =>
+    db.reminders.some((r) => r.roundId === round.id && r.userId === id && r.day === today);
+  if (userId) {
     if (membershipOf(group.id, userId)?.status !== 'active') {
       throw new ServiceError('Ce membre ne fait pas partie de ce groupe.', 'forbidden');
     }
     // Inutile de relancer quelqu'un qui a déjà payé.
     if (memberStatus(round, userId) === 'paid') throw new ServiceError('Ce membre a déjà payé.');
-    sendSmsToUser(userId, 'reminder');
+    if (remindedToday(userId)) {
+      throw new ServiceError(
+        'Ce membre a déjà été relancé aujourd’hui. Réessayez demain.',
+        'conflict',
+      );
+    }
+  }
+  const unpaid = [
+    ...new Set(
+      activeMemberships(group.id)
+        .map((membership) => membership.userId)
+        .filter((id) => (!userId || id === userId) && memberStatus(round, id) !== 'paid'),
+    ),
+  ];
+  const targets = unpaid.filter((id) => !remindedToday(id));
+  if (unpaid.length > 0 && targets.length === 0) {
+    throw new ServiceError(
+      'Les membres qui n’ont pas payé ont déjà été relancés aujourd’hui. Réessayez demain.',
+      'conflict',
+    );
+  }
+  for (const id of targets) {
+    db.reminders.push({ roundId: round.id, userId: id, day: today });
+    if (db.preferences[id]?.reminders !== false) sendSmsToUser(id, 'reminder');
     notify(
-      userId,
+      id,
       'reminder',
       'Rappel de cotisation',
       `${group.name} : merci de payer votre cotisation du tour ${round.number}.`,
       `/groupes/${group.id}`,
     );
-    persist();
-  },
-};
+  }
+  if (targets.length > 0) {
+    const [only] = targets;
+    const who =
+      targets.length === 1 && only ? fullName(requireUser(only)) : `${targets.length} membres`;
+    recordAudit(
+      actor,
+      'reminder_sent',
+      `a relancé ${who} pour le tour ${round.number} de « ${group.name} »`,
+      group.id,
+    );
+  }
+  persist();
+  return targets.length;
+}

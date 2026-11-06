@@ -254,12 +254,14 @@ export function createSupabasePaymentService(): PaymentService {
       await rpc('payment_record_cash', { p_round: roundId, p_user: userId });
     },
 
-    async remindLate() {
-      throw NOT_READY('L’envoi des rappels');
+    // SMS « Retard » dans la langue du membre ; une relance par membre et par jour.
+    async remindLate(roundId) {
+      const reply = await invoke<{ count: number }>('reminders-send', { roundId });
+      return reply.count;
     },
 
-    async remindMember() {
-      throw NOT_READY('L’envoi des rappels');
+    async remindMember(roundId, userId) {
+      await invoke('reminders-send', { roundId, userId });
     },
   };
 }

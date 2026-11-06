@@ -1,4 +1,3 @@
-| `…260000_conditions.sql` | Conditions d’utilisation : version des textes (augmentée quand ils changent), `terms_acceptances` (preuve en ajout seul : qui, version, date, appareil), `legal_terms` (sans session), `terms_status`, `terms_accept`, `svc_terms_due` et `svc_terms_accept` (création du PIN) |
 # Backend — Calebasse de l’Espoir
 
 Backend Supabase de la PWA de tontine : base PostgreSQL (règles RLS), Edge Functions
@@ -70,6 +69,8 @@ Les migrations versionnées dans `supabase/migrations/` :
 | `…230000_paiement_en_ligne.sql` | Étape 9 : `svc_payment_prepare` (montant + frais PayTech payés en plus), `svc_payment_set_token`, `svc_payment_confirm` (montant exact, idempotent, revenus, tour prêt), `svc_payment_fail`, `payment_receipt` |
 | `…240000_parametres.sql` | `settings_get`, `settings_update` (validations ; clé secrète PayTech dans le coffre-fort Vault, seul l’indice reste lisible), `svc_paytech_keys` (Edge Functions) |
 | `…250000_finances_litiges_annonces.sql` | `payout_block`, `payout_unblock`, `admin_compensate`, litiges (`dispute_take`, `_record_payment`, `_refund`, `_reject`, ouverture automatique sur notification PayTech anormale), `svc_announcement` |
+| `…260000_conditions.sql` | Conditions d’utilisation : version des textes (augmentée quand ils changent), `terms_acceptances` (preuve en ajout seul : qui, version, date, appareil), `legal_terms` (sans session), `terms_status`, `terms_accept`, `svc_terms_due` et `svc_terms_accept` (création du PIN) |
+| `…270000_relances.sql` | Relance manuelle : `payment_reminders` (une relance par membre, par tour et par jour), `svc_reminder_prepare` (droits, membres à relancer, notification, audit `reminder_sent`), `svc_sms_template` (modèle dans la langue du membre) ; SMS envoyés par l’Edge Function `reminders-send` |
 | `…200000_rythme_journalier.sql`, `…200100_duree_tour.sql` | Rythme de cotisation `daily`/`weekly`/`biweekly`/`monthly` et `turn_length` (durée d’un tour en périodes du rythme, choisie par l’admin ; un an au plus, deux ans en mensuel) |
 
 - RLS est activé sur toutes les tables (règles : étape 3 ci-dessous).

@@ -1,10 +1,9 @@
 import { Button, Card, CardTitle, Input, Textarea } from '@/components/ui';
 import type { PlatformSettings } from '@/types';
-import { numberUpdater, useSaveSettings, type SectionProps } from './settingsState';
+import { useSaveSettings, type SectionProps } from './settingsState';
 
 export function SmsSection({ settings, setSettings }: SectionProps) {
   const saveSms = useSaveSettings('sms');
-  const updateNumber = numberUpdater(setSettings);
   return (
     <Card className="flex flex-col gap-4">
       <CardTitle>Fournisseur SMS</CardTitle>
@@ -23,13 +22,6 @@ export function SmsSection({ settings, setSettings }: SectionProps) {
           onChange={(event) =>
             setSettings({ ...settings, sms: { ...settings.sms, senderName: event.target.value } })
           }
-        />
-        <Input
-          label="Coût par SMS (FCFA)"
-          type="number"
-          min="0"
-          value={settings.sms.costPerSms}
-          onChange={(event) => updateNumber('sms', 'costPerSms', event.target.value)}
         />
       </div>
       <p className="text-small text-muted">
