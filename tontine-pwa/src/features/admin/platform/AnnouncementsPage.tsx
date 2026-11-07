@@ -15,6 +15,28 @@ const smsKindLabels = {
   payout: 'Versements',
 } as const;
 
+/** Types de notification affichés dans le suivi des messages. */
+const notificationTypeLabels: Record<string, string> = {
+  announcement: 'Annonces',
+  reminder: 'Rappels de cotisation',
+  late: 'Retards et pénalités',
+  payment: 'Paiements reçus',
+  payment_failed: 'Paiements échoués',
+  payout: 'Cagnottes',
+  payout_approval: 'Versements à valider',
+  beneficiary: 'Tours ouverts',
+  debt: 'Impayés',
+  swap: 'Échanges de tour',
+  dispute: 'Réclamations',
+  added: 'Ajouts à un groupe',
+  join_request: 'Demandes d’adhésion',
+  join_accepted: 'Adhésions acceptées',
+  join_rejected: 'Adhésions refusées',
+  ready_for_payout: 'Tours prêts à verser',
+  started: 'Démarrages de tontine',
+  draw: 'Tirages au sort',
+};
+
 export function AnnouncementsPage() {
   const [targetKind, setTargetKind] = useState<'all' | 'admins' | 'group'>('all');
   const [groupId, setGroupId] = useState('');
@@ -25,6 +47,10 @@ export function AnnouncementsPage() {
   const groups = useQuery({
     queryKey: queryKeys.managedGroups,
     queryFn: () => groupService.listManaged(),
+  });
+  const notifications = useQuery({
+    queryKey: ['admin', 'notification-stats', days],
+    queryFn: () => communicationService.notificationStats(Number(days)),
   });
   const sms = useQuery({
     queryKey: ['admin', 'sms-stats', days],
@@ -113,8 +139,10 @@ export function AnnouncementsPage() {
         <Card className="flex flex-col gap-4">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <CardTitle>Suivi des SMS</CardTitle>
-              <p className="mt-1 text-label text-muted">Nombre de messages envoyés, par type.</p>
+              <CardTitle>Suivi des messages</CardTitle>
+              <p className="mt-1 text-label text-muted">
+                Notifications dans l’application et SMS envoyés, par type.
+              </p>
             </div>
             <Select
               label="Période"
@@ -127,6 +155,24 @@ export function AnnouncementsPage() {
               ]}
             />
           </div>
+          <QueryState query={notifications}>
+            {notifications.data ? (
+              <>
+                <Stat
+                  label="Notifications dans l’application (et sur le téléphone)"
+                  value={notifications.data.count}
+                />
+                <ul className="divide-y divide-line">
+                  {notifications.data.byType.map((item) => (
+                    <li key={item.type} className="flex justify-between gap-3 py-2">
+                      <span>{notificationTypeLabels[item.type] ?? 'Autres messages'}</span>
+                      <span className="tabular-nums text-muted">{item.count}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+          </QueryState>
           <QueryState query={sms}>
             {sms.data ? (
               <>

@@ -24,12 +24,22 @@ describe('rubriques du super administrateur', () => {
 
   it('envoie une annonce dans l’application, ou aussi par SMS, avec une trace d’audit', async () => {
     const smsBefore = (await communicationService.smsStats(30)).count;
+    const announcementsBefore =
+      (await communicationService.notificationStats(30)).byType.find(
+        (t) => t.type === 'announcement',
+      )?.count ?? 0;
     const count = await communicationService.announce(
       { kind: 'admins' },
       'Maintenance',
       'La plateforme sera indisponible dimanche.',
     );
     expect(count).toBeGreaterThan(0);
+    // Le suivi compte les notifications envoyées dans l'application, par type.
+    expect(
+      (await communicationService.notificationStats(30)).byType.find(
+        (t) => t.type === 'announcement',
+      )?.count,
+    ).toBe(announcementsBefore + count);
     // Notification push seulement : aucun SMS n'est compté.
     expect((await communicationService.smsStats(30)).count).toBe(smsBefore);
     // Canal « SMS » : un SMS par destinataire, en plus de la notification.

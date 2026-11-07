@@ -1483,6 +1483,7 @@ export type Database = {
         Args: { p_membership: string; p_role: Database['public']['Enums']['group_role'] };
         Returns: undefined;
       };
+      notification_stats: { Args: { p_days: number }; Returns: Json };
       order_draw: { Args: { p_group: string }; Returns: undefined };
       order_set: { Args: { p_group: string; p_memberships: string[] }; Returns: undefined };
       payment_receipt: { Args: { p_payment: string }; Returns: Json };

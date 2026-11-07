@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(18);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000c1', 'w-super@users.calebasse.invalid'),
@@ -114,6 +114,15 @@ set local role service_role;
 select throws_ok(
   $$select public.svc_debt_payment_prepare('00000000-0000-0000-0000-0000000000c3', pg_temp.id('d'), 'wave')$$,
   '23505', null, 'a settled debt cannot be paid again');
+reset role;
+
+-- Suivi des messages : totaux de notifications par type, pour le super admin seulement.
+set local role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000c1');
+select cmp_ok((public.notification_stats(30) ->> 'count')::int, '>=', 1,
+  'the super admin sees how many notifications were sent');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000c2');
+select throws_ok('select public.notification_stats(30)', '42501', null, 'an admin cannot see the platform totals');
 reset role;
 
 select * from finish();

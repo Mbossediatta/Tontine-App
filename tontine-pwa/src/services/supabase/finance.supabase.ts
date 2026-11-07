@@ -5,6 +5,7 @@ import { isSameMonth, subDays } from 'date-fns';
 import { ServiceError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import type {
+  NotificationStats,
   AdminCompensation,
   Dispute,
   DisputeView,
@@ -436,6 +437,10 @@ export function createSupabaseCommunicationService(): CommunicationService {
         'Annonce non envoyée. Vérifiez la connexion et réessayez.',
       );
       return reply.count;
+    },
+
+    async notificationStats(days) {
+      return rpc<NotificationStats>('notification_stats', { p_days: days });
     },
 
     async smsStats(days): Promise<SmsStats> {

@@ -486,6 +486,12 @@ export interface PlatformReport {
 }
 
 /** Suivi des SMS d'une période : volume et coût, au total et par motif. */
+/** Notifications envoyées dans l'application (et en push), par type, sur une période. */
+export interface NotificationStats {
+  count: number;
+  byType: Array<{ type: string; count: number }>;
+}
+
 export interface SmsStats {
   count: number;
   cost: number;

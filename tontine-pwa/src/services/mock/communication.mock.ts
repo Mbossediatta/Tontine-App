@@ -72,6 +72,26 @@ export const mockCommunicationService: CommunicationService = {
     return users.length;
   },
 
+  async notificationStats(days) {
+    await delay();
+    assertSuperAdmin(currentUser());
+    if (!Number.isInteger(days) || days < 1 || days > 365) {
+      throw new ServiceError('La période doit être comprise entre 1 et 365 jours.');
+    }
+    const since = Date.now() - days * 86_400_000;
+    const counts = new Map<string, number>();
+    for (const notification of db.notifications) {
+      if (new Date(notification.createdAt).getTime() < since) continue;
+      // Comme le serveur : les étapes d'un échange de tour sont regroupées.
+      const type = notification.type.startsWith('swap') ? 'swap' : notification.type;
+      counts.set(type, (counts.get(type) ?? 0) + 1);
+    }
+    const byType = [...counts]
+      .map(([type, count]) => ({ type, count }))
+      .sort((a, b) => b.count - a.count);
+    return { count: byType.reduce((sum, item) => sum + item.count, 0), byType };
+  },
+
   async smsStats(days) {
     await delay();
     assertSuperAdmin(currentUser());

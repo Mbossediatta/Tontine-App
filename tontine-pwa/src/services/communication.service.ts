@@ -1,4 +1,4 @@
-import type { AnnouncementTarget, SmsStats } from '@/types';
+import type { AnnouncementTarget, NotificationStats, SmsStats } from '@/types';
 
 /** Canal d'une annonce : l'application seule, ou l'application plus un SMS. */
 export type AnnouncementChannel = 'app' | 'sms';
@@ -17,4 +17,6 @@ export interface CommunicationService {
   ): Promise<number>;
   /** SMS envoyés sur les `days` derniers jours : volume, coût, détail par motif. */
   smsStats(days: number): Promise<SmsStats>;
+  /** Notifications envoyées dans l'application sur les `days` derniers jours, par type. */
+  notificationStats(days: number): Promise<NotificationStats>;
 }
