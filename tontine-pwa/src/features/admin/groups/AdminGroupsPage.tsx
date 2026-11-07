@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Plus, Search, UsersRound } from 'lucide-react';
+import { Plus, Search, Share2, UsersRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GroupStatusBadge } from '@/components/domain';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { AsyncContent, Card, EmptyState } from '@/components/ui';
+import { AsyncContent, Button, Card, EmptyState, Modal } from '@/components/ui';
 import { groupContributionLabel, plural, searchable } from '@/lib/format';
 import type { GroupOverview, GroupStatus } from '@/types';
+import { InviteShare } from '../components/InviteShare';
 import { headerLinkClass } from '../components/linkStyles';
 import { useShowMore } from '../components/useShowMore';
 import { useAdminDashboard, useCommunities } from '../queries';
@@ -35,74 +36,98 @@ function GroupSummary({
   communityName?: string;
 }) {
   const { group } = overview;
+  const [inviting, setInviting] = useState(false);
   const percent =
     overview.activeShareCount > 0
       ? Math.min(100, (overview.paidCount / overview.activeShareCount) * 100)
       : 0;
 
   return (
-    <Link
-      to={`/admin/groupes/${group.id}`}
-      className="block rounded-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
-    >
-      <Card
-        interactive
-        className="flex h-full flex-col gap-4 transition-colors hover:ring-1 hover:ring-blue-700/30"
+    <div className="relative">
+      <Link
+        to={`/admin/groupes/${group.id}`}
+        className="block rounded-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="truncate font-sans text-card-title text-ink">{group.name}</h2>
-            <p className="mt-1 break-words text-label text-muted">
-              {communityName ? `${communityName} · ` : ''}
-              {groupContributionLabel(group)} · {overview.totalRounds} tours
-            </p>
-          </div>
-          <GroupStatusBadge status={group.status} />
-        </div>
-
-        <div className="flex items-center gap-2 text-label text-muted">
-          <UsersRound className="h-4 w-4 shrink-0" aria-hidden="true" />
-          {plural(overview.activeMemberCount, 'personne')} · {overview.activeShareCount} parts ·{' '}
-          {plural(overview.pendingRequestCount, 'demande')}
-        </div>
-
-        {overview.currentRound ? (
-          <div className="mt-auto flex flex-col gap-1.5">
-            <div className="flex items-center justify-between gap-2 text-small">
-              <span className="font-bold text-ink">
-                Tour {overview.currentRound.number} · {overview.paidCount}/
-                {overview.activeShareCount} parts payées
-              </span>
-              <span className="shrink-0 text-muted">{Math.round(percent)} %</span>
+        <Card
+          interactive
+          className="flex h-full flex-col gap-4 transition-colors hover:ring-1 hover:ring-blue-700/30"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="truncate font-sans text-card-title text-ink">{group.name}</h2>
+              <p className="mt-1 break-words text-label text-muted">
+                {communityName ? `${communityName} · ` : ''}
+                {groupContributionLabel(group)} · {overview.totalRounds} tours
+              </p>
             </div>
-            <div
-              role="progressbar"
-              aria-label={`Collecte du tour ${overview.currentRound.number} pour ${group.name}`}
-              aria-valuemin={0}
-              aria-valuemax={overview.activeShareCount}
-              aria-valuenow={overview.paidCount}
-              className="h-2 overflow-hidden rounded-pill bg-blue-100"
-            >
+            <GroupStatusBadge status={group.status} />
+          </div>
+
+          <div className="flex items-center gap-2 text-label text-muted">
+            <UsersRound className="h-4 w-4 shrink-0" aria-hidden="true" />
+            {plural(overview.activeMemberCount, 'personne')} · {overview.activeShareCount} parts ·{' '}
+            {plural(overview.pendingRequestCount, 'demande')}
+          </div>
+
+          {overview.currentRound ? (
+            <div className="mt-auto flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-2 text-small">
+                <span className="font-bold text-ink">
+                  Tour {overview.currentRound.number} · {overview.paidCount}/
+                  {overview.activeShareCount} parts payées
+                </span>
+                <span className="shrink-0 text-muted">{Math.round(percent)} %</span>
+              </div>
               <div
-                className="h-full rounded-pill bg-green-600"
-                style={{
-                  width: `${percent}%`,
-                }}
-              />
+                role="progressbar"
+                aria-label={`Collecte du tour ${overview.currentRound.number} pour ${group.name}`}
+                aria-valuemin={0}
+                aria-valuemax={overview.activeShareCount}
+                aria-valuenow={overview.paidCount}
+                className="h-2 overflow-hidden rounded-pill bg-blue-100"
+              >
+                <div
+                  className="h-full rounded-pill bg-green-600"
+                  style={{
+                    width: `${percent}%`,
+                  }}
+                />
+              </div>
+              <p className="text-small text-muted">
+                {overview.paidCount} parts payées sur {overview.activeShareCount}
+              </p>
             </div>
-            <p className="text-small text-muted">
-              {overview.paidCount} parts payées sur {overview.activeShareCount}
+          ) : (
+            <p className="mt-auto rounded-control bg-blue-50 px-3 py-2 text-small text-muted">
+              {group.status === 'draft' ? 'En attente de démarrage' : 'Aucun tour en cours'}
             </p>
-          </div>
-        ) : (
-          <p className="mt-auto rounded-control bg-blue-50 px-3 py-2 text-small text-muted">
-            {group.status === 'draft' ? 'En attente de démarrage' : 'Aucun tour en cours'}
-          </p>
-        )}
+          )}
 
-        <span className="sr-only">Gérer le groupe {group.name}</span>
-      </Card>
-    </Link>
+          <span className="sr-only">Gérer le groupe {group.name}</span>
+        </Card>
+      </Link>
+      {/* Avant le démarrage : inviter sans ouvrir le groupe (bouton hors du lien de la carte). */}
+      {group.status === 'draft' ? (
+        <>
+          <Button
+            size="sm"
+            variant="secondary"
+            className="absolute bottom-4 right-4"
+            onClick={() => setInviting(true)}
+            icon={<Share2 className="h-4 w-4" aria-hidden="true" />}
+          >
+            Inviter
+          </Button>
+          <Modal
+            open={inviting}
+            onClose={() => setInviting(false)}
+            title={`Inviter dans « ${group.name} »`}
+          >
+            <InviteShare code={group.inviteCode} groupName={group.name} />
+          </Modal>
+        </>
+      ) : null}
+    </div>
   );
 }
 

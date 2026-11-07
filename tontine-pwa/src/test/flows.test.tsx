@@ -1,5 +1,5 @@
 // Parcours de bout en bout sur les données simulées (critères d'acceptation du cahier des charges).
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { AppProviders } from '@/app/providers';
 import { routes } from '@/app/router';
@@ -279,6 +279,28 @@ describe('parcours', () => {
     expect(groupPaymentLinks.map((link) => link.getAttribute('href'))).toContain(
       '/admin/groupes/g-famille?onglet=paiements',
     );
+  }, 10_000);
+
+  it('invite depuis la liste « Mes groupes » (groupe pas encore démarré)', async () => {
+    await loginAs('u-admin1');
+    const group = await groupService.create({
+      communityId: 'c-ouakam',
+      name: 'Tontine Invitation',
+      contributionAmount: 1000,
+      frequency: 'monthly',
+      turnLength: 1,
+      maxMembers: 4,
+      paymentDueDay: 5,
+      startDate: new Date(Date.now() + 2 * 86_400_000).toISOString(),
+      attributionMode: 'random',
+    });
+    renderAt('/admin/mes-groupes');
+    const title = await screen.findByText('Tontine Invitation', {}, TIMEOUT);
+    const card = title.closest('div.relative') as HTMLElement;
+    fireEvent.click(within(card).getByRole('button', { name: /Inviter/ }));
+    expect(
+      await screen.findByText(new RegExp(`/rejoindre/${group.inviteCode}`), {}, TIMEOUT),
+    ).toBeInTheDocument();
   }, 10_000);
 
   it('propose à l’admin de participer au groupe qu’on lui a confié', async () => {
