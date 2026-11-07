@@ -1,6 +1,7 @@
 import { Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { OfflineBanner, UpdateBanner } from '@/components/layout/Banners';
+import { InstallBanner } from '@/components/layout/InstallBanner';
 import { FullPageLoader } from '@/features/auth/RequireAuth';
 import { useAuthBootstrap, useAuthStore } from '@/hooks/useAuth';
 import { AppProviders } from './providers';
@@ -19,6 +20,7 @@ function AppContent() {
     <>
       <UpdateBanner />
       <OfflineBanner />
+      <InstallBanner />
       <Suspense fallback={<FullPageLoader />}>
         <RouterProvider router={router} future={{ v7_startTransition: true }} />
       </Suspense>

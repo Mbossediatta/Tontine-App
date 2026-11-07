@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Camera, ChevronRight, KeyRound, LifeBuoy, LogOut, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { InstallCard } from '@/features/profile/InstallCard';
 import { Toggle } from '@/components/ui';
 import { useLogout } from '@/features/auth/useLogout';
 import { useNotificationPreferences } from '@/features/notifications/queries';
@@ -202,6 +203,8 @@ export default function MemberProfilePage() {
           </ul>
         </Card>
       </section>
+
+      <InstallCard />
 
       <LanguagePicker />
 
