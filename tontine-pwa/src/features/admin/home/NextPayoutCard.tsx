@@ -18,7 +18,7 @@ interface NextPayoutCardProps {
 export function NextPayoutCard({ overview, round }: NextPayoutCardProps) {
   const [confirming, setConfirming] = useState(false);
   const online = useOnline();
-  const ready = payoutOpen(round);
+  const ready = payoutOpen(round) && !round.round.payoutRequestedAt;
 
   return (
     <section className="flex flex-col gap-3 rounded-card bg-blue-700 p-5 text-white shadow-card">
@@ -42,7 +42,11 @@ export function NextPayoutCard({ overview, round }: NextPayoutCardProps) {
       >
         Valider le versement
       </button>
-      {!ready ? (
+      {round.round.payoutRequestedAt ? (
+        <p className="text-small text-blue-100">
+          En attente de la validation du super admin (300 000 FCFA ou plus).
+        </p>
+      ) : !ready ? (
         <p className="text-small text-blue-100">
           Possible quand toutes les parts auront payé ({overview.paidCount} /{' '}
           {overview.activeShareCount}), ou après l’heure limite ({formatDateTime(round.deadline)}).

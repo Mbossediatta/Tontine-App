@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Zap } from 'lucide-react';
 import { AmountText } from '@/components/domain';
 import { OnlineButton } from '@/components/layout/OnlineButton';
 import { Card, CardTitle, Input, Select } from '@/components/ui';
+import { env } from '@/lib/env';
 import { formatDate, formatPhone, fullName } from '@/lib/format';
 import { useAction } from '@/lib/query';
 import { roundService } from '@/services';
@@ -21,6 +22,10 @@ function TransferRow({ view, user, amount }: PendingTransfer) {
   const transfer = view.round.transfers?.[user.id];
   const [method, setMethod] = useState<PayoutMethod>(user.payoutMethod ?? 'wave');
   const [ref, setRef] = useState('');
+  const auto = useAction({
+    action: () => roundService.sendPayoutAuto(view.round.id, user.id),
+    success: 'Cagnotte envoyée automatiquement',
+  });
   const send = useAction({
     action: () => roundService.markPayoutSent(view.round.id, user.id, method, ref),
     success: 'Envoi enregistré : le bénéficiaire va confirmer la réception',
@@ -45,33 +50,45 @@ function TransferRow({ view, user, amount }: PendingTransfer) {
           {transfer.ref} · en attente de la confirmation du bénéficiaire
         </p>
       ) : (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <Select
-            label="Envoyé par"
-            value={method}
-            onChange={(event) => setMethod(event.target.value as PayoutMethod)}
-            options={[
-              { value: 'wave', label: 'Wave' },
-              { value: 'orange_money', label: 'Orange Money' },
-            ]}
-          />
-          <div className="flex-1">
-            <Input
-              label="Référence de la transaction"
-              value={ref}
-              maxLength={60}
-              onChange={(event) => setRef(event.target.value)}
+        <>
+          {env.autoPayout ? (
+            <OnlineButton
+              variant="secondary"
+              loading={auto.isPending}
+              onClick={() => auto.mutate()}
+              icon={<Zap className="h-4 w-4" aria-hidden="true" />}
+            >
+              Envoyer automatiquement
+            </OnlineButton>
+          ) : null}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <Select
+              label="Envoyé par"
+              value={method}
+              onChange={(event) => setMethod(event.target.value as PayoutMethod)}
+              options={[
+                { value: 'wave', label: 'Wave' },
+                { value: 'orange_money', label: 'Orange Money' },
+              ]}
             />
+            <div className="flex-1">
+              <Input
+                label="Référence de la transaction"
+                value={ref}
+                maxLength={60}
+                onChange={(event) => setRef(event.target.value)}
+              />
+            </div>
+            <OnlineButton
+              disabled={ref.trim().length < 3}
+              loading={send.isPending}
+              onClick={() => send.mutate()}
+              icon={<Send className="h-4 w-4" aria-hidden="true" />}
+            >
+              Argent envoyé
+            </OnlineButton>
           </div>
-          <OnlineButton
-            disabled={ref.trim().length < 3}
-            loading={send.isPending}
-            onClick={() => send.mutate()}
-            icon={<Send className="h-4 w-4" aria-hidden="true" />}
-          >
-            Argent envoyé
-          </OnlineButton>
-        </div>
+        </>
       )}
     </li>
   );

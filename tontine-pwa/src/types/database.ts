@@ -644,6 +644,7 @@ export type Database = {
           amount: number;
           contribution_amount: number;
           created_at: string;
+          debt_id: string | null;
           id: string;
           late_penalty_amount: number;
           membership_fee_amount: number;
@@ -663,6 +664,7 @@ export type Database = {
           amount: number;
           contribution_amount?: number;
           created_at?: string;
+          debt_id?: string | null;
           id?: string;
           late_penalty_amount?: number;
           membership_fee_amount?: number;
@@ -681,6 +683,7 @@ export type Database = {
           amount?: number;
           contribution_amount?: number;
           created_at?: string;
+          debt_id?: string | null;
           id?: string;
           late_penalty_amount?: number;
           membership_fee_amount?: number;
@@ -696,6 +699,13 @@ export type Database = {
           user_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: 'payments_debt_id_fkey';
+            columns: ['debt_id'];
+            isOneToOne: false;
+            referencedRelation: 'debts';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'payments_recorded_by_fkey';
             columns: ['recorded_by'];
@@ -1065,6 +1075,8 @@ export type Database = {
           paid_out_at: string | null;
           payout_block_reason: string | null;
           payout_blocked_at: string | null;
+          payout_requested_at: string | null;
+          payout_requested_by: string | null;
           payout_validated_by: string | null;
           pot_amount: number;
           recipient_type: Database['public']['Enums']['recipient_type'];
@@ -1082,6 +1094,8 @@ export type Database = {
           paid_out_at?: string | null;
           payout_block_reason?: string | null;
           payout_blocked_at?: string | null;
+          payout_requested_at?: string | null;
+          payout_requested_by?: string | null;
           payout_validated_by?: string | null;
           pot_amount?: number;
           recipient_type?: Database['public']['Enums']['recipient_type'];
@@ -1098,6 +1112,8 @@ export type Database = {
           paid_out_at?: string | null;
           payout_block_reason?: string | null;
           payout_blocked_at?: string | null;
+          payout_requested_at?: string | null;
+          payout_requested_by?: string | null;
           payout_validated_by?: string | null;
           pot_amount?: number;
           recipient_type?: Database['public']['Enums']['recipient_type'];
@@ -1109,6 +1125,13 @@ export type Database = {
             columns: ['group_id'];
             isOneToOne: false;
             referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'rounds_payout_requested_by_fkey';
+            columns: ['payout_requested_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
             referencedColumns: ['id'];
           },
           {
@@ -1491,10 +1514,14 @@ export type Database = {
       };
       public_settings: { Args: Record<PropertyKey, never>; Returns: Json };
       reminder_send: { Args: { p_round: string; p_user?: string }; Returns: number };
-      round_payout: { Args: { p_round: string }; Returns: undefined };
+      round_payout: { Args: { p_round: string }; Returns: string };
       settings_get: { Args: Record<PropertyKey, never>; Returns: Json };
       settings_update: {
         Args: { p_new_secret?: string; p_section: string; p_values: Json };
+        Returns: undefined;
+      };
+      settings_update_templates: {
+        Args: { p_language: string; p_values: Json };
         Returns: undefined;
       };
       svc_admin_create: {
@@ -1514,6 +1541,14 @@ export type Database = {
           p_kind: string;
           p_message: string;
           p_title: string;
+        };
+        Returns: Json;
+      };
+      svc_debt_payment_prepare: {
+        Args: {
+          p_debt: string;
+          p_method: Database['public']['Enums']['payment_method'];
+          p_user: string;
         };
         Returns: Json;
       };
@@ -1548,6 +1583,20 @@ export type Database = {
         Returns: Json;
       };
       svc_payment_set_token: { Args: { p_payment: string; p_token: string }; Returns: undefined };
+      svc_payout_transfer_done: {
+        Args: {
+          p_actor: string;
+          p_method: Database['public']['Enums']['payout_method'];
+          p_ref: string;
+          p_round: string;
+          p_user: string;
+        };
+        Returns: undefined;
+      };
+      svc_payout_transfer_prepare: {
+        Args: { p_actor: string; p_round: string; p_user: string };
+        Returns: Json;
+      };
       svc_paytech_keys: { Args: Record<PropertyKey, never>; Returns: Json };
       svc_phone_change: {
         Args: { p_actor: string; p_phone: string; p_user: string };
@@ -1624,7 +1673,7 @@ export type Database = {
         | 'reminder_sent'
         | 'swap_approved'
         | 'payout_sent';
-      debt_settlement: 'cash' | 'withheld';
+      debt_settlement: 'cash' | 'withheld' | 'online';
       debt_status: 'open' | 'settled';
       dispute_kind:
         | 'debited_not_recorded'
@@ -1809,7 +1858,7 @@ export const Constants = {
         'swap_approved',
         'payout_sent',
       ],
-      debt_settlement: ['cash', 'withheld'],
+      debt_settlement: ['cash', 'withheld', 'online'],
       debt_status: ['open', 'settled'],
       dispute_kind: [
         'debited_not_recorded',

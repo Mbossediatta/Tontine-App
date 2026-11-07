@@ -20,6 +20,8 @@ export interface PaymentService {
   recordCash(roundId: string, userId: string, periods?: number): Promise<void>;
   /** Impayés devenus dettes : tous pour un admin du groupe, les miens pour un membre. */
   listDebts(groupId: string): Promise<DebtView[]>;
+  /** Le membre rembourse sa dette en ligne (Wave, Orange Money) : page de paiement. */
+  payDebt(debtId: string, method: InitiatePaymentInput['method']): Promise<InitiatePaymentResult>;
   /** Remboursement d'une dette reçu en espèces (admin du groupe). */
   recordDebtPayment(debtId: string): Promise<void>;
   /** Envoie un rappel aux retardataires ; renvoie le nombre de personnes relancées. */

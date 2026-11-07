@@ -119,6 +119,8 @@ export interface Round {
   /** Versement bloqué par le super administrateur (en cas de doute) : la date, et pourquoi. */
   payoutBlockedAt?: string;
   payoutBlockReason?: string;
+  /** Seconde validation (cagnotte de 300 000 FCFA ou plus) : demandée par l'admin le… */
+  payoutRequestedAt?: string;
   /** Envoi réel de la cagnotte à chaque bénéficiaire (clé : id de la personne). */
   transfers?: Record<string, PayoutTransfer>;
   /** Cycle auquel appartient le tour. */
@@ -136,6 +138,8 @@ export interface PayoutTransfer {
 export interface Payment {
   id: string;
   roundId: string;
+  /** Remboursement d'une dette (paiement en ligne lié à la dette). */
+  debtId?: string;
   userId: string;
   amount: number;
   contributionAmount?: number;
@@ -198,7 +202,7 @@ export interface Debt {
   /** Pénalité impayée, revenu de la plateforme. */
   penaltyAmount: number;
   status: 'open' | 'settled';
-  settledVia?: 'cash' | 'withheld';
+  settledVia?: 'cash' | 'withheld' | 'online';
   createdAt: string;
   settledAt?: string;
 }
@@ -417,6 +421,8 @@ export interface PlatformSettings {
     termsVersion: number;
   };
   templates: Record<TemplateKey, string>;
+  /** Les mêmes modèles en wolof, pour les membres wolophones. */
+  templatesWo: Record<TemplateKey, string>;
 }
 
 /** Clés secrètes : stockées côté serveur seulement, jamais renvoyées au navigateur. */

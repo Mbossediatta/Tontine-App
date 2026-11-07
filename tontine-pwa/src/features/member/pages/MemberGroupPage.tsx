@@ -8,6 +8,7 @@ import { useCurrentUser } from '@/hooks/useAuth';
 import { cn } from '@/lib/cn';
 import { contributionLabel, frequencyLabel, fullName, initials, plural } from '@/lib/format';
 import type { GroupOverview, MemberView, RoundView } from '@/types';
+import { DebtCard } from '../components/DebtCard';
 import { PayoutReceiptCard } from '../components/PayoutReceiptCard';
 import { duesOf, monthName, shortDate } from '../dues';
 import { AmountDisplay } from '../ui/AmountDisplay';
@@ -275,25 +276,11 @@ export default function MemberGroupPage() {
         ) : null}
       </header>
 
-      {(() => {
-        // Impayés : la cagnotte d'un tour a été versée sans ma cotisation.
-        const mine = (debts.data ?? []).filter(
+      <DebtCard
+        debts={(debts.data ?? []).filter(
           ({ debt }) => debt.status === 'open' && debt.userId === user.id,
-        );
-        if (mine.length === 0) return null;
-        const total = mine.reduce((sum, { debt }) => sum + debt.amount + debt.penaltyAmount, 0);
-        return (
-          <Card className="border-amber-300 bg-amber-50 px-4 py-3">
-            <p className="text-[15px] font-semibold text-amber-900">
-              Impayé : <AmountDisplay value={total} />
-            </p>
-            <p className="text-[13px] text-amber-900">
-              Tour {mine.map(({ roundNumber }) => roundNumber).join(', ')} versé sans ta cotisation.
-              Rembourse ton administrateur ; sinon ce montant sera retenu sur ta cagnotte.
-            </p>
-          </Card>
-        );
-      })()}
+        )}
+      />
 
       {(rounds.data ?? [])
         .filter(

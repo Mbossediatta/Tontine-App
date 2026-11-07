@@ -10,7 +10,7 @@ import {
   requireGroup,
   requireRound,
 } from './access';
-import { currentUser, delay, nowIso, persist, requireOnline, requireUser } from './db';
+import { currentUser, db, delay, nowIso, persist, requireOnline, requireUser } from './db';
 import { recordAudit } from './audit';
 import { assertGroupOpen } from './platform';
 import {
@@ -23,6 +23,9 @@ import {
   paidCount,
 } from './lifecycle';
 import { buildMemberViews, toPublicUser } from './views';
+
+/** Seconde validation par le super admin à partir de ce montant (FCFA). */
+const PAYOUT_APPROVAL_THRESHOLD = 300_000;
 
 function assertOrderEditable(groupId: string) {
   const group = requireGroup(groupId);
@@ -236,6 +239,30 @@ export const mockRoundService: RoundService = {
         throw new ServiceError('Un bénéficiaire n’a pas renseigné de numéro de reversement.');
       }
     }
+    // Seconde validation : grosse cagnotte, l'admin du groupe demande, le super admin valide.
+    const collected = db.payments
+      .filter((p) => p.roundId === round.id && p.status === 'paid')
+      .reduce((sum, p) => sum + (p.contributionAmount ?? p.amount), 0);
+    if (
+      round.recipientType !== 'platform' &&
+      collected >= PAYOUT_APPROVAL_THRESHOLD &&
+      actor.globalRole !== 'super_admin'
+    ) {
+      if (!round.payoutRequestedAt) {
+        round.payoutRequestedAt = nowIso();
+        for (const admin of db.users.filter((u) => u.globalRole === 'super_admin')) {
+          notify(
+            admin.id,
+            'payout_approval',
+            'Versement à valider',
+            `${group.name} : cagnotte de ${formatAmount(collected)} (tour ${round.number}) à valider avant le versement.`,
+            '/admin/versements',
+          );
+        }
+        persist();
+      }
+      return 'pending_approval';
+    }
     round.payoutValidatedBy = actor.id;
     closeRound(round);
     recordAudit(
@@ -245,5 +272,14 @@ export const mockRoundService: RoundService = {
       group.id,
     );
     persist();
+    return 'paid';
+  },
+
+  async sendPayoutAuto() {
+    await delay();
+    throw new ServiceError(
+      'L’envoi automatique n’est pas encore activé : envoyez l’argent par Wave ou Orange Money, puis notez la référence.',
+      'conflict',
+    );
   },
 };

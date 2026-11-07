@@ -19,7 +19,9 @@ interface Prepared {
 serve(async (req) => {
   const profile = await caller(req);
   const body = await readJson(req);
-  const roundId = stringField(body, 'roundId');
+  // Une cotisation (roundId) ou le remboursement d'une dette (debtId).
+  const debtId = typeof body.debtId === 'string' ? body.debtId : null;
+  const roundId = debtId ? null : stringField(body, 'roundId');
   const method = stringField(body, 'method') as keyof typeof TARGET_PAYMENT;
   if (!(method in TARGET_PAYMENT)) throw new AppError('Choisissez Wave, Orange Money ou Free Money.');
   // Anti-abus : au plus 10 essais de paiement en ligne par personne et par heure.
@@ -38,12 +40,18 @@ serve(async (req) => {
   }
 
   const prepared = checkBusiness(
-    await admin().rpc('svc_payment_prepare', {
-      p_user: profile.id,
-      p_round: roundId,
-      p_method: method,
-      p_periods: periods,
-    }),
+    debtId
+      ? await admin().rpc('svc_debt_payment_prepare', {
+          p_user: profile.id,
+          p_debt: debtId,
+          p_method: method,
+        })
+      : await admin().rpc('svc_payment_prepare', {
+          p_user: profile.id,
+          p_round: roundId,
+          p_method: method,
+          p_periods: periods,
+        }),
   ) as Prepared;
   const payment = encodeURIComponent(prepared.paymentId);
 
@@ -55,7 +63,7 @@ serve(async (req) => {
   // Adresse publique de payments-ipn (PayTech doit pouvoir l'appeler en HTTPS).
   const ipnUrl = Deno.env.get('PAYTECH_IPN_URL') ??
     `${requireEnv('SUPABASE_URL').replace(/\/$/, '')}/functions/v1/payments-ipn`;
-  const label = `Cotisation ${prepared.groupName} – tour ${prepared.roundNumber}`;
+  const label = `${debtId ? 'Remboursement' : 'Cotisation'} ${prepared.groupName} – tour ${prepared.roundNumber}`;
   const { token, redirectUrl } = await requestPayment({
     itemName: label,
     itemPrice: prepared.total,

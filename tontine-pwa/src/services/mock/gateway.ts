@@ -63,6 +63,27 @@ export function applyPendingConfirmations(now: number = Date.now()): void {
     payment.status = 'paid';
     payment.paidAt = nowIso();
     recordPaymentEarnings(payment, group);
+    // Remboursement d'une dette payé en ligne : la dette est réglée.
+    const debt = payment.debtId ? db.debts.find((item) => item.id === payment.debtId) : undefined;
+    if (debt) {
+      debt.status = 'settled';
+      debt.settledVia = 'online';
+      debt.settledAt = nowIso();
+      notify(
+        payment.userId,
+        'debt',
+        'Dette remboursée',
+        `${group.name} : votre remboursement de ${formatAmount(payment.amount)} (tour ${round.number}) est bien reçu. Merci !`,
+        `/groupes/${group.id}`,
+      );
+      notifyManagers(
+        group.id,
+        'debt',
+        'Dette remboursée en ligne',
+        `${group.name} : ${fullName(requireUser(payment.userId))} a remboursé ${formatAmount(debt.amount)} (impayé du tour ${round.number}) : à reverser aux bénéficiaires de ce tour.`,
+      );
+      continue;
+    }
     db.providerLedger.push({
       ref: payment.providerRef ?? payment.id,
       phone: requireUser(payment.userId).phone,

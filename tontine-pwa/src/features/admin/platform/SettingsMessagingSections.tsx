@@ -98,40 +98,57 @@ export function AppSection({ settings, setSettings }: SectionProps) {
   );
 }
 
-export function TemplatesSection({ settings, setSettings }: SectionProps) {
-  const saveTemplates = useSaveSettings('templates');
+export function TemplatesSection(props: SectionProps) {
+  return (
+    <>
+      <TemplatesCard {...props} section="templates" title="Modèles de messages (français)" />
+      <TemplatesCard {...props} section="templatesWo" title="Modèles de messages (wolof)" />
+    </>
+  );
+}
+
+/**
+ * Modèles d'une langue : rappel, retard, paiement reçu, cagnotte envoyée. Chaque membre les
+ * reçoit dans sa langue ({prenom}, {montant}, {groupe}, {date} sont remplis par le serveur).
+ */
+function TemplatesCard({
+  settings,
+  setSettings,
+  section,
+  title,
+}: SectionProps & { section: 'templates' | 'templatesWo'; title: string }) {
+  const saveTemplates = useSaveSettings(section);
+  const templates = settings[section];
   return (
     <Card className="flex flex-col gap-4">
-      <CardTitle>Modèles de messages</CardTitle>
+      <CardTitle>{title}</CardTitle>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {(Object.keys(settings.templates) as Array<keyof PlatformSettings['templates']>).map(
-          (key) => (
-            <Textarea
-              key={key}
-              label={
-                {
-                  reminder: 'Rappel avant échéance',
-                  late: 'Relance de retard',
-                  payment: 'Confirmation de paiement',
-                  payout: 'Avis de versement',
-                }[key]
-              }
-              rows={3}
-              value={settings.templates[key]}
-              onChange={(event) =>
-                setSettings({
-                  ...settings,
-                  templates: { ...settings.templates, [key]: event.target.value },
-                })
-              }
-            />
-          ),
-        )}
+        {(Object.keys(templates) as Array<keyof PlatformSettings['templates']>).map((key) => (
+          <Textarea
+            key={key}
+            label={
+              {
+                reminder: 'Rappel avant échéance',
+                late: 'Relance de retard',
+                payment: 'Confirmation de paiement',
+                payout: 'Avis de versement',
+              }[key]
+            }
+            rows={3}
+            value={templates[key]}
+            onChange={(event) =>
+              setSettings({
+                ...settings,
+                [section]: { ...templates, [key]: event.target.value },
+              })
+            }
+          />
+        ))}
       </div>
       <Button
         variant="blue"
         loading={saveTemplates.isPending}
-        onClick={() => saveTemplates.mutate(settings.templates)}
+        onClick={() => saveTemplates.mutate(templates)}
       >
         Enregistrer les modèles
       </Button>

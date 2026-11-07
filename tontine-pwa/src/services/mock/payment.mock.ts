@@ -77,6 +77,37 @@ export const mockPaymentService: PaymentService = {
       }));
   },
 
+  async payDebt(debtId, method) {
+    requireOnline();
+    await delay();
+    const user = currentUser();
+    const debt = db.debts.find((item) => item.id === debtId && item.userId === user.id);
+    if (!debt) throw new ServiceError('Cette dette est introuvable.', 'not_found');
+    if (debt.status !== 'open') throw new ServiceError('Cette dette est déjà réglée.', 'conflict');
+    const amount = debt.amount + debt.penaltyAmount;
+    const payment = {
+      id: newId('pay'),
+      roundId: debt.roundId,
+      userId: user.id,
+      debtId: debt.id,
+      amount,
+      contributionAmount: debt.amount,
+      membershipFeeAmount: 0,
+      latePenaltyAmount: debt.penaltyAmount,
+      serviceFeeAmount: serviceFee(amount, db.settings.payment.feePercent),
+      method,
+      providerRef: `SIM-${Date.now().toString(36).toUpperCase()}`,
+      status: 'pending' as const,
+      createdAt: nowIso(),
+    };
+    db.payments.push(payment);
+    persist();
+    return {
+      paymentId: payment.id,
+      checkoutUrl: `/paiement/simulation?payment=${encodeURIComponent(payment.id)}`,
+    };
+  },
+
   async recordDebtPayment(debtId) {
     requireOnline();
     await delay();

@@ -139,6 +139,10 @@ export function createSupabaseSettingsService(): SettingsService {
     },
     async update(section, values, newSecret) {
       requireOnline();
+      if (section === 'templatesWo') {
+        await rpc('settings_update_templates', { p_language: 'wo', p_values: values });
+        return;
+      }
       await rpc(
         'settings_update',
         { p_section: section, p_values: values, p_new_secret: newSecret?.trim() || null },

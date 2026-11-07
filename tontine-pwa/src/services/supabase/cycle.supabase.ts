@@ -144,7 +144,12 @@ export function createSupabaseRoundService(): RoundService {
 
     async payout(roundId) {
       requireOnline();
-      await rpc('round_payout', { p_round: roundId });
+      return rpc<'paid' | 'pending_approval'>('round_payout', { p_round: roundId });
+    },
+
+    async sendPayoutAuto(roundId, userId) {
+      requireOnline();
+      await invoke('payout-send', { roundId, userId });
     },
 
     async markPayoutSent(roundId, userId, method, ref) {
@@ -337,6 +342,15 @@ export function createSupabasePaymentService(): PaymentService {
         user: person(ctx, row.user_id, manager),
         roundNumber: ctx.rounds.find((round) => round.id === row.round_id)?.number ?? 0,
       }));
+    },
+
+    async payDebt(debtId, method) {
+      requireOnline();
+      return invoke<InitiatePaymentResult>(
+        'payments-initiate',
+        { debtId, method },
+        'Le service de paiement est indisponible pour le moment. Réessayez dans quelques minutes.',
+      );
     },
 
     async recordDebtPayment(debtId) {

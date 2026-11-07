@@ -63,6 +63,8 @@ async function superAdminData() {
 function stageOf(round: Round): PayoutStage {
   if (round.status === 'paid_out') return 'paid';
   if (round.payoutBlockedAt) return 'blocked';
+  // Grosse cagnotte : l'admin a demandé, le super admin doit valider.
+  if (round.payoutRequestedAt) return 'approval';
   if (round.status === 'ready_for_payout') return 'ready';
   return round.status === 'open' ? 'collecting' : 'upcoming';
 }
@@ -70,10 +72,11 @@ function stageOf(round: Round): PayoutStage {
 /** Ordre d'affichage : ce qui demande de l'attention d'abord. */
 const STAGE_ORDER: Record<PayoutStage, number> = {
   blocked: 0,
-  ready: 1,
-  collecting: 2,
-  upcoming: 3,
-  paid: 4,
+  approval: 1,
+  ready: 2,
+  collecting: 3,
+  upcoming: 4,
+  paid: 5,
 };
 
 /** Bénéficiaire affiché pour la période réservée au super admin. */

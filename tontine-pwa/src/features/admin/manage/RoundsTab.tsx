@@ -50,13 +50,18 @@ export function RoundsTab({ overview }: { overview: GroupOverview }) {
                   <OnlineButton
                     variant="primary"
                     block
-                    disabled={!payoutOpen(current)}
+                    disabled={!payoutOpen(current) || Boolean(current.round.payoutRequestedAt)}
                     onClick={() => setPayoutRound(current)}
                     icon={<Banknote className="h-5 w-5" aria-hidden="true" />}
                   >
                     Reverser la cagnotte
                   </OnlineButton>
                 )}
+                {current.round.payoutRequestedAt ? (
+                  <p className="text-label text-blue-700">
+                    En attente de la validation du super admin (cagnotte de 300 000 FCFA ou plus).
+                  </p>
+                ) : null}
                 {current.round.status !== 'ready_for_payout' ? (
                   <p className="text-label text-muted">
                     {payoutOpen(current)

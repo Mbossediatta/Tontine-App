@@ -11,7 +11,10 @@ const PAYOUT_LABELS = { wave: 'Wave', orange_money: 'Orange Money' } as const;
 export function PayoutDialog({ round, onClose }: { round: RoundView | null; onClose: () => void }) {
   const payout = useAction({
     action: (roundId: string) => roundService.payout(roundId),
-    success: 'Cagnotte reversée',
+    success: (result) =>
+      result === 'pending_approval'
+        ? 'Demande envoyée : le super admin doit valider ce versement (300 000 FCFA ou plus)'
+        : 'Cagnotte reversée',
     onSuccess: onClose,
   });
   const beneficiary = round?.beneficiary;

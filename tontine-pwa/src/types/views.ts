@@ -394,7 +394,7 @@ export interface AdminAccount {
 }
 
 /** Étape d'un versement, vue par le super administrateur. */
-export type PayoutStage = 'upcoming' | 'collecting' | 'ready' | 'blocked' | 'paid';
+export type PayoutStage = 'upcoming' | 'collecting' | 'ready' | 'approval' | 'blocked' | 'paid';
 
 /** Ligne de la rubrique « Versements ». */
 export interface PayoutRow {

@@ -16,6 +16,7 @@ const payoutStageLabels: Record<PayoutRow['stage'], string> = {
   upcoming: 'À venir',
   collecting: 'Collecte en cours',
   ready: 'Prêt à verser',
+  approval: 'À valider',
   blocked: 'Bloqué',
   paid: 'Versé',
 };
@@ -31,6 +32,11 @@ export function PayoutsPage() {
     action: (roundId: string) => roundService.payout(roundId),
     success: 'Revenu de la période crédité à la plateforme',
   });
+  // Grosse cagnotte (300 000 FCFA ou plus) : le super admin valide le versement demandé.
+  const approve = useAction({
+    action: (roundId: string) => roundService.payout(roundId),
+    success: 'Versement validé : l’admin du groupe peut envoyer la cagnotte',
+  });
   const block = useAction({
     action: ({ row, note }: { row: PayoutRow; note: string }) =>
       financeService.blockPayout(row.round.id, note),
@@ -44,7 +50,7 @@ export function PayoutsPage() {
     action: (roundId: string) => financeService.unblockPayout(roundId),
     success: 'Versement débloqué',
   });
-  const stages = ['ready', 'blocked', 'collecting', 'upcoming', 'paid'] as const;
+  const stages = ['approval', 'ready', 'blocked', 'collecting', 'upcoming', 'paid'] as const;
   const payoutPage = useShowMore(payouts.data ?? [], 15, null);
   return (
     <PageFrame
@@ -147,6 +153,16 @@ export function PayoutsPage() {
                         value={row.round.potAmount}
                         className="font-bold text-green-700"
                       />
+                      {row.stage === 'approval' ? (
+                        <Button
+                          variant="blue"
+                          size="sm"
+                          loading={approve.isPending}
+                          onClick={() => approve.mutate(row.round.id)}
+                        >
+                          Valider le versement
+                        </Button>
+                      ) : null}
                       {row.round.recipientType === 'platform' && row.stage === 'ready' ? (
                         <Button
                           variant="blue"

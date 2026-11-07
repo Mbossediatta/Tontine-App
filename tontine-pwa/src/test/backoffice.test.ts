@@ -13,6 +13,7 @@ import {
 } from '@/services';
 import { demoLogin } from '@/services/mock/auth.mock';
 import { simulateDeadlinePassed } from '@/services/mock/clock';
+import { applyPendingConfirmations, completeSimulatedCheckout } from '@/services/mock/gateway';
 import { lastOtpFor } from '@/services/mock/otp';
 import { resetDatabase } from '@/services/mock/db';
 import { duesOf } from '@/features/member/dues';
@@ -362,6 +363,80 @@ describe('back-office du super administrateur', () => {
     const paidOut = (await roundService.list(group.id)).find((view) => view.round.id === roundId);
     expect(paidOut?.round.transfers?.[MOUSSA]).toMatchObject({ ref: 'TX-0001' });
     expect(paidOut?.round.transfers?.[MOUSSA]?.receivedAt).toBeDefined();
+  }, 15_000);
+
+  it('cagnotte de 300 000 FCFA ou plus : demande de l’admin, validation du super admin', async () => {
+    await demoLogin(MOUSSA);
+    const group = await groupService.create({
+      communityId: 'c-ouakam',
+      name: 'Grosse Tontine',
+      contributionAmount: 200_000,
+      frequency: 'monthly',
+      turnLength: 1,
+      maxMembers: 2,
+      paymentDueDay: 5,
+      startDate: new Date(Date.now() + 86_400_000).toISOString(),
+      attributionMode: 'manual',
+    });
+    await membershipService.addByPhone(group.id, '772345678');
+    const members = (await membershipService.list(group.id)).filter(
+      (member) => member.membership.status === 'active',
+    );
+    const ordered = [...members].sort((a) => (a.user.id === MOUSSA ? -1 : 1));
+    await roundService.setManualOrder(
+      group.id,
+      ordered.map((member) => member.membership.id),
+    );
+    await groupService.start(group.id);
+    const roundId = (await groupService.get(group.id)).currentRound?.id ?? '';
+    for (const member of ordered) await paymentService.recordCash(roundId, member.user.id);
+
+    expect(await roundService.payout(roundId)).toBe('pending_approval');
+    expect((await roundService.list(group.id))[0]?.round.payoutRequestedAt).toBeDefined();
+    await demoLogin('u-super');
+    const row = (await financeService.payouts()).find((item) => item.round.id === roundId);
+    expect(row?.stage).toBe('approval');
+    expect(await roundService.payout(roundId)).toBe('paid');
+  }, 15_000);
+
+  it('une dette se rembourse en ligne (Wave)', async () => {
+    await demoLogin(MOUSSA);
+    const group = await groupService.create({
+      communityId: 'c-ouakam',
+      name: 'Tontine Dette En Ligne',
+      contributionAmount: 1000,
+      frequency: 'monthly',
+      turnLength: 1,
+      maxMembers: 2,
+      paymentDueDay: 5,
+      startDate: new Date(Date.now() + 86_400_000).toISOString(),
+      attributionMode: 'manual',
+    });
+    await membershipService.addByPhone(group.id, '772345678');
+    const members = (await membershipService.list(group.id)).filter(
+      (member) => member.membership.status === 'active',
+    );
+    const ordered = [...members].sort((a) => (a.user.id === MOUSSA ? -1 : 1));
+    await roundService.setManualOrder(
+      group.id,
+      ordered.map((member) => member.membership.id),
+    );
+    await groupService.start(group.id);
+    const roundId = (await groupService.get(group.id)).currentRound?.id ?? '';
+    const other = ordered[1]?.user.id ?? '';
+    await paymentService.recordCash(roundId, MOUSSA);
+    await simulateDeadlinePassed(roundId);
+    await roundService.payout(roundId);
+
+    await demoLogin(other);
+    const [debt] = await paymentService.listDebts(group.id);
+    const { paymentId } = await paymentService.payDebt(debt?.debt.id ?? '', 'wave');
+    await completeSimulatedCheckout(paymentId, true);
+    applyPendingConfirmations(Date.now() + 60_000);
+    expect((await paymentService.listDebts(group.id))[0]?.debt).toMatchObject({
+      status: 'settled',
+      settledVia: 'online',
+    });
   }, 15_000);
 
   it('un membre peut avoir deux parts et reçoit deux tours avec une cotisation doublée', async () => {

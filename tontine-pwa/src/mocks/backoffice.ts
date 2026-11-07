@@ -60,6 +60,12 @@ export function seedSettings(): PlatformSettings {
       payout:
         'Bonne nouvelle {prenom} : la cagnotte de {montant} de « {groupe} » vous a été versée.',
     },
+    templatesWo: {
+      reminder: 'Salaam {prenom}, sa cotisation bu {montant} ci « {groupe} » war na fay ba {date}.',
+      late: 'Salaam {prenom}, sa cotisation ci « {groupe} » dafa yéex. Lu nga war a fay : {montant}.',
+      payment: 'Jërëjëf {prenom} ! Sa fay bu {montant} ci « {groupe} » agsi na.',
+      payout: 'Xibaar bu baax {prenom} : cagnotte bu {montant} bu « {groupe} » yónnee nañu la ko.',
+    },
   };
 }
 

@@ -72,6 +72,7 @@ interface RoundRow {
   payout_validated_by: string | null;
   payout_blocked_at: string | null;
   payout_block_reason: string | null;
+  payout_requested_at: string | null;
   round_beneficiaries: {
     membership_id: string;
     amount: number;
@@ -194,6 +195,7 @@ function toRound(row: RoundRow, memberships: Membership[]): Round {
     payoutValidatedBy: row.payout_validated_by ?? undefined,
     payoutBlockedAt: row.payout_blocked_at ?? undefined,
     payoutBlockReason: row.payout_block_reason ?? undefined,
+    payoutRequestedAt: row.payout_requested_at ?? undefined,
     transfers,
     cycle: row.cycle,
   };
@@ -325,7 +327,7 @@ export async function loadContext(groupRows: GroupRow[], viewer?: Viewer): Promi
       ? client
           .from('rounds')
           .select(
-            'id, group_id, cycle, number, open_date, due_date, recipient_type, pot_amount, status, paid_out_at, payout_validated_by, payout_blocked_at, payout_block_reason, round_beneficiaries (membership_id, amount, sent_at, sent_method, sent_ref, received_at)',
+            'id, group_id, cycle, number, open_date, due_date, recipient_type, pot_amount, status, paid_out_at, payout_validated_by, payout_blocked_at, payout_block_reason, payout_requested_at, round_beneficiaries (membership_id, amount, sent_at, sent_method, sent_ref, received_at)',
           )
           .in('group_id', ids)
           .order('number')

@@ -4,8 +4,8 @@ import { ServiceError } from '@/lib/errors';
 import { createSeed, type MockDatabase } from '@/mocks';
 import type { User } from '@/types';
 
-// v12 : dettes (impayés au versement d'un tour).
-const DB_KEY = 'tontine.mock.db.v12';
+// v13 : modèles wolof, dettes payées en ligne, seconde validation.
+const DB_KEY = 'tontine.mock.db.v13';
 const SESSION_KEY = 'tontine.mock.session.v1';
 const PENDING_PHONE_KEY = 'tontine.mock.pendingPhone.v1';
 
