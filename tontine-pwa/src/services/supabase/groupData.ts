@@ -226,11 +226,26 @@ export interface Viewer {
   role: 'super_admin' | 'admin' | 'user';
 }
 
+let knownViewer: Promise<Viewer> | null = null;
+let knownViewerId = '';
+
+/** Personne connectée et son rôle ; le rôle est lu une fois par compte (un aller-retour de moins). */
 export async function currentViewer(): Promise<Viewer> {
   const id = await sessionUserId();
-  const result = await supabase().from('profiles').select('global_role').eq('id', id).single();
-  const role = (result.data as { global_role: Viewer['role'] } | null)?.global_role ?? 'user';
-  return { id, role };
+  if (!knownViewer || knownViewerId !== id) {
+    knownViewerId = id;
+    knownViewer = (async () => {
+      const result = await supabase().from('profiles').select('global_role').eq('id', id).single();
+      if (result.error) throw new Error(result.error.message);
+      const role = (result.data as { global_role: Viewer['role'] } | null)?.global_role ?? 'user';
+      return { id, role };
+    })();
+    // Une erreur (réseau…) n'est pas gardée : on réessaiera au prochain appel.
+    knownViewer.catch(() => {
+      knownViewer = null;
+    });
+  }
+  return knownViewer;
 }
 
 /** Données des groupes lisibles par la personne connectée. */
@@ -309,14 +324,44 @@ async function loadPeople(ids: string[]): Promise<Map<string, PublicUser>> {
   return people;
 }
 
+/** Chargements en cours, par groupes et par personne : les blocs d'un même écran les partagent. */
+const inflight = new Map<string, Promise<GroupContext>>();
+
+/**
+ * Données des groupes donnés pour la personne connectée. Plusieurs blocs d'un écran (groupe,
+ * tours, membres, dettes…) demandent le même contexte au même moment : un seul chargement
+ * est fait et partagé ; rien n'est gardé ensuite (pas de données périmées).
+ */
 export async function loadContext(groupRows: GroupRow[], viewer?: Viewer): Promise<GroupContext> {
-  const client = supabase();
   const me = viewer ?? (await currentViewer());
+  const key = `${me.id}|${groupRows
+    .map((row) => row.id)
+    .sort()
+    .join(',')}`;
+  const pending = inflight.get(key);
+  if (pending) return pending;
+  const loading = loadContextNow(groupRows, me).finally(() => inflight.delete(key));
+  inflight.set(key, loading);
+  return loading;
+}
+
+async function loadContextNow(groupRows: GroupRow[], me: Viewer): Promise<GroupContext> {
+  const client = supabase();
   const groups = groupRows.map(toGroup);
   const ids = groups.map((group) => group.id);
   const communityIds = [...new Set(groups.flatMap((group) => group.communityId ?? []))];
 
-  const [membershipRows, roundRows, communityRows, settings] = await Promise.all([
+  const empty = Promise.resolve({ data: [], error: null });
+  const [
+    membershipRows,
+    roundRows,
+    communityRows,
+    settings,
+    orderView,
+    paymentRows,
+    penaltyRows,
+    statuses,
+  ] = await Promise.all([
     ids.length
       ? client
           .from('memberships')
@@ -338,12 +383,32 @@ export async function loadContext(groupRows: GroupRow[], viewer?: Viewer): Promi
     rpc<{ payment?: { feePercent?: number }; rules?: { graceDays?: number } } | null>(
       'public_settings',
     ),
+    // Ordre de passage confidentiel (…_calendrier_confidentiel.sql) : mon rang, ou tous les
+    // rangs si je gère le groupe ; et le nombre de bénéficiaires de chaque tour.
+    ids.length
+      ? rpc<OrderView>('group_order_view', { p_groups: ids })
+      : Promise.resolve<OrderView>({ orders: [], beneficiaryCounts: {} }),
+    // Paiements et pénalités des tours de ces groupes (filtrés par le groupe de leur tour,
+    // sans attendre la liste des tours).
+    ids.length
+      ? client
+          .from('payments')
+          .select(
+            'id, round_id, user_id, amount, contribution_amount, membership_fee_amount, late_penalty_amount, service_fee_amount, method, status, provider_ref, paid_at, created_at, rounds!inner (group_id)',
+          )
+          .in('rounds.group_id', ids)
+          .order('created_at')
+      : empty,
+    ids.length
+      ? client
+          .from('penalties')
+          .select('round_id, user_id, amount, rounds!inner (group_id)')
+          .in('rounds.group_id', ids)
+      : empty,
+    ids.length
+      ? rpc<Record<string, RoundStatuses>>('group_round_statuses', { p_groups: ids })
+      : Promise.resolve<Record<string, RoundStatuses>>({}),
   ]);
-  // Ordre de passage confidentiel (…_calendrier_confidentiel.sql) : mon rang, ou tous les
-  // rangs si je gère le groupe ; et le nombre de bénéficiaires de chaque tour.
-  const orderView = ids.length
-    ? await rpc<OrderView>('group_order_view', { p_groups: ids })
-    : { orders: [], beneficiaryCounts: {} };
   const ranks = new Map(orderView.orders.map((item) => [item.membershipId, item.payoutOrder]));
 
   const memberships = rows<MembershipRow>(membershipRows).map((row) =>
@@ -351,22 +416,6 @@ export async function loadContext(groupRows: GroupRow[], viewer?: Viewer): Promi
   );
   const rawRounds = rows<RoundRow>(roundRows);
   const rounds = rawRounds.map((row) => toRound(row, memberships));
-  const roundIds = rounds.map((round) => round.id);
-
-  const groupsWithRounds = [...new Set(rounds.map((round) => round.groupId))];
-  const [paymentRows, penaltyRows, statuses] = roundIds.length
-    ? await Promise.all([
-        client
-          .from('payments')
-          .select(
-            'id, round_id, user_id, amount, contribution_amount, membership_fee_amount, late_penalty_amount, service_fee_amount, method, status, provider_ref, paid_at, created_at',
-          )
-          .in('round_id', roundIds)
-          .order('created_at'),
-        client.from('penalties').select('round_id, user_id, amount').in('round_id', roundIds),
-        rpc<Record<string, RoundStatuses>>('group_round_statuses', { p_groups: groupsWithRounds }),
-      ])
-    : [{ data: [], error: null }, { data: [], error: null }, {}];
 
   const personIds = new Set<string>(groups.map((group) => group.adminId));
   for (const membership of memberships) personIds.add(membership.userId);
