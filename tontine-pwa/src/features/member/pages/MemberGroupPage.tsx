@@ -331,6 +331,13 @@ export default function MemberGroupPage() {
         ) : null}
       </section>
 
+      <Link
+        to={`/reclamation?groupe=${id}`}
+        className="text-center text-[13px] font-semibold text-blue-700 underline"
+      >
+        Un problème avec un paiement ou une cagnotte ? Faire une réclamation
+      </Link>
+
       <section aria-labelledby="members">
         <SectionHeader id="members" title="Membres" />
         {members.isPending ? (

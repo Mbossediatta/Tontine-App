@@ -429,10 +429,10 @@ const SMS_KINDS: SmsKind[] = ['otp', 'reminder', 'announcement', 'payment', 'pay
 
 export function createSupabaseCommunicationService(): CommunicationService {
   return {
-    async announce(target, title, message) {
+    async announce(target, title, message, channel = 'app') {
       const reply = await invoke<{ count: number }>(
         'announcement-send',
-        { target, title, message },
+        { target, title, message, channel },
         'Annonce non envoyée. Vérifiez la connexion et réessayez.',
       );
       return reply.count;

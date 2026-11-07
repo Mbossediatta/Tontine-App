@@ -301,6 +301,12 @@ export default function MemberHomePage() {
         </>
       )}
 
+      <Link
+        to="/reclamation"
+        className="text-center text-[13px] font-semibold text-blue-700 underline"
+      >
+        Un problème ? Faire une réclamation
+      </Link>
       <JoinGroupDialog open={joinOpen} onClose={() => setJoinOpen(false)} />
     </div>
   );

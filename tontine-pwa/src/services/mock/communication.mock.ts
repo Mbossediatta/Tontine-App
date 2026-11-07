@@ -5,6 +5,7 @@ import type { CommunicationService } from '../communication.service';
 import { assertSuperAdmin, requireGroup } from './access';
 import { recordAudit } from './audit';
 import { currentUser, db, delay, persist, requireOnline } from './db';
+import { sendSmsToUser } from './sms';
 import { notify } from './lifecycle';
 
 async function authorize(): Promise<User> {
@@ -41,7 +42,7 @@ const SMS_LABELS: Record<SmsKind, string> = {
 };
 
 export const mockCommunicationService: CommunicationService = {
-  async announce(target, title, message) {
+  async announce(target, title, message, channel = 'app') {
     const actor = await authorize();
     const cleanTitle = title.trim();
     const cleanMessage = message.trim();
@@ -58,6 +59,8 @@ export const mockCommunicationService: CommunicationService = {
         cleanMessage,
         target.kind === 'group' ? `/groupes/${target.groupId}` : undefined,
       );
+      // Canal « SMS » : un SMS en plus de la notification.
+      if (channel === 'sms') sendSmsToUser(user.id, 'announcement');
     }
     recordAudit(
       actor,

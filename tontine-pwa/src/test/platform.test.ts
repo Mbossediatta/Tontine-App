@@ -22,7 +22,7 @@ describe('rubriques du super administrateur', () => {
     await demoLogin('u-super');
   });
 
-  it('envoie une annonce en notification (pas de SMS) et conserve une trace d’audit', async () => {
+  it('envoie une annonce dans l’application, ou aussi par SMS, avec une trace d’audit', async () => {
     const smsBefore = (await communicationService.smsStats(30)).count;
     const count = await communicationService.announce(
       { kind: 'admins' },
@@ -32,6 +32,14 @@ describe('rubriques du super administrateur', () => {
     expect(count).toBeGreaterThan(0);
     // Notification push seulement : aucun SMS n'est compté.
     expect((await communicationService.smsStats(30)).count).toBe(smsBefore);
+    // Canal « SMS » : un SMS par destinataire, en plus de la notification.
+    const bySms = await communicationService.announce(
+      { kind: 'admins' },
+      'Maintenance',
+      'Rappel : indisponible dimanche.',
+      'sms',
+    );
+    expect((await communicationService.smsStats(30)).count).toBe(smsBefore + bySms);
     expect(
       (await reportService.auditLog()).some(({ entry }) => entry.action === 'announcement_sent'),
     ).toBe(true);

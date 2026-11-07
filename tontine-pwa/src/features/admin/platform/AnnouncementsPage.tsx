@@ -20,6 +20,7 @@ export function AnnouncementsPage() {
   const [groupId, setGroupId] = useState('');
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
+  const [channel, setChannel] = useState<'app' | 'sms'>('app');
   const [days, setDays] = useState('30');
   const groups = useQuery({
     queryKey: queryKeys.managedGroups,
@@ -35,6 +36,7 @@ export function AnnouncementsPage() {
         targetKind === 'group' ? { kind: 'group', groupId } : { kind: targetKind },
         title,
         message,
+        channel,
       ),
     success: (count) => `Annonce envoyée à ${count} destinataire${count > 1 ? 's' : ''}`,
     onSuccess: () => {
@@ -84,7 +86,20 @@ export function AnnouncementsPage() {
             maxLength={500}
             rows={5}
             onChange={(event) => setMessage(event.target.value)}
-            hint="Le message sera envoyé dans l’application et par SMS."
+          />
+          <Select
+            label="Envoyer par"
+            value={channel}
+            onChange={(event) => setChannel(event.target.value as 'app' | 'sms')}
+            options={[
+              { value: 'app', label: 'L’application (notification sur le téléphone)' },
+              { value: 'sms', label: 'SMS, en plus de la notification' },
+            ]}
+            hint={
+              channel === 'sms'
+                ? 'Chaque destinataire reçoit aussi un SMS Orange (payant, compté dans le suivi des SMS).'
+                : 'Gratuit : le message arrive dans l’application et en notification sur le téléphone.'
+            }
           />
           <Button
             icon={<Send className="h-4 w-4" aria-hidden="true" />}
