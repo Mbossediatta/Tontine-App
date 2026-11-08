@@ -38,39 +38,48 @@ export function InstallBanner() {
   };
 
   return (
+    // Bandeau d'application : × à gauche, icône, nom et explication, bouton « Installer ».
     <div
       role="status"
-      className="sticky top-0 z-40 flex items-center gap-3 bg-green-700 px-4 py-2 text-label text-white"
+      className="sticky top-0 z-40 flex items-center gap-3 bg-blue-700 px-3 py-2 text-white shadow-md"
       style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
     >
-      {showIosHelp ? (
-        <p className="flex flex-1 flex-wrap items-center gap-1">
-          Installez Calebasse : touchez <Share className="h-4 w-4" aria-label="Partager" /> «
-          Partager » puis « Sur l’écran d’accueil ».
-        </p>
-      ) : (
-        <>
-          <p className="flex-1">
-            Installez Calebasse sur votre téléphone : plus rapide, en un geste.
-          </p>
-          <button
-            type="button"
-            onClick={() => void install()}
-            className="inline-flex min-h-touch shrink-0 items-center gap-1 rounded-control bg-white px-3 font-semibold text-green-800"
-          >
-            <Download className="h-4 w-4" aria-hidden="true" />
-            Installer
-          </button>
-        </>
-      )}
       <button
         type="button"
         onClick={close}
         aria-label="Fermer"
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control hover:bg-white/15"
+        className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-blue-100 hover:bg-white/15 hover:text-white"
       >
-        <X className="h-5 w-5" aria-hidden="true" />
+        <X className="h-4 w-4" aria-hidden="true" />
       </button>
+      <img
+        src="/icons/icon-192.png"
+        alt=""
+        width={40}
+        height={40}
+        className="h-10 w-10 shrink-0 rounded-[10px] bg-white shadow-sm"
+      />
+      <div className="min-w-0 flex-1 leading-tight">
+        <p className="truncate text-[15px] font-bold">Calebasse de l’Espoir</p>
+        {showIosHelp ? (
+          <p className="text-[12px] text-blue-100">
+            Touchez <Share className="inline h-3.5 w-3.5 align-[-2px]" aria-label="Partager" /> puis
+            « Sur l’écran d’accueil »
+          </p>
+        ) : (
+          <p className="truncate text-[12px] text-blue-100">Installez l’application · gratuit</p>
+        )}
+      </div>
+      {showIosHelp ? null : (
+        <button
+          type="button"
+          onClick={() => void install()}
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-white px-4 text-[14px] font-bold text-blue-700 shadow-sm transition-colors duration-150 hover:bg-blue-50"
+        >
+          <Download className="h-4 w-4" aria-hidden="true" />
+          Installer
+        </button>
+      )}
     </div>
   );
 }
