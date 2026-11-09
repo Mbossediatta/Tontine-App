@@ -307,85 +307,94 @@ export default function MemberGroupPage() {
           {overview.myStatus ? <StatusPill status={overview.myStatus} /> : null}
         </div>
         {due ? (
-          <Button block className="mt-2" onClick={() => navigate(`/payer?tour=${due.round.id}`)}>
+          <Button
+            block
+            className="mt-2 lg:w-auto lg:min-w-[280px] lg:self-start"
+            onClick={() => navigate(`/payer?tour=${due.round.id}`)}
+          >
             Payer <AmountDisplay value={due.amount} />
           </Button>
         ) : null}
       </header>
-
-      <DebtCard
-        debts={(debts.data ?? []).filter(
-          ({ debt }) => debt.status === 'open' && debt.userId === user.id,
-        )}
-      />
-
-      {(rounds.data ?? [])
-        .filter(
-          (view) =>
-            view.round.status === 'paid_out' &&
-            view.round.recipientType !== 'platform' &&
-            view.beneficiaries.some((person) => person.id === user.id),
-        )
-        .map((view) => (
-          <PayoutReceiptCard key={view.round.id} view={view} userId={user.id} groupId={id} />
-        ))}
-
-      <section data-guide="group-facts" aria-labelledby="facts">
-        <SectionHeader id="facts" title="Le groupe" />
-        <GroupFacts overview={overview} admins={admins} />
-      </section>
-
-      <section data-guide="group-calendar" aria-labelledby="calendar">
-        <SectionHeader id="calendar" title="Calendrier de passage" />
-        {rounds.isPending ? (
-          <ListSkeleton rows={4} />
-        ) : rounds.isError ? (
-          <ErrorBlock onRetry={() => void rounds.refetch()} />
-        ) : (rounds.data ?? []).length === 0 ? (
-          <EmptyState
-            title="Calendrier pas encore fixé"
-            description="L’ordre de passage sera établi au démarrage du groupe."
+      {/* Ordinateur : fiche et reçus à gauche ; calendrier, réclamation et membres à droite. */}
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-8">
+        <div className="flex flex-col gap-6">
+          <DebtCard
+            debts={(debts.data ?? []).filter(
+              ({ debt }) => debt.status === 'open' && debt.userId === user.id,
+            )}
           />
-        ) : (
-          <>
-            <SwapList swaps={swaps.data ?? []} myUserId={user.id} mode="member" />
-            <PayoutCalendar
-              overview={overview}
-              rounds={rounds.data ?? []}
-              userId={user.id}
-              onSwap={myRounds.length > 0 ? setSwapTarget : undefined}
-            />
-          </>
-        )}
-        {swapTarget ? (
-          <SwapRequestDialog
-            key={swapTarget.round.id}
-            target={swapTarget}
-            myRounds={myRounds}
-            myUserId={user.id}
-            onClose={() => setSwapTarget(null)}
-          />
-        ) : null}
-      </section>
 
-      <Link
-        to={`/reclamation?groupe=${id}`}
-        data-guide="group-claim"
-        className="text-center text-[13px] font-semibold text-blue-700 underline"
-      >
-        Un problème avec un paiement ou une cagnotte ? Faire une réclamation
-      </Link>
+          {(rounds.data ?? [])
+            .filter(
+              (view) =>
+                view.round.status === 'paid_out' &&
+                view.round.recipientType !== 'platform' &&
+                view.beneficiaries.some((person) => person.id === user.id),
+            )
+            .map((view) => (
+              <PayoutReceiptCard key={view.round.id} view={view} userId={user.id} groupId={id} />
+            ))}
 
-      <section data-guide="group-members" aria-labelledby="members">
-        <SectionHeader id="members" title="Membres" />
-        {members.isPending ? (
-          <ListSkeleton rows={4} />
-        ) : members.isError ? (
-          <ErrorBlock onRetry={() => void members.refetch()} />
-        ) : (
-          <MemberList members={members.data ?? []} userId={user.id} />
-        )}
-      </section>
+          <section data-guide="group-facts" aria-labelledby="facts">
+            <SectionHeader id="facts" title="Le groupe" />
+            <GroupFacts overview={overview} admins={admins} />
+          </section>
+        </div>
+        <div className="flex flex-col gap-6">
+          <section data-guide="group-calendar" aria-labelledby="calendar">
+            <SectionHeader id="calendar" title="Calendrier de passage" />
+            {rounds.isPending ? (
+              <ListSkeleton rows={4} />
+            ) : rounds.isError ? (
+              <ErrorBlock onRetry={() => void rounds.refetch()} />
+            ) : (rounds.data ?? []).length === 0 ? (
+              <EmptyState
+                title="Calendrier pas encore fixé"
+                description="L’ordre de passage sera établi au démarrage du groupe."
+              />
+            ) : (
+              <>
+                <SwapList swaps={swaps.data ?? []} myUserId={user.id} mode="member" />
+                <PayoutCalendar
+                  overview={overview}
+                  rounds={rounds.data ?? []}
+                  userId={user.id}
+                  onSwap={myRounds.length > 0 ? setSwapTarget : undefined}
+                />
+              </>
+            )}
+            {swapTarget ? (
+              <SwapRequestDialog
+                key={swapTarget.round.id}
+                target={swapTarget}
+                myRounds={myRounds}
+                myUserId={user.id}
+                onClose={() => setSwapTarget(null)}
+              />
+            ) : null}
+          </section>
+
+          <Link
+            to={`/reclamation?groupe=${id}`}
+            data-guide="group-claim"
+            className="text-center text-[13px] font-semibold text-blue-700 underline"
+          >
+            Un problème avec un paiement ou une cagnotte ? Faire une réclamation
+          </Link>
+
+          <section data-guide="group-members" aria-labelledby="members">
+            <SectionHeader id="members" title="Membres" />
+            {members.isPending ? (
+              <ListSkeleton rows={4} />
+            ) : members.isError ? (
+              <ErrorBlock onRetry={() => void members.refetch()} />
+            ) : (
+              <MemberList members={members.data ?? []} userId={user.id} />
+            )}
+          </section>
+        </div>
+      </div>
       <PageGuide id="group" ready={!rounds.isPending && !members.isPending} />
     </div>
   );

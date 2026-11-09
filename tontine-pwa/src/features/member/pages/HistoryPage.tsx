@@ -265,8 +265,11 @@ export default function HistoryPage() {
       )}
 
       {/* Filtres : groupe (liste déroulante) et période (segments). */}
-      <div data-guide="history-filters" className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1">
+      <div
+        data-guide="history-filters"
+        className="flex flex-col gap-3 lg:flex-row lg:items-end lg:gap-4"
+      >
+        <label className="flex flex-col gap-1 lg:flex-1">
           <span className="text-[13px] font-semibold text-slate-700">Groupe</span>
           <select
             value={groupId}
@@ -284,7 +287,7 @@ export default function HistoryPage() {
         <div
           role="radiogroup"
           aria-label="Période"
-          className="grid grid-cols-4 rounded-lg bg-slate-100 p-1"
+          className="grid grid-cols-4 rounded-lg bg-slate-100 p-1 lg:w-[420px]"
         >
           {PERIODS.map((p) => (
             <button

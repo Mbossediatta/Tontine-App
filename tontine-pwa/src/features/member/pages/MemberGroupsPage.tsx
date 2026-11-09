@@ -209,7 +209,7 @@ function DiscoverableGroups({
       aria-labelledby="community-groups-title"
     >
       <SectionHeader id="community-groups-title" title="Groupes ouverts dans tes communautés" />
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-3">
         {query.data.map((overview) => (
           <OpenGroupCard
             key={overview.group.id}

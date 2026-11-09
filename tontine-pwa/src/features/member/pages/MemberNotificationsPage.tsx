@@ -67,7 +67,7 @@ export default function MemberNotificationsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4 motion-safe:animate-fade-in">
+    <div className="flex flex-col gap-4 motion-safe:animate-fade-in lg:mx-auto lg:w-full lg:max-w-participant">
       <header className="flex min-h-[48px] items-center justify-between gap-2">
         <div className="flex items-center gap-1">
           <Link

@@ -215,7 +215,7 @@ export default function ClaimsPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6 motion-safe:animate-fade-in">
+    <div className="flex flex-col gap-6 motion-safe:animate-fade-in lg:mx-auto lg:w-full lg:max-w-participant">
       <PageTitle>Réclamation</PageTitle>
       <p className="-mt-4 text-[13px] text-slate-600">
         Un paiement absent, une cagnotte non reçue ? L’équipe de la plateforme examine chaque

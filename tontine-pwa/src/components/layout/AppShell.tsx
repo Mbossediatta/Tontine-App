@@ -48,7 +48,8 @@ export function AppShell() {
       <main
         className={cn(
           'mx-auto w-full px-page pb-[calc(5rem+env(safe-area-inset-bottom))] pt-4 sm:px-page-sm lg:pb-10 lg:pt-6',
-          isAdminArea ? 'max-w-admin' : 'max-w-participant',
+          // Espace membre : colonne de téléphone, élargie sur ordinateur (deux colonnes).
+          isAdminArea ? 'max-w-admin' : 'max-w-participant lg:max-w-participantWide',
         )}
       >
         <Suspense fallback={<PageSkeleton />}>

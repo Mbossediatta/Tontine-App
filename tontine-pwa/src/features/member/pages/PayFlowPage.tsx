@@ -239,7 +239,7 @@ export default function PayFlowPage() {
 
   if (query.isPending) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 lg:mx-auto lg:w-full lg:max-w-participant">
         <PageTitle>Payer</PageTitle>
         <ListSkeleton rows={2} />
       </div>
@@ -249,7 +249,7 @@ export default function PayFlowPage() {
 
   if (dues.length === 0) {
     return (
-      <div className="flex flex-col gap-4 motion-safe:animate-fade-in">
+      <div className="flex flex-col gap-4 motion-safe:animate-fade-in lg:mx-auto lg:w-full lg:max-w-participant">
         <PageTitle>Payer</PageTitle>
         <EmptyState
           title="Rien à payer pour le moment"
@@ -296,7 +296,7 @@ export default function PayFlowPage() {
   const back = () => setStep(current === 3 ? 2 : 1);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 lg:mx-auto lg:w-full lg:max-w-participant">
       <header data-guide="pay-steps" className="flex flex-col gap-3">
         <div className="flex min-h-[44px] items-center gap-1">
           {current > 1 && !(current === 2 && dues.length === 1) ? (

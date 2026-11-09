@@ -146,84 +146,89 @@ export default function MemberProfilePage() {
   return (
     <div className="flex flex-col gap-6 motion-safe:animate-fade-in">
       <PageTitle>Profil</PageTitle>
-
-      <section className="flex items-center gap-3">
-        {/* Photo du compte (sinon les initiales) ; un appui ouvre l'ajout de photo. Elle
+      {/* Ordinateur : identité et compte à gauche ; langue, notifications et sortie à droite. */}
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-8">
+        <div className="flex flex-col gap-6">
+          <section className="flex items-center gap-3">
+            {/* Photo du compte (sinon les initiales) ; un appui ouvre l'ajout de photo. Elle
             apparaît aussi côté administration (liste et fiche des membres). */}
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          aria-label={user.avatarUrl ? 'Changer ma photo' : 'Ajouter une photo'}
-          className="relative h-12 w-12 shrink-0 rounded-full"
-        >
-          {user.avatarUrl ? (
-            <img src={user.avatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
-          ) : (
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-[15px] font-bold text-green-800">
-              {initials(user)}
-            </span>
-          )}
-          <span
-            aria-hidden="true"
-            className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-blue-700 text-white ring-2 ring-blue-50"
-          >
-            <Camera className="h-3 w-3" />
-          </span>
-        </button>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[18px] font-bold leading-6">{fullName(user)}</p>
-          <p className="text-[13px] tabular-nums text-slate-600">{formatPhone(user.phone)}</p>
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              aria-label={user.avatarUrl ? 'Changer ma photo' : 'Ajouter une photo'}
+              className="relative h-12 w-12 shrink-0 rounded-full"
+            >
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
+              ) : (
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-[15px] font-bold text-green-800">
+                  {initials(user)}
+                </span>
+              )}
+              <span
+                aria-hidden="true"
+                className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-blue-700 text-white ring-2 ring-blue-50"
+              >
+                <Camera className="h-3 w-3" />
+              </span>
+            </button>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[18px] font-bold leading-6">{fullName(user)}</p>
+              <p className="text-[13px] tabular-nums text-slate-600">{formatPhone(user.phone)}</p>
+            </div>
+            <Button variant="quiet" onClick={() => setEditing(true)}>
+              Modifier
+            </Button>
+          </section>
+
+          <section data-guide="profile-account" aria-labelledby="account">
+            <SectionHeader id="account" title="Compte" />
+            <Card>
+              <ul className="divide-y divide-slate-200">
+                <SettingRow
+                  icon={<KeyRound className="h-5 w-5" />}
+                  label="Changer mon code PIN"
+                  value="Le code qui ouvre l’application"
+                  onClick={() => setChangingPin(true)}
+                />
+                <SettingRow
+                  icon={<Wallet className="h-5 w-5" />}
+                  label="Recevoir la cagnotte"
+                  value={payoutLabel}
+                  onClick={() => setPayout(true)}
+                />
+                <SettingRow
+                  icon={<LifeBuoy className="h-5 w-5" />}
+                  label="Réclamation"
+                  value="Paiement absent, cagnotte non reçue…"
+                  onClick={() => navigate('/reclamation')}
+                />
+              </ul>
+            </Card>
+          </section>
+
+          <InstallCard />
         </div>
-        <Button variant="quiet" onClick={() => setEditing(true)}>
-          Modifier
-        </Button>
-      </section>
+        <div className="flex flex-col gap-6">
+          <LanguagePicker />
 
-      <section data-guide="profile-account" aria-labelledby="account">
-        <SectionHeader id="account" title="Compte" />
-        <Card>
-          <ul className="divide-y divide-slate-200">
-            <SettingRow
-              icon={<KeyRound className="h-5 w-5" />}
-              label="Changer mon code PIN"
-              value="Le code qui ouvre l’application"
-              onClick={() => setChangingPin(true)}
-            />
-            <SettingRow
-              icon={<Wallet className="h-5 w-5" />}
-              label="Recevoir la cagnotte"
-              value={payoutLabel}
-              onClick={() => setPayout(true)}
-            />
-            <SettingRow
-              icon={<LifeBuoy className="h-5 w-5" />}
-              label="Réclamation"
-              value="Paiement absent, cagnotte non reçue…"
-              onClick={() => navigate('/reclamation')}
-            />
-          </ul>
-        </Card>
-      </section>
+          <section data-guide="profile-notifications" aria-labelledby="notifications">
+            <SectionHeader id="notifications" title="Notifications" />
+            <NotificationPreferencesList />
+          </section>
 
-      <InstallCard />
+          <Button
+            variant="secondary"
+            block
+            icon={<LogOut className="h-5 w-5" aria-hidden="true" />}
+            onClick={() => void logout()}
+          >
+            Se déconnecter
+          </Button>
 
-      <LanguagePicker />
-
-      <section data-guide="profile-notifications" aria-labelledby="notifications">
-        <SectionHeader id="notifications" title="Notifications" />
-        <NotificationPreferencesList />
-      </section>
-
-      <Button
-        variant="secondary"
-        block
-        icon={<LogOut className="h-5 w-5" aria-hidden="true" />}
-        onClick={() => void logout()}
-      >
-        Se déconnecter
-      </Button>
-
-      <DeleteAccountCard />
+          <DeleteAccountCard />
+        </div>
+      </div>
 
       <EditProfileDialog open={editing} onClose={() => setEditing(false)} />
       <ChangePinSheet open={changingPin} onClose={() => setChangingPin(false)} />

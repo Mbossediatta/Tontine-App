@@ -112,7 +112,8 @@ export default {
       spacing: { page: '16px', 'page-sm': '24px' },
       minHeight: { touch: '44px', button: '48px' },
       minWidth: { touch: '44px' },
-      maxWidth: { participant: '560px', admin: '1280px' },
+      // participantWide : espace membre sur ordinateur (deux colonnes).
+      maxWidth: { participant: '560px', participantWide: '1040px', admin: '1280px' },
       keyframes: {
         'check-pop': {
           '0%': { transform: 'scale(0)', opacity: '0' },

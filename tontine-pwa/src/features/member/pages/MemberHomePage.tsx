@@ -296,23 +296,28 @@ export default function MemberHomePage() {
           }
         />
       ) : (
-        <>
-          {dues[0] ? (
-            <NextDueCard due={dues[0]} others={dues.length - 1} />
-          ) : (
-            <UpToDateCard groups={groups} />
-          )}
-          <MonthStatusList groups={groups} />
-          <MyTurns groups={groups} userId={user.id} />
-          <button
-            type="button"
-            onClick={() => setJoinOpen(true)}
-            className="flex min-h-[44px] items-center gap-2 self-start rounded-lg px-1 text-[15px] font-semibold text-blue-700 hover:bg-blue-50"
-          >
-            <Plus className="h-5 w-5" aria-hidden="true" />
-            {t('home.joinAnother')}
-          </button>
-        </>
+        // Ordinateur : deux colonnes (à payer et mes groupes ; mon tour) ; téléphone : une seule.
+        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-8">
+          <div className="flex flex-col gap-6">
+            {dues[0] ? (
+              <NextDueCard due={dues[0]} others={dues.length - 1} />
+            ) : (
+              <UpToDateCard groups={groups} />
+            )}
+            <MonthStatusList groups={groups} />
+          </div>
+          <div className="flex flex-col gap-6">
+            <MyTurns groups={groups} userId={user.id} />
+            <button
+              type="button"
+              onClick={() => setJoinOpen(true)}
+              className="flex min-h-[44px] items-center gap-2 self-start rounded-lg px-1 text-[15px] font-semibold text-blue-700 hover:bg-blue-50"
+            >
+              <Plus className="h-5 w-5" aria-hidden="true" />
+              {t('home.joinAnother')}
+            </button>
+          </div>
+        </div>
       )}
 
       <Link
