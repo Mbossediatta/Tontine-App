@@ -236,7 +236,15 @@ export default function MemberHomePage() {
   const { t, language } = useT();
   const [joinOpen, setJoinOpen] = useState(false);
 
-  const groups = activeGroups(query.data ?? []);
+  // Accueil : les groupes en cours. Un groupe clôturé ou archivé reste dans « Groupes »
+  // (et ses paiements dans l'Historique) ; il ne revient ici que s'il reste à y payer.
+  const mine = activeGroups(query.data ?? []);
+  const groups = mine.filter(
+    (overview) =>
+      (overview.group.status !== 'finished' && !overview.group.archivedAt) ||
+      duesOf([overview]).length > 0,
+  );
+  const hasPastGroups = groups.length < mine.length;
   const dues = duesOf(groups);
 
   return (
@@ -279,8 +287,8 @@ export default function MemberHomePage() {
         <ErrorBlock onRetry={() => void query.refetch()} />
       ) : groups.length === 0 ? (
         <EmptyState
-          title={t('home.emptyTitle')}
-          description={t('home.emptyText')}
+          title={hasPastGroups ? t('home.allFinishedTitle') : t('home.emptyTitle')}
+          description={hasPastGroups ? t('home.allFinishedText') : t('home.emptyText')}
           action={
             <Button block onClick={() => setJoinOpen(true)}>
               {t('home.join')}

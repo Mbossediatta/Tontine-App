@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { ChevronRight, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { JoinGroupDialog } from '@/features/groups/JoinGroupDialog';
 import { useDiscoverableGroups, useMyGroups } from '@/features/groups/queries';
+import { cn } from '@/lib/cn';
 import { contributionLabel, plural } from '@/lib/format';
 import { useAction } from '@/lib/query';
 import { groupService } from '@/services';
@@ -15,12 +16,103 @@ import { EmptyState, ErrorBlock } from '../ui/EmptyState';
 import { ListSkeleton } from '../ui/Skeleton';
 import { StatusPill } from '../ui/StatusPill';
 
-/** « Mes groupes » : une ligne par groupe, avec mon statut du mois. */
+/** Une ligne de groupe : nom, montant, membres et tour, puis mon statut. */
+function GroupRow({ overview }: { overview: GroupOverview }) {
+  const {
+    group,
+    communityName,
+    myStatus,
+    myMembershipStatus,
+    activeMemberCount,
+    currentRound,
+    totalRounds,
+  } = overview;
+  return (
+    <li>
+      <Link
+        to={`/groupes/${group.id}`}
+        className="flex min-h-[64px] items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-slate-50 active:bg-slate-100"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[15px] font-semibold">{group.name}</span>
+          {/* Deux lignes courtes : elles ne se coupent pas au milieu sur téléphone. */}
+          <span className="block text-[13px] text-slate-600">
+            {communityName ? `${communityName} · ` : ''}
+            {contributionLabel(group.contributionAmount, group.frequency)}
+          </span>
+          <span className="block text-[13px] text-slate-600">
+            {plural(activeMemberCount, 'membre')}
+            {currentRound ? ` · Tour ${currentRound.number} sur ${totalRounds}` : ''}
+          </span>
+        </span>
+        {myMembershipStatus === 'pending' ? (
+          <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold text-slate-600">
+            Demande envoyée
+          </span>
+        ) : myStatus && !group.archivedAt ? (
+          <StatusPill status={myStatus} />
+        ) : (
+          <span className="shrink-0 whitespace-nowrap text-[13px] text-slate-600">
+            {group.status === 'draft' ? 'Pas commencé' : 'Terminé'}
+          </span>
+        )}
+        <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
+      </Link>
+    </li>
+  );
+}
+
+/**
+ * Groupes archivés par l'administrateur : regroupés en bas, repliés par défaut. Leur
+ * calendrier reste consultable ; paiements et reçus restent dans l'Historique.
+ */
+function ArchivedGroups({ groups }: { groups: GroupOverview[] }) {
+  const [open, setOpen] = useState(false);
+  if (groups.length === 0) return null;
+  return (
+    <section className="flex flex-col gap-2">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="archived-groups"
+        onClick={() => setOpen((value) => !value)}
+        className="flex min-h-[48px] items-center justify-between gap-3 rounded-lg px-1 text-left text-[15px] font-semibold text-slate-700 hover:bg-slate-100"
+      >
+        <span>Groupes terminés · {groups.length}</span>
+        <ChevronDown
+          className={cn('h-5 w-5 shrink-0 transition-transform duration-150', open && 'rotate-180')}
+          aria-hidden="true"
+        />
+      </button>
+      {open ? (
+        <div id="archived-groups" className="flex flex-col gap-2">
+          <p className="px-1 text-[13px] text-slate-600">
+            Ces groupes sont clos. Tes paiements et tes reçus restent dans l’Historique.
+          </p>
+          <Card>
+            <ul className="divide-y divide-slate-200">
+              {groups.map((overview) => (
+                <GroupRow key={overview.group.id} overview={overview} />
+              ))}
+            </ul>
+          </Card>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+/**
+ * « Mes groupes » : une ligne par groupe, avec mon statut du mois. Les groupes archivés
+ * par l'administrateur sont rangés à part, en bas, dans une section repliée.
+ */
 export default function MemberGroupsPage() {
   const query = useMyGroups();
   const discoverable = useDiscoverableGroups();
   const [joinOpen, setJoinOpen] = useState(false);
   const groups = query.data ?? [];
+  const current = groups.filter(({ group }) => !group.archivedAt);
+  const archived = groups.filter(({ group }) => group.archivedAt);
   const joinOpenGroup = useAction<string>({
     action: (groupId) => groupService.requestJoinOpen(groupId),
     success: 'Demande envoyée à l’administrateur',
@@ -34,9 +126,11 @@ export default function MemberGroupsPage() {
         <ListSkeleton rows={3} />
       ) : query.isError ? (
         <ErrorBlock onRetry={() => void query.refetch()} />
-      ) : groups.length === 0 ? (
+      ) : current.length === 0 ? (
         <EmptyState
-          title="Tu n’as encore rejoint aucun groupe"
+          title={
+            archived.length > 0 ? 'Aucun groupe en cours' : 'Tu n’as encore rejoint aucun groupe'
+          }
           description="Demande un code d’invitation à l’administrateur d’une tontine."
           action={
             <Button block onClick={() => setJoinOpen(true)}>
@@ -47,49 +141,9 @@ export default function MemberGroupsPage() {
       ) : (
         <Card data-guide="groups-list">
           <ul className="divide-y divide-slate-200">
-            {groups.map(
-              ({
-                group,
-                communityName,
-                myStatus,
-                myMembershipStatus,
-                activeMemberCount,
-                currentRound,
-                totalRounds,
-              }) => (
-                <li key={group.id}>
-                  <Link
-                    to={`/groupes/${group.id}`}
-                    className="flex min-h-[64px] items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-slate-50 active:bg-slate-100"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-semibold">{group.name}</span>
-                      {/* Deux lignes courtes : elles ne se coupent pas au milieu sur téléphone. */}
-                      <span className="block text-[13px] text-slate-600">
-                        {communityName ? `${communityName} · ` : ''}
-                        {contributionLabel(group.contributionAmount, group.frequency)}
-                      </span>
-                      <span className="block text-[13px] text-slate-600">
-                        {plural(activeMemberCount, 'membre')}
-                        {currentRound ? ` · Tour ${currentRound.number} sur ${totalRounds}` : ''}
-                      </span>
-                    </span>
-                    {myMembershipStatus === 'pending' ? (
-                      <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold text-slate-600">
-                        Demande envoyée
-                      </span>
-                    ) : myStatus ? (
-                      <StatusPill status={myStatus} />
-                    ) : (
-                      <span className="shrink-0 whitespace-nowrap text-[13px] text-slate-600">
-                        {group.status === 'draft' ? 'Pas commencé' : 'Terminé'}
-                      </span>
-                    )}
-                    <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
-                  </Link>
-                </li>
-              ),
-            )}
+            {current.map((overview) => (
+              <GroupRow key={overview.group.id} overview={overview} />
+            ))}
           </ul>
         </Card>
       )}
@@ -100,8 +154,9 @@ export default function MemberGroupsPage() {
         joining={joinOpenGroup.isPending}
         joinedId={joinOpenGroup.variables}
       />
+      <ArchivedGroups groups={archived} />
       {/* « Rejoindre » en bas, à portée de pouce (l'état vide a déjà son propre bouton). */}
-      {groups.length > 0 ? (
+      {current.length > 0 ? (
         <BottomAction>
           <Button
             data-guide="groups-join"

@@ -61,6 +61,9 @@ export const fr = {
   'home.emptyText': 'Demande le code d’invitation à l’administrateur de ta tontine.',
   'home.join': 'Rejoindre un groupe',
   'home.joinAnother': 'Rejoindre un autre groupe',
+  'home.allFinishedTitle': 'Tes groupes sont terminés',
+  'home.allFinishedText':
+    'Rejoins un nouveau groupe pour reprendre une tontine. Tes anciens groupes restent dans « Groupes », et tes paiements dans l’Historique.',
 
   // Choix de la langue (Profil)
   'language.title': 'Langue',

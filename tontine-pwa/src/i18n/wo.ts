@@ -60,6 +60,9 @@ export const wo: Record<MessageKey, string> = {
   'home.emptyText': 'Laajal kodu woote bi ci njiitu sa natt.',
   'home.join': 'Bokk ci mbootaay',
   'home.joinAnother': 'Bokk ci beneen mbootaay',
+  'home.allFinishedTitle': 'Say mbootaay jeex nañu',
+  'home.allFinishedText':
+    'Bokkal ci mbootaay bu bees ngir dellu ci natt. Say mbootaay yu jiitu ñu ngi ci « Mbootaay », say fey ci « Li weesu ».',
 
   // Choix de la langue (Profil)
   'language.title': 'Làkk',
