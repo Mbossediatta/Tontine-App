@@ -7,6 +7,7 @@ import {
   activeMemberships,
   assertCanManage,
   assertCanView,
+  assertNotOwnMoney,
   canManage,
   membershipOf,
   requireGroup,
@@ -117,6 +118,11 @@ export const mockPaymentService: PaymentService = {
     const actor = currentUser();
     assertCanManage(group, actor);
     if (debt.status !== 'open') throw new ServiceError('Cette dette est déjà réglée.');
+    assertNotOwnMoney(
+      actor,
+      [debt.userId],
+      'C’est votre propre dette : c’est l’administrateur du groupe qui enregistre son remboursement.',
+    );
     debt.status = 'settled';
     debt.settledVia = 'cash';
     debt.settledAt = nowIso();
@@ -294,6 +300,11 @@ export const mockPaymentService: PaymentService = {
     if (round.status !== 'open') throw new ServiceError('Ce tour n’accepte plus de paiement.');
     const status = memberStatus(round, userId);
     if (status === 'paid') throw new ServiceError('Ce membre a déjà payé.');
+    assertNotOwnMoney(
+      actor,
+      [userId],
+      'C’est votre propre paiement : c’est l’administrateur du groupe qui l’enregistre.',
+    );
     const breakdown = amountBreakdown(group, round, userId, periods);
     const amount = breakdown.amount;
     db.payments.push({

@@ -4,6 +4,8 @@ import type { RoundService } from '../round.service';
 import {
   activeMemberships,
   assertCanManage,
+  assertNotOwnMoney,
+  roundBeneficiaryIds,
   assertCanView,
   assertSuperAdmin,
   canManage,
@@ -155,6 +157,11 @@ export const mockRoundService: RoundService = {
     if (reference.length < 3 || reference.length > 60) {
       throw new ServiceError('Indiquez la référence de la transaction (Wave ou Orange Money).');
     }
+    assertNotOwnMoney(
+      actor,
+      [userId],
+      'Cette cagnotte est la vôtre : c’est l’administrateur du groupe qui en enregistre l’envoi.',
+    );
     const amount = round.beneficiaryAmounts?.[userId];
     if (amount === undefined)
       throw new ServiceError('Cette personne n’est pas bénéficiaire de ce tour.');
@@ -209,6 +216,12 @@ export const mockRoundService: RoundService = {
     const actor = currentUser();
     assertCanManage(group, actor);
     if (round.recipientType === 'platform') assertSuperAdmin(actor);
+    else
+      assertNotOwnMoney(
+        actor,
+        roundBeneficiaryIds(round),
+        'Vous êtes bénéficiaire de ce tour : c’est l’administrateur du groupe qui valide ce versement.',
+      );
     assertGroupOpen(group);
     if (round.payoutBlockedAt) {
       throw new ServiceError(

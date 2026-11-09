@@ -2,7 +2,7 @@ import { ServiceError } from '@/lib/errors';
 import { formatAmount, fullName } from '@/lib/format';
 import type { Dispute, DisputeView, User } from '@/types';
 import type { DisputeService } from '../dispute.service';
-import { assertSuperAdmin, requireGroup, requireRound } from './access';
+import { assertNotOwnMoney, assertSuperAdmin, requireGroup, requireRound } from './access';
 import { recordAudit } from './audit';
 import { synchronize } from './clock';
 import { currentUser, db, delay, findUser, newId, nowIso, persist, requireOnline } from './db';
@@ -71,6 +71,12 @@ export const mockDisputeService: DisputeService = {
     await delay();
     const user = currentUser();
     const group = requireGroup(input.groupId);
+    // Le super admin traite les réclamations : la sienne resterait sans personne pour la trancher.
+    assertNotOwnMoney(
+      user,
+      [user.id],
+      'Vous traitez les réclamations : réglez ce problème directement avec l’administrateur du groupe.',
+    );
     if (!db.memberships.some((m) => m.groupId === group.id && m.userId === user.id)) {
       throw new ServiceError('Vous ne faites pas partie de ce groupe.', 'forbidden');
     }

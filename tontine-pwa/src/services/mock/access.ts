@@ -14,6 +14,28 @@ export function isSuperAdmin(user: User): boolean {
   return user.globalRole === 'super_admin';
 }
 
+/**
+ * Garde-fou : le super admin ne décide pas sur son propre argent (sa cagnotte, son
+ * paiement, sa dette) ; c'est l'administrateur du groupe qui le fait. Même règle que la
+ * base (migration …_garde_fou_super_admin.sql).
+ */
+export function assertNotOwnMoney(actor: User, concerned: string[], message: string): void {
+  if (isSuperAdmin(actor) && concerned.includes(actor.id)) {
+    deny(actor, message, 'Action d’administration refusée sur « son propre argent »');
+  }
+}
+
+/** Comptes bénéficiaires d'un tour (une part = une adhésion). */
+export function roundBeneficiaryIds(round: Round): string[] {
+  if (round.beneficiaryMembershipIds) {
+    return round.beneficiaryMembershipIds.flatMap((id) => {
+      const membership = db.memberships.find((m) => m.id === id);
+      return membership ? [membership.userId] : [];
+    });
+  }
+  return round.beneficiaryId ? [round.beneficiaryId] : [];
+}
+
 export function requireGroup(groupId: string): Group {
   const group = db.groups.find((item) => item.id === groupId);
   if (!group) throw new ServiceError('Ce groupe n’existe pas.', 'not_found');
