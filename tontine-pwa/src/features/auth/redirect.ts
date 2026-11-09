@@ -28,13 +28,23 @@ export function roleHome(user: User | null): string {
 }
 
 /**
+ * Pages jamais rouvertes après la connexion : on s'y trouvait seulement au moment de
+ * la déconnexion (bouton « Se déconnecter » du profil) ou du verrouillage.
+ */
+const NOT_REOPENED = /^\/profil(?:[/?#]|$)/;
+
+/**
  * Page à ouvrir après la connexion : celle que la personne voulait voir (chemin
  * interne uniquement), sinon le tableau de bord de son rôle.
  */
 export function redirectTarget(location: Location, user: User | null = null): string {
   const from = (location.state as RedirectState | null)?.from;
   // L'adresse du site seule (« / ») n'est pas un choix : on ouvre l'accueil du rôle.
-  return from && from !== '/' && from.startsWith('/') && !from.startsWith('//')
+  return from &&
+    from !== '/' &&
+    from.startsWith('/') &&
+    !from.startsWith('//') &&
+    !NOT_REOPENED.test(from)
     ? from
     : roleHome(user);
 }

@@ -25,6 +25,12 @@ describe('page ouverte après la connexion', () => {
     expect(redirectTarget(from('/rejoindre/ABC123'), person('user'))).toBe('/rejoindre/ABC123');
   });
 
+  it('le profil (page de la déconnexion) n’est pas rouvert : accueil du rôle', () => {
+    expect(redirectTarget(from('/profil'), person('user'))).toBe('/');
+    expect(redirectTarget(from('/profil?onglet=securite'), person('user'))).toBe('/');
+    expect(redirectTarget(from('/profil'), person('admin'))).toBe('/admin');
+  });
+
   it('jamais vers un autre site', () => {
     expect(redirectTarget(from('//exemple.com'), person('user'))).toBe('/');
     expect(redirectTarget(from(), person('super_admin'))).toBe('/admin');
