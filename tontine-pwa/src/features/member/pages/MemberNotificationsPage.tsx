@@ -5,7 +5,7 @@ import { PushPromptCard } from '@/features/notifications/PushPromptCard';
 import { useNotifications } from '@/features/notifications/queries';
 import { cn } from '@/lib/cn';
 import { formatRelative } from '@/lib/format';
-import { useAction } from '@/lib/query';
+import { queryKeys, useAction } from '@/lib/query';
 import { notificationService } from '@/services';
 import type { AppNotification } from '@/types';
 import { Button } from '../ui/Button';
@@ -47,8 +47,12 @@ export default function MemberNotificationsPage() {
   const markAll = useAction({
     action: () => notificationService.markAllRead(),
     success: 'Tout est marqué comme lu',
+    refresh: [queryKeys.notifications],
   });
-  const markOne = useAction({ action: (id: string) => notificationService.markRead(id) });
+  const markOne = useAction({
+    action: (id: string) => notificationService.markRead(id),
+    refresh: [queryKeys.notifications],
+  });
 
   const items = query.data ?? [];
   const unread = items.filter((n) => !n.read);

@@ -1,6 +1,6 @@
 import { Card, CardTitle, Skeleton, Toggle } from '@/components/ui';
 import { useNotificationPreferences } from '@/features/notifications/queries';
-import { useAction } from '@/lib/query';
+import { queryKeys, useAction } from '@/lib/query';
 import { notificationService } from '@/services';
 import type { NotificationPreferences } from '@/types';
 
@@ -19,6 +19,7 @@ export function NotificationPrefsCard() {
   const save = useAction({
     action: (prefs: NotificationPreferences) => notificationService.updatePreferences(prefs),
     success: 'Préférences enregistrées',
+    refresh: [queryKeys.preferences],
   });
 
   return (

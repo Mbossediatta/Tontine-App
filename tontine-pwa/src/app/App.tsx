@@ -4,12 +4,14 @@ import { OfflineBanner, UpdateBanner } from '@/components/layout/Banners';
 import { InstallBanner } from '@/components/layout/InstallBanner';
 import { FullPageLoader } from '@/features/auth/RequireAuth';
 import { useAuthBootstrap, useAuthStore } from '@/hooks/useAuth';
+import { usePersistedCache } from '@/lib/persistCache';
 import { AppProviders } from './providers';
 import { router } from './router';
 import { hideSplash } from './splash';
 
 function AppContent() {
   useAuthBootstrap();
+  usePersistedCache();
   // L'écran de démarrage part quand on sait qui est connecté : la première page
   // s'affiche alors sans clignoter (connexion, PIN ou accueil).
   const status = useAuthStore((state) => state.status);

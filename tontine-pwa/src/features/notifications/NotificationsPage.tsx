@@ -6,7 +6,7 @@ import { FilterChips } from '@/features/admin/components/ListToolbar';
 import { useShowMore } from '@/features/admin/components/useShowMore';
 import { cn } from '@/lib/cn';
 import { formatRelative } from '@/lib/format';
-import { useAction } from '@/lib/query';
+import { queryKeys, useAction } from '@/lib/query';
 import { notificationService } from '@/services';
 import type { AppNotification } from '@/types';
 import { PushPromptCard } from './PushPromptCard';
@@ -98,8 +98,12 @@ export default function NotificationsPage() {
   const markAll = useAction({
     action: () => notificationService.markAllRead(),
     success: 'Tout est marqué comme lu',
+    refresh: [queryKeys.notifications],
   });
-  const markOne = useAction({ action: (id: string) => notificationService.markRead(id) });
+  const markOne = useAction({
+    action: (id: string) => notificationService.markRead(id),
+    refresh: [queryKeys.notifications],
+  });
 
   const notifications = query.data ?? [];
   const unread = notifications.filter((n) => !n.read);
