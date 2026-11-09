@@ -39,11 +39,13 @@ export function CalendarTab({ groupId, cycleActive }: { groupId: string; cycleAc
               rounds={rounds}
               myUserId={user.id}
               renderAction={(view) =>
-                (swappable(view) &&
-                  myRounds.some((mine) => mine.round.id !== view.round.id) &&
-                  // Tour d'un autre (anonyme si je ne gère pas le groupe : aucun nom reçu).
-                  !view.beneficiaries.every((person) => person.id === user.id)) ||
-                view.beneficiaries.length === 0 ? (
+                // Tour à venir entre membres (jamais celui de la plateforme), j'ai un autre
+                // tour à céder, et c'est le tour d'un autre : anonyme (aucun nom reçu) si je
+                // ne gère pas le groupe, ou dont je ne suis pas le seul bénéficiaire.
+                swappable(view) &&
+                myRounds.some((mine) => mine.round.id !== view.round.id) &&
+                (view.beneficiaries.length === 0 ||
+                  !view.beneficiaries.every((person) => person.id === user.id)) ? (
                   <OnlineButton size="sm" variant="ghost" onClick={() => setTarget(view)}>
                     Proposer un échange
                   </OnlineButton>
