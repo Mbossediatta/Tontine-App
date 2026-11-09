@@ -5,14 +5,17 @@ import {
   isWithinInterval,
   startOfDay,
   startOfMonth,
+  subDays,
+  subHours,
 } from 'date-fns';
 import { ServiceError } from '@/lib/errors';
-import { fullName } from '@/lib/format';
-import type { AuditView, ReportRow, Round, SecurityEventView } from '@/types';
+import { fullName, searchable } from '@/lib/format';
+import type { AuditView, ReportRow, Round, SecurityEventKind, SecurityEventView } from '@/types';
 import type { ReportService } from '../report.service';
 import { assertSuperAdmin } from './access';
 import { currentUser, db, delay, findUser } from './db';
 import { roundCollected, roundExpected } from './metrics';
+import { pageOf } from './paging';
 import { lateOnRound } from './platform';
 
 function lateAmountFor(round: Round): number {
@@ -159,22 +162,104 @@ export const mockReportService: ReportService = {
   async auditLog() {
     await delay();
     assertSuperAdmin(currentUser());
-    return [...db.auditLog]
-      .sort((a, b) => b.at.localeCompare(a.at))
-      .map((entry): AuditView => {
-        const actor = findUser(entry.actorId);
-        return { entry, actorName: actor ? fullName(actor) : 'Compte supprimé' };
-      });
+    return auditViews();
+  },
+
+  async auditPage(filters, cursor, limit) {
+    await delay();
+    assertSuperAdmin(currentUser());
+    const words = searchable(filters.search?.trim() ?? '');
+    const matching = auditViews().filter(
+      ({ entry, actorName }) =>
+        (!words || searchable(`${actorName} ${entry.summary}`).includes(words)) &&
+        (!filters.actorId || entry.actorId === filters.actorId) &&
+        (!filters.actions || filters.actions.includes(entry.action)) &&
+        (!filters.from || entry.at.slice(0, 10) >= filters.from) &&
+        (!filters.to || entry.at.slice(0, 10) <= filters.to),
+    );
+    const page = pageOf(matching, ({ entry }) => ({ at: entry.at, id: entry.id }), cursor, limit);
+    if (cursor) return page;
+    const today = new Date().toISOString().slice(0, 10);
+    return {
+      ...page,
+      summary: {
+        total: matching.length,
+        actors: new Set(matching.map(({ entry }) => entry.actorId)).size,
+        today: db.auditLog.filter((entry) => entry.at.slice(0, 10) === today).length,
+      },
+    };
+  },
+
+  async auditActors() {
+    await delay();
+    assertSuperAdmin(currentUser());
+    const names = new Map(auditViews().map(({ entry, actorName }) => [entry.actorId, actorName]));
+    return [...names]
+      .filter(([id]) => id)
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
   },
 
   async securityLog() {
     await delay();
     assertSuperAdmin(currentUser());
-    return [...db.securityEvents]
-      .sort((a, b) => b.at.localeCompare(a.at))
-      .map((event): SecurityEventView => {
-        const user = event.userId ? findUser(event.userId) : undefined;
-        return { event, userName: user ? fullName(user) : undefined };
-      });
+    return securityViews();
+  },
+
+  async securityPage(filters, cursor, limit) {
+    await delay();
+    assertSuperAdmin(currentUser());
+    const words = searchable(filters.search?.trim() ?? '');
+    const matching = securityViews().filter(
+      ({ event, userName }) =>
+        (!filters.kinds || filters.kinds.includes(event.kind)) &&
+        (!filters.severity || event.severity === filters.severity) &&
+        (!words ||
+          searchable(`${userName ?? ''} ${event.phone ?? ''} ${event.detail}`).includes(words)),
+    );
+    const page = pageOf(matching, ({ event }) => ({ at: event.at, id: event.id }), cursor, limit);
+    return cursor ? page : { ...page, summary: { total: matching.length } };
+  },
+
+  async securitySummary() {
+    await delay();
+    assertSuperAdmin(currentUser());
+    const events = db.securityEvents;
+    const weekAgo = subDays(new Date(), 7).toISOString();
+    const dayAgo = subHours(new Date(), 24).toISOString();
+    const lastWeek: Partial<Record<SecurityEventKind, number>> = {};
+    for (const event of events) {
+      if (event.at >= weekAgo) lastWeek[event.kind] = (lastWeek[event.kind] ?? 0) + 1;
+    }
+    const count = (keep: (event: (typeof events)[number]) => boolean) => events.filter(keep).length;
+    return {
+      lastWeek,
+      criticalToday: count((event) => event.severity === 'critical' && event.at >= dayAgo),
+      all: events.length,
+      critical: count((event) => event.severity === 'critical'),
+      login: count((event) =>
+        ['pin_failed', 'pin_blocked', 'otp_failed', 'admin_login'].includes(event.kind),
+      ),
+      access: count((event) => event.kind === 'access_denied'),
+      input: count((event) => event.kind === 'suspicious_input'),
+    };
   },
 };
+
+function auditViews(): AuditView[] {
+  return [...db.auditLog]
+    .sort((a, b) => b.at.localeCompare(a.at))
+    .map((entry): AuditView => {
+      const actor = findUser(entry.actorId);
+      return { entry, actorName: actor ? fullName(actor) : 'Compte supprimé' };
+    });
+}
+
+function securityViews(): SecurityEventView[] {
+  return [...db.securityEvents]
+    .sort((a, b) => b.at.localeCompare(a.at))
+    .map((event): SecurityEventView => {
+      const user = event.userId ? findUser(event.userId) : undefined;
+      return { event, userName: user ? fullName(user) : undefined };
+    });
+}

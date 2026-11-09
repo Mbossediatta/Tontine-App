@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ChevronRight, Download, FileText, Lock } from 'lucide-react';
@@ -7,15 +8,18 @@ import { Link } from 'react-router-dom';
 import { Button, Card, CardTitle, Input, Select } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { downloadCsv } from '@/lib/csv';
-import { formatDate, formatDateTime, searchable } from '@/lib/format';
+import { errorMessage } from '@/lib/errors';
+import { formatDate, formatDateTime } from '@/lib/format';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { downloadTablePdf } from '@/lib/tablePdf';
 import { reportService } from '@/services';
-import type { AuditView } from '@/types';
+import type { AuditAction, AuditFilters, AuditView } from '@/types';
 import { CollapsibleFilters } from '../components/ListToolbar';
-import { useShowMore } from '../components/useShowMore';
+import { fetchAllPages, useServerList } from '../components/useServerList';
 import { PageFrame, QueryState, Stat } from './PlatformUi';
 import {
   auditActionLabel,
+  auditActions,
   auditCategories,
   auditCategoryOf,
   type AuditCategory,
@@ -121,44 +125,64 @@ export function AuditPage() {
   const [action, setAction] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const audit = useQuery({ queryKey: ['admin', 'audit'], queryFn: () => reportService.auditLog() });
-  const entries = useMemo(() => audit.data ?? [], [audit.data]);
+  const [exporting, setExporting] = useState<'csv' | 'pdf'>();
+  // La recherche part au serveur une fois la saisie terminée, pas à chaque lettre.
+  const debouncedSearch = useDebouncedValue(search.trim());
 
-  // Auteurs présents dans le journal, par ordre alphabétique.
-  const actors = useMemo(() => {
-    const names = new Map(entries.map(({ entry, actorName }) => [entry.actorId, actorName]));
-    return [...names]
-      .filter(([id]) => id)
-      .map(([value, label]) => ({ value, label }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'fr'));
-  }, [entries]);
-  // Types proposés : ceux de la famille choisie qui apparaissent dans le journal.
+  // Types d'action d'une famille (filtre « Famille » sans type précis).
+  const categoryActions = useMemo(
+    () =>
+      (Object.keys(auditActions) as AuditAction[]).filter(
+        (value) => auditCategoryOf(value) === category,
+      ),
+    [category],
+  );
+  // Filtres appliqués par le serveur : seules les actions retenues sont envoyées.
+  const serverFilters: AuditFilters = {
+    search: debouncedSearch || undefined,
+    actorId: actorId || undefined,
+    actions: action ? [action as AuditAction] : category ? categoryActions : undefined,
+    from: from || undefined,
+    to: to || undefined,
+  };
+  const audit = useServerList(['admin', 'audit', serverFilters], (cursor, limit) =>
+    reportService.auditPage(serverFilters, cursor, limit),
+  );
+  const filtered = audit.rows;
+  const actorList = useQuery({
+    queryKey: ['admin', 'audit-actors'],
+    queryFn: () => reportService.auditActors(),
+  });
+  const actors = useMemo(
+    () => (actorList.data ?? []).map(({ id, name }) => ({ value: id, label: name })),
+    [actorList.data],
+  );
+  // Types proposés : ceux de la famille choisie (tous si aucune famille).
   const actions = useMemo(
     () =>
-      [...new Set(entries.map(({ entry }) => entry.action))]
+      (Object.keys(auditActions) as AuditAction[])
         .filter((value) => !category || auditCategoryOf(value) === category)
         .map((value) => ({ value, label: auditActionLabel(value) }))
         .sort((a, b) => a.label.localeCompare(b.label, 'fr')),
-    [entries, category],
+    [category],
   );
 
-  const filtered = useMemo(() => {
-    const words = searchable(search.trim());
-    return entries.filter(
-      ({ entry, actorName }) =>
-        (!words || searchable(`${actorName} ${entry.summary}`).includes(words)) &&
-        (!actorId || entry.actorId === actorId) &&
-        (!category || auditCategoryOf(entry.action) === category) &&
-        (!action || entry.action === action) &&
-        (!from || entry.at.slice(0, 10) >= from) &&
-        (!to || entry.at.slice(0, 10) <= to),
-    );
-  }, [entries, search, actorId, category, action, from, to]);
-
   const filters = [search, actorId, category, action, from, to];
-  // Le journal grossit à chaque action : 30 lignes, puis « Voir plus ».
-  const page = useShowMore(filtered, 30, filters.join('|'));
-  const today = new Date().toISOString().slice(0, 10);
+
+  const exportAll = async (kind: 'csv' | 'pdf') => {
+    setExporting(kind);
+    try {
+      const rows = await fetchAllPages((cursor, limit) =>
+        reportService.auditPage(serverFilters, cursor, limit),
+      );
+      if (kind === 'csv') auditCsv(rows);
+      else auditPdf(rows, period);
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setExporting(undefined);
+    }
+  };
   const period =
     from || to
       ? `du ${from ? formatDate(from) : 'début'} au ${to ? formatDate(to) : 'aujourd’hui'}`
@@ -169,18 +193,15 @@ export function AuditPage() {
       title="Journal d’audit"
       subtitle="Qui a fait quoi, et quand : les actions importantes de la plateforme."
     >
-      <QueryState query={audit}>
+      <QueryState query={audit.query}>
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Stat label="Actions affichées" value={filtered.length} />
-            <Stat
-              label="Aujourd’hui"
-              value={entries.filter(({ entry }) => entry.at.slice(0, 10) === today).length}
-            />
+            <Stat label="Actions" value={audit.summary?.total ?? 0} />
+            <Stat label="Aujourd’hui" value={audit.summary?.today ?? 0} />
             <Stat
               label="Auteurs"
               className="col-span-2 sm:col-span-1"
-              value={new Set(filtered.map(({ entry }) => entry.actorId)).size}
+              value={audit.summary?.actors ?? 0}
             />
           </div>
 
@@ -192,7 +213,8 @@ export function AuditPage() {
                   variant="outline"
                   size="sm"
                   disabled={!filtered.length}
-                  onClick={() => auditCsv(filtered)}
+                  loading={exporting === 'csv'}
+                  onClick={() => void exportAll('csv')}
                   icon={<Download className="h-4 w-4" aria-hidden="true" />}
                 >
                   CSV
@@ -201,7 +223,8 @@ export function AuditPage() {
                   variant="outline"
                   size="sm"
                   disabled={!filtered.length}
-                  onClick={() => auditPdf(filtered, period)}
+                  loading={exporting === 'pdf'}
+                  onClick={() => void exportAll('pdf')}
                   icon={<FileText className="h-4 w-4" aria-hidden="true" />}
                 >
                   PDF
@@ -263,8 +286,8 @@ export function AuditPage() {
             </CollapsibleFilters>
 
             {filtered.length ? (
-              <>
-                {byDay(page.visible).map(([day, rows]) => (
+              <div className={cn('flex flex-col gap-4', audit.updating && 'opacity-60')}>
+                {byDay(filtered).map(([day, rows]) => (
                   <section key={day} aria-label={dayTitle(day)}>
                     <h3 className="sticky top-0 z-10 border-b border-line bg-white py-2 text-label font-bold text-ink">
                       {dayTitle(day)}
@@ -276,11 +299,11 @@ export function AuditPage() {
                     </ol>
                   </section>
                 ))}
-                {page.more}
-              </>
+                {audit.more}
+              </div>
             ) : (
               <p className="text-muted">
-                {entries.length
+                {filters.some(Boolean)
                   ? 'Aucune action ne correspond aux filtres.'
                   : 'Aucune action enregistrée pour le moment.'}
               </p>

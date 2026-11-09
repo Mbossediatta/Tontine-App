@@ -6,7 +6,11 @@ import type {
   Community,
   SaveCommunityInput,
   SuperAdminDashboard,
+  ListPage,
+  PageCursor,
+  TransactionFilters,
   TransactionRow,
+  TransactionSummary,
 } from '@/types';
 
 /** Opérations du tableau de bord et de la supervision (super administrateur sauf `dashboard`). */
@@ -17,6 +21,15 @@ export interface AdminService {
   superDashboard(): Promise<SuperAdminDashboard>;
   /** Toutes les transactions de la plateforme, de la plus récente à la plus ancienne. */
   listTransactions(): Promise<TransactionRow[]>;
+  /**
+   * Une page des transactions (de la plus récente à la plus ancienne), filtrée par le
+   * serveur. Sans `cursor` : la première page, avec ses totaux.
+   */
+  transactionsPage(
+    filters: TransactionFilters,
+    cursor?: PageCursor,
+    limit?: number,
+  ): Promise<ListPage<TransactionRow, TransactionSummary>>;
 
   // --- Administrateurs ---
   listAdmins(): Promise<AdminPerformance[]>;

@@ -1,11 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button, Card, CardTitle, Input, Select } from '@/components/ui';
+import { cn } from '@/lib/cn';
+import { errorMessage } from '@/lib/errors';
 import { queryKeys } from '@/lib/query';
 import { adminService, groupService } from '@/services';
+import type { PaymentMethod, PaymentStatus, TransactionFilters } from '@/types';
 import { CollapsibleFilters } from '../components/ListToolbar';
-import { useShowMore } from '../components/useShowMore';
+import { fetchAllPages, useServerList } from '../components/useServerList';
 import { TransactionList } from '../super/TransactionsCard';
 import { PageFrame, QueryState, Stat } from './PlatformUi';
 import { ReconciliationCard } from './ReconciliationCard';
@@ -18,54 +22,56 @@ export function TransactionsPage() {
   const [groupId, setGroupId] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const transactions = useQuery({
-    queryKey: ['admin', 'transactions'],
-    queryFn: () => adminService.listTransactions(),
-  });
+  const [exporting, setExporting] = useState(false);
+  // Filtres appliqués par le serveur : seules les lignes retenues sont envoyées.
+  const filters: TransactionFilters = {
+    status: (status || undefined) as PaymentStatus | undefined,
+    method: (method || undefined) as PaymentMethod | undefined,
+    groupId: groupId || undefined,
+    from: from || undefined,
+    to: to || undefined,
+  };
+  const list = useServerList(['admin', 'transactions', filters], (cursor, limit) =>
+    adminService.transactionsPage(filters, cursor, limit),
+  );
   const groups = useQuery({
     queryKey: queryKeys.managedGroups,
     queryFn: () => groupService.listManaged(),
   });
-  const rows = useMemo(
-    () =>
-      (transactions.data ?? []).filter(
-        ({ payment, groupId: rowGroupId }) =>
-          (!status || payment.status === status) &&
-          (!method || payment.method === method) &&
-          (!groupId || rowGroupId === groupId) &&
-          (!from || (payment.createdAt ?? payment.paidAt ?? '').slice(0, 10) >= from) &&
-          (!to || (payment.createdAt ?? payment.paidAt ?? '').slice(0, 10) <= to),
-      ),
-    [transactions.data, status, method, groupId, from, to],
-  );
-  const filters = [status, method, groupId, from, to];
-  const page = useShowMore(rows, 20, filters.join('|'));
+  const rows = list.rows;
+  const activeFilters = [status, method, groupId, from, to];
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      transactionCsv(
+        await fetchAllPages((cursor, limit) =>
+          adminService.transactionsPage(filters, cursor, limit),
+        ),
+      );
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <PageFrame
       title="Transactions"
       subtitle="Historique des paiements et rapprochement avec le prestataire."
     >
-      <QueryState query={transactions}>
+      <QueryState query={list.query}>
         <>
           {/* Téléphone : le montant sur toute la largeur, les deux compteurs côte à côte. */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Stat
               label="Montant payé"
               className="col-span-2 sm:col-span-1"
-              value={money(
-                rows
-                  .filter((row) => row.payment.status === 'paid')
-                  .reduce((sum, row) => sum + row.payment.amount, 0),
-              )}
+              value={money(list.summary?.paidAmount ?? 0)}
             />
-            <Stat label="Transactions affichées" value={rows.length} />
-            <Stat
-              label="En attente / en échec"
-              value={
-                rows.filter((row) => ['pending', 'failed'].includes(row.payment.status)).length
-              }
-            />
+            <Stat label="Transactions" value={list.summary?.total ?? 0} />
+            <Stat label="En attente / en échec" value={list.summary?.openCount ?? 0} />
           </div>
           <Card className="flex flex-col gap-4">
             <div className="flex flex-wrap items-end justify-between gap-3">
@@ -73,14 +79,16 @@ export function TransactionsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => transactionCsv(rows)}
+                disabled={!rows.length}
+                loading={exporting}
+                onClick={() => void exportCsv()}
                 icon={<Download className="h-4 w-4" aria-hidden="true" />}
               >
                 Exporter CSV
               </Button>
             </div>
             <CollapsibleFilters
-              activeCount={filters.filter(Boolean).length}
+              activeCount={activeFilters.filter(Boolean).length}
               className="grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5"
             >
               <Input
@@ -132,16 +140,16 @@ export function TransactionsPage() {
               />
             </CollapsibleFilters>
             {rows.length ? (
-              <>
+              <div className={cn('flex flex-col gap-4', list.updating && 'opacity-60')}>
                 {/* Téléphone et tablette : lignes compactes ; ordinateur : tableau complet. */}
                 <div className="lg:hidden">
-                  <TransactionList rows={page.visible} detailed />
+                  <TransactionList rows={rows} detailed />
                 </div>
                 <div className="hidden lg:block">
-                  <TransactionsTable rows={page.visible} />
+                  <TransactionsTable rows={rows} />
                 </div>
-                {page.more}
-              </>
+                {list.more}
+              </div>
             ) : (
               <p className="text-muted">Aucune transaction ne correspond à ces filtres.</p>
             )}

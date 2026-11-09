@@ -13,12 +13,16 @@ import { ServiceError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import type {
   AppNotification,
+  AuditActor,
+  AuditSummary,
   AuditView,
   NotificationPreferences,
   PlatformSettings,
   ReportRow,
   Round,
   SecurityEventView,
+  SecuritySummary,
+  SecurityTotals,
 } from '@/types';
 import type { NotificationService } from '../notification.service';
 import type { ReportService } from '../report.service';
@@ -32,7 +36,7 @@ import {
   roundExpected,
   type GroupContext,
 } from './groupData';
-import { requireOnline, rows, rpc, sessionUserId } from './rpc';
+import { fromServerPage, requireOnline, rows, rpc, sessionUserId, type ServerPage } from './rpc';
 
 // --- Notifications -------------------------------------------------------------------
 
@@ -175,6 +179,29 @@ async function superAdminContext(): Promise<{ ctx: GroupContext; people: PersonR
       .select('id, first_name, last_name, global_role, deleted_at, created_at'),
   ]);
   return { ctx, people: rows<PersonRow>(people) };
+}
+
+/** Ligne de audit_page : l'action et le nom de son auteur. */
+interface AuditPageRow {
+  id: string;
+  actor_id: string | null;
+  action: AuditView['entry']['action'];
+  summary: string;
+  group_id: string | null;
+  at: string;
+  actor_name: string;
+}
+
+/** Ligne de security_page : l'événement et le nom du compte concerné. */
+interface SecurityPageRow {
+  id: string;
+  kind: SecurityEventView['event']['kind'];
+  severity: SecurityEventView['event']['severity'];
+  detail: string;
+  user_id: string | null;
+  phone: string | null;
+  at: string;
+  user_name: string | null;
 }
 
 function nameOf(people: Map<string, PersonRow>, id: string | null | undefined): string | undefined {
@@ -323,6 +350,81 @@ export function createSupabaseReportService(): ReportService {
         },
         actorName: nameOf(names, entry.actor_id) ?? 'Compte supprimé',
       }));
+    },
+
+    async auditPage(filters, cursor, limit) {
+      requireOnline();
+      const page = await rpc<ServerPage<AuditPageRow, AuditSummary>>(
+        'audit_page',
+        {
+          p_search: filters.search?.trim() || null,
+          p_actor: filters.actorId || null,
+          p_actions: filters.actions ?? null,
+          p_from: filters.from || null,
+          p_to: filters.to || null,
+          p_cursor_at: cursor?.at ?? null,
+          p_cursor_id: cursor?.id ?? null,
+          p_limit: limit ?? null,
+        },
+        'Impossible de charger le journal. Réessayez.',
+      );
+      return fromServerPage(
+        page,
+        (row): AuditView => ({
+          entry: {
+            id: row.id,
+            actorId: row.actor_id ?? '',
+            action: row.action,
+            summary: row.summary,
+            groupId: row.group_id ?? undefined,
+            at: row.at,
+          },
+          actorName: row.actor_name,
+        }),
+        (row) => ({ at: row.at, id: row.id }),
+      );
+    },
+
+    async auditActors() {
+      requireOnline();
+      return rpc<AuditActor[]>('audit_actors', {}, 'Impossible de charger les auteurs.');
+    },
+
+    async securityPage(filters, cursor, limit) {
+      requireOnline();
+      const page = await rpc<ServerPage<SecurityPageRow, SecurityTotals>>(
+        'security_page',
+        {
+          p_kinds: filters.kinds ?? null,
+          p_severity: filters.severity ?? null,
+          p_search: filters.search?.trim() || null,
+          p_cursor_at: cursor?.at ?? null,
+          p_cursor_id: cursor?.id ?? null,
+          p_limit: limit ?? null,
+        },
+        'Impossible de charger le journal de sécurité. Réessayez.',
+      );
+      return fromServerPage(
+        page,
+        (row): SecurityEventView => ({
+          event: {
+            id: row.id,
+            kind: row.kind,
+            severity: row.severity,
+            detail: row.detail,
+            userId: row.user_id ?? undefined,
+            phone: row.phone ?? undefined,
+            at: row.at,
+          },
+          userName: row.user_name ?? undefined,
+        }),
+        (row) => ({ at: row.at, id: row.id }),
+      );
+    },
+
+    async securitySummary() {
+      requireOnline();
+      return rpc<SecuritySummary>('security_summary', {}, 'Impossible de charger les compteurs.');
     },
 
     async securityLog(): Promise<SecurityEventView[]> {

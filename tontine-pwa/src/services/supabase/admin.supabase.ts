@@ -18,6 +18,7 @@ import type {
   SuperAdminDashboard,
   TodoItem,
   TransactionRow,
+  TransactionSummary,
   User,
 } from '@/types';
 import type { AdminService } from '../admin.service';
@@ -33,7 +34,7 @@ import {
   roundCollected,
   roundExpected,
 } from './groupData';
-import { invoke, rpc } from './rpc';
+import { fromServerPage, invoke, rpc, type ServerPage } from './rpc';
 
 const PAGE_SIZE = 1000;
 
@@ -227,6 +228,23 @@ function toPayment(row: PaymentRow): Payment {
     status: row.status,
     paidAt: row.paid_at ?? undefined,
     createdAt: row.created_at,
+  };
+}
+
+/** Ligne de transactions_page : le paiement, son groupe, son tour et le compte qui paie. */
+interface TransactionPageRow extends PaymentRow {
+  group_id: string;
+  group_name: string;
+  round_number: number;
+  user: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    phone: string | null;
+    avatar_url: string | null;
+    payout_phone: string | null;
+    payout_method: User['payoutMethod'] | null;
+    deleted_at: string | null;
   };
 }
 
@@ -652,6 +670,44 @@ export function createSupabaseAdminService(): AdminService {
     },
     async listTransactions() {
       return (await loadDashboard()).transactions;
+    },
+    async transactionsPage(filters, cursor, limit) {
+      requireOnline();
+      const page = await rpc<ServerPage<TransactionPageRow, TransactionSummary>>(
+        'transactions_page',
+        {
+          p_status: filters.status ?? null,
+          p_method: filters.method ?? null,
+          p_group: filters.groupId ?? null,
+          p_from: filters.from || null,
+          p_to: filters.to || null,
+          p_cursor_at: cursor?.at ?? null,
+          p_cursor_id: cursor?.id ?? null,
+          p_limit: limit ?? null,
+        },
+        'Impossible de charger les transactions. Réessayez.',
+      );
+      return fromServerPage(
+        page,
+        (row): TransactionRow => ({
+          payment: toPayment(row),
+          user: row.user.deleted_at
+            ? { id: row.user.id, firstName: 'Compte', lastName: 'supprimé' }
+            : {
+                id: row.user.id,
+                firstName: row.user.first_name,
+                lastName: row.user.last_name,
+                avatarUrl: row.user.avatar_url ?? undefined,
+                phone: row.user.phone ?? undefined,
+                payoutPhone: row.user.payout_phone ?? undefined,
+                payoutMethod: row.user.payout_method ?? undefined,
+              },
+          groupId: row.group_id,
+          groupName: row.group_name,
+          roundNumber: row.round_number,
+        }),
+        (row) => ({ at: row.created_at, id: row.id }),
+      );
     },
     async listAdmins() {
       return (await loadDashboard()).data.admins;

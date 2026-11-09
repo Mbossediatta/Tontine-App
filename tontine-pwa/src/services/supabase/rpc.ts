@@ -4,6 +4,7 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { ServiceError, type ServiceErrorCode } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
+import type { ListPage, PageCursor } from '@/types';
 
 export interface DbError {
   code?: string;
@@ -100,4 +101,25 @@ export async function invoke<T>(
     }
   }
   throw new ServiceError(fallback);
+}
+
+/** Page renvoyée par les fonctions SQL *_page (voir migration …_pagination_listes.sql). */
+export interface ServerPage<Row, Summary> {
+  rows: Row[];
+  hasMore: boolean;
+  summary: Summary | null;
+}
+
+/** Page du serveur → ListPage : lignes converties, curseur de la suivante, totaux. */
+export function fromServerPage<Row, View, Summary>(
+  page: ServerPage<Row, Summary>,
+  toView: (row: Row) => View,
+  cursorOf: (row: Row) => PageCursor,
+): ListPage<View, Summary> {
+  const last = page.rows[page.rows.length - 1];
+  return {
+    rows: page.rows.map(toView),
+    next: page.hasMore && last ? cursorOf(last) : undefined,
+    summary: page.summary ?? undefined,
+  };
 }

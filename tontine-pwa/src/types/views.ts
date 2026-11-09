@@ -3,8 +3,11 @@ import type {
   DisputeKind,
   Debt,
   AttributionMode,
+  AuditAction,
   AuditEntry,
   SecurityEvent,
+  SecurityEventKind,
+  SecuritySeverity,
   AdminCompensation,
   Dispute,
   DisputeEvent,
@@ -570,4 +573,79 @@ export interface UpdateProfileInput {
   avatarUrl?: string;
   payoutPhone?: string;
   payoutMethod?: PayoutMethod;
+}
+
+// --- Listes paginées par le serveur (Transactions, Journal d'audit, Sécurité) ---------
+
+/** Position dans une liste triée du plus récent au plus ancien : date et id de la dernière ligne reçue. */
+export interface PageCursor {
+  at: string;
+  id: string;
+}
+
+/** Une page d'une longue liste ; `summary` (totaux) n'accompagne que la première page. */
+export interface ListPage<Row, Summary> {
+  rows: Row[];
+  /** Où reprendre pour la page suivante ; absent quand tout a été reçu. */
+  next?: PageCursor;
+  summary?: Summary;
+}
+
+export interface TransactionFilters {
+  status?: PaymentStatus;
+  method?: PaymentMethod;
+  groupId?: string;
+  /** Dates « AAAA-MM-JJ », bornes comprises. */
+  from?: string;
+  to?: string;
+}
+
+export interface TransactionSummary {
+  total: number;
+  paidAmount: number;
+  /** En attente ou en échec. */
+  openCount: number;
+}
+
+export interface AuditFilters {
+  search?: string;
+  actorId?: string;
+  /** Types d'action retenus (une famille, ou un seul type). */
+  actions?: AuditAction[];
+  from?: string;
+  to?: string;
+}
+
+export interface AuditSummary {
+  total: number;
+  /** Auteurs distincts parmi les actions retenues. */
+  actors: number;
+  /** Actions du jour, tous filtres confondus. */
+  today: number;
+}
+
+export interface AuditActor {
+  id: string;
+  name: string;
+}
+
+export interface SecurityFilters {
+  kinds?: SecurityEventKind[];
+  severity?: SecuritySeverity;
+  search?: string;
+}
+
+export interface SecurityTotals {
+  total: number;
+}
+
+/** Compteurs de la rubrique Sécurité, indépendants des filtres. */
+export interface SecuritySummary {
+  lastWeek: Partial<Record<SecurityEventKind, number>>;
+  criticalToday: number;
+  all: number;
+  critical: number;
+  login: number;
+  access: number;
+  input: number;
 }

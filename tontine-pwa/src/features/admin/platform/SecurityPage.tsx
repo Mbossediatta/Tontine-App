@@ -1,6 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { subDays, subHours } from 'date-fns';
 import {
   Ban,
   Bug,
@@ -13,11 +12,18 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Badge, Card, CardTitle } from '@/components/ui';
-import { formatDateTime, formatPhone, searchable } from '@/lib/format';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { cn } from '@/lib/cn';
+import { formatDateTime, formatPhone } from '@/lib/format';
 import { reportService } from '@/services';
-import type { SecurityEventKind, SecurityEventView, SecuritySeverity } from '@/types';
+import type {
+  SecurityEventKind,
+  SecurityEventView,
+  SecurityFilters,
+  SecuritySeverity,
+} from '@/types';
 import { FilterChips, SearchField } from '../components/ListToolbar';
-import { Paged } from '../components/Paged';
+import { useServerList } from '../components/useServerList';
 import { PageFrame, QueryState, Stat } from './PlatformUi';
 import { SecurityProtections } from './SecurityProtections';
 
@@ -38,13 +44,13 @@ const SEVERITY: Record<SecuritySeverity, { label: string; tone: 'danger' | 'warn
 
 type Filter = 'all' | 'critical' | 'login' | 'access' | 'input';
 
-const FILTERS: Record<Filter, (view: SecurityEventView) => boolean> = {
-  all: () => true,
-  critical: ({ event }) => event.severity === 'critical',
-  login: ({ event }) =>
-    ['pin_failed', 'pin_blocked', 'otp_failed', 'admin_login'].includes(event.kind),
-  access: ({ event }) => event.kind === 'access_denied',
-  input: ({ event }) => event.kind === 'suspicious_input',
+/** Ce que chaque filtre demande au serveur. */
+const FILTERS: Record<Filter, Omit<SecurityFilters, 'search'>> = {
+  all: {},
+  critical: { severity: 'critical' },
+  login: { kinds: ['pin_failed', 'pin_blocked', 'otp_failed', 'admin_login'] },
+  access: { kinds: ['access_denied'] },
+  input: { kinds: ['suspicious_input'] },
 };
 
 /** Une ligne du journal : type, gravité, détail, compte concerné, date. */
@@ -88,37 +94,30 @@ function EventRow({ view }: { view: SecurityEventView }) {
 export function SecurityPage() {
   const [filter, setFilter] = useState<Filter>('all');
   const [search, setSearch] = useState('');
-  const log = useQuery({
-    queryKey: ['admin', 'security'],
-    queryFn: () => reportService.securityLog(),
-  });
-  const events = useMemo(() => log.data ?? [], [log.data]);
-
-  const weekAgo = subDays(new Date(), 7).toISOString();
-  const lastWeek = events.filter(({ event }) => event.at >= weekAgo);
-  const countOf = (kind: SecurityEventKind) =>
-    lastWeek.filter(({ event }) => event.kind === kind).length;
-  const dayAgo = subHours(new Date(), 24).toISOString();
-  const criticalToday = events.filter(
-    ({ event }) => event.severity === 'critical' && event.at >= dayAgo,
-  ).length;
-
-  const words = searchable(search.trim());
-  const visible = events.filter(
-    (view) =>
-      FILTERS[filter](view) &&
-      (!words ||
-        searchable(
-          `${view.userName ?? ''} ${view.event.phone ?? ''} ${view.event.detail}`,
-        ).includes(words)),
+  // La recherche part au serveur une fois la saisie terminée, pas à chaque lettre.
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const serverFilters: SecurityFilters = {
+    ...FILTERS[filter],
+    search: debouncedSearch || undefined,
+  };
+  const log = useServerList(['admin', 'security', serverFilters], (cursor, limit) =>
+    reportService.securityPage(serverFilters, cursor, limit),
   );
+  const counters = useQuery({
+    queryKey: ['admin', 'security-summary'],
+    queryFn: () => reportService.securitySummary(),
+  });
+  const summary = counters.data;
+  const visible = log.rows;
+  const countOf = (kind: SecurityEventKind) => summary?.lastWeek[kind] ?? 0;
+  const criticalToday = summary?.criticalToday ?? 0;
 
   return (
     <PageFrame
       title="Sécurité"
       subtitle="Tentatives de connexion, accès refusés et saisies suspectes."
     >
-      <QueryState query={log}>
+      <QueryState query={log.query}>
         <>
           {criticalToday > 0 ? (
             <div
@@ -168,39 +167,38 @@ export function SecurityPage() {
                 value={filter}
                 onChange={setFilter}
                 options={[
-                  { value: 'all', label: 'Tous', count: events.length },
+                  { value: 'all', label: 'Tous', count: summary?.all },
                   {
                     value: 'critical',
                     label: 'Critiques',
-                    count: events.filter(FILTERS.critical).length,
+                    count: summary?.critical,
                   },
                   {
                     value: 'login',
                     label: 'Connexion',
-                    count: events.filter(FILTERS.login).length,
+                    count: summary?.login,
                   },
                   {
                     value: 'access',
                     label: 'Accès refusés',
-                    count: events.filter(FILTERS.access).length,
+                    count: summary?.access,
                   },
                   {
                     value: 'input',
                     label: 'Saisies suspectes',
-                    count: events.filter(FILTERS.input).length,
+                    count: summary?.input,
                   },
                 ]}
               />
               {visible.length ? (
-                <Paged items={visible} pageSize={30} resetKey={`${filter}|${search}`}>
-                  {(page) => (
-                    <ul className="divide-y divide-line">
-                      {page.map((view) => (
-                        <EventRow key={view.event.id} view={view} />
-                      ))}
-                    </ul>
-                  )}
-                </Paged>
+                <div className={cn('flex flex-col gap-3', log.updating && 'opacity-60')}>
+                  <ul className="divide-y divide-line">
+                    {visible.map((view) => (
+                      <EventRow key={view.event.id} view={view} />
+                    ))}
+                  </ul>
+                  {log.more}
+                </div>
               ) : (
                 <p className="text-muted">Aucun événement ne correspond à ces filtres.</p>
               )}

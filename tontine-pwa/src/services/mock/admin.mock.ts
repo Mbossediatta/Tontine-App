@@ -10,6 +10,7 @@ import type {
   PlatformAlert,
   TodoItem,
   SaveCommunityInput,
+  TransactionRow,
   User,
 } from '@/types';
 import type { AdminService } from '../admin.service';
@@ -36,6 +37,7 @@ import {
 import { currentRoundOf, memberStatus, notify, notifyManagers } from './lifecycle';
 import { monthlyCollections } from './metrics';
 import { adminNameOf, adminPerformance, allTransactions, lateOnRound } from './platform';
+import { pageOf } from './paging';
 import { buildOverview } from './views';
 
 // --- Règles d'accès ---------------------------------------------------------
@@ -320,6 +322,39 @@ export const mockAdminService: AdminService = {
     await delay();
     assertSuperAdmin(currentUser());
     return allTransactions();
+  },
+
+  async transactionsPage(filters, cursor, limit) {
+    await delay();
+    assertSuperAdmin(currentUser());
+    const day = (row: TransactionRow) =>
+      (row.payment.createdAt ?? row.payment.paidAt ?? '').slice(0, 10);
+    const matching = allTransactions().filter(
+      (row) =>
+        (!filters.status || row.payment.status === filters.status) &&
+        (!filters.method || row.payment.method === filters.method) &&
+        (!filters.groupId || row.groupId === filters.groupId) &&
+        (!filters.from || day(row) >= filters.from) &&
+        (!filters.to || day(row) <= filters.to),
+    );
+    const page = pageOf(
+      matching,
+      (row) => ({ at: row.payment.createdAt ?? row.payment.paidAt ?? '', id: row.payment.id }),
+      cursor,
+      limit,
+    );
+    if (cursor) return page;
+    return {
+      ...page,
+      summary: {
+        total: matching.length,
+        paidAmount: matching
+          .filter((row) => row.payment.status === 'paid')
+          .reduce((sum, row) => sum + row.payment.amount, 0),
+        openCount: matching.filter((row) => ['pending', 'failed'].includes(row.payment.status))
+          .length,
+      },
+    };
   },
 
   // --- Administrateurs ---------------------------------------------------------
