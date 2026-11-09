@@ -120,8 +120,8 @@ reset role;
 select is(
   (select array_agg(kind::text || ':' || amount order by kind, amount) from public.platform_earnings
    where group_id = (select id from ids where name = 'g')),
-  array['membership_fee:1000', 'membership_fee:1000', 'reserved_turn:20000'],
-  'platform earnings: two membership fees and the reserved turn');
+  array['membership_fee:1000', 'membership_fee:1000', 'reserved_turn:10000'],
+  'platform earnings: two membership fees and the reserved turn (50 % of a contribution)');
 select is((select status::text from public.groups where id = (select id from ids where name = 'g')),
   'finished', 'the cycle is finished');
 

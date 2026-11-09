@@ -6,7 +6,7 @@ import { SwapList } from '@/features/groups/SwapList';
 import { SwapRequestDialog } from '@/features/groups/SwapRequestDialog';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { cn } from '@/lib/cn';
-import { payoutPerShare } from '@/lib/tontine';
+import { contributionPerTurn, payoutPerShare } from '@/lib/tontine';
 import { contributionLabel, frequencyLabel, fullName, initials, plural } from '@/lib/format';
 import type { GroupOverview, MemberView, RoundView } from '@/types';
 import { DebtCard } from '../components/DebtCard';
@@ -49,6 +49,20 @@ function GroupFacts({ overview, admins }: { overview: GroupOverview; admins: str
               value={payoutPerShare(overview.potAmount, group.sharesPerRound)}
               className="text-green-700"
             />,
+          ] as [string, React.ReactNode],
+        ]
+      : []),
+    // Période de service de la plateforme : ce que chacun y paie (part d'une cotisation).
+    ...(group.reserveFinalTurn
+      ? [
+          [
+            'Période de service Calebasse',
+            <span key="svc">
+              <AmountDisplay value={contributionPerTurn(group, { recipientType: 'platform' })} />
+              <span className="block text-[13px] font-normal text-slate-600">
+                {group.platformSharePercent ?? 100} % d’une cotisation, en fin de cycle
+              </span>
+            </span>,
           ] as [string, React.ReactNode],
         ]
       : []),

@@ -164,6 +164,8 @@ export const mockGroupService: GroupService = {
       sharesPerRound: input.sharesPerRound ?? 1,
       membershipFeeAmount: collectMembershipFee ? (input.membershipFeeAmount ?? 0) : 0,
       reserveFinalTurn: input.reserveFinalTurn ?? true,
+      // Période de service : le réglage du moment, figé pour la vie du groupe.
+      platformSharePercent: db.settings.rules.platformSharePercent ?? 50,
       status: 'draft',
       inviteCode: generateInviteCode(),
       createdBy: user.id,

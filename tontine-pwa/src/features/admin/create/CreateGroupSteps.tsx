@@ -381,7 +381,12 @@ export function StepSummary() {
       'Frais d’adhésion',
       v.collectMembershipFee ? `${v.membershipFeeAmount} FCFA / personne` : 'Désactivés',
     ],
-    ['Dernière période Superadmin', v.reserveFinalTurn ? 'Oui' : 'Non'],
+    [
+      'Période de service de la plateforme',
+      v.reserveFinalTurn
+        ? 'Oui : une période en fin de cycle, où chaque membre paie une partie de sa cotisation (part réglée par la plateforme)'
+        : 'Non',
+    ],
     ['Attribution', v.attributionMode === 'random' ? 'Tirage au sort' : 'Ordre manuel'],
   ];
   return (

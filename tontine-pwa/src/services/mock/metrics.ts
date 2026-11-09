@@ -12,7 +12,7 @@ export function roundExpected(round: Round): number {
   if (round.status === 'upcoming') return 0;
   const group = db.groups.find((g) => g.id === round.groupId);
   if (!group) return 0;
-  const contributions = contributionPerTurn(group) * activeMemberships(group.id).length;
+  const contributions = contributionPerTurn(group, round) * activeMemberships(group.id).length;
   const feeUsers = new Set(
     db.memberships
       .filter((membership) => membership.groupId === group.id && membership.status === 'active')

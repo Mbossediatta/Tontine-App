@@ -130,6 +130,15 @@ export function RulesSection({ settings, setSettings }: SectionProps) {
           value={settings.rules.maxMembers}
           onChange={(event) => updateNumber('rules', 'maxMembers', event.target.value)}
         />
+        <Input
+          label="Période de service (% d’une cotisation)"
+          type="number"
+          min="10"
+          max="100"
+          value={settings.rules.platformSharePercent}
+          onChange={(event) => updateNumber('rules', 'platformSharePercent', event.target.value)}
+          hint="Ce que chaque membre paie pendant le tour de la plateforme. S’applique aux groupes créés ensuite."
+        />
       </div>
       <Button
         variant="blue"

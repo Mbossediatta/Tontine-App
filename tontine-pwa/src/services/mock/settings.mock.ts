@@ -44,6 +44,13 @@ export const mockSettingsService: SettingsService = {
     if (!values || typeof values !== 'object') {
       throw new ServiceError('Les paramètres transmis sont invalides.');
     }
+    if (section === 'rules') {
+      // Comme le serveur : la période de service coûte de 10 à 100 % d'une cotisation.
+      const percent = Number((values as { platformSharePercent?: unknown }).platformSharePercent);
+      if (!(percent >= 10 && percent <= 100)) {
+        throw new ServiceError('Période de service : part d’une cotisation (%) : entre 10 et 100.');
+      }
+    }
     const before = db.settings.app;
     db.settings[section] = cloneSettings({ ...db.settings, [section]: values })[section];
     if (section === 'app') {

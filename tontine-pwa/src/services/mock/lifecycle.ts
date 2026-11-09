@@ -4,6 +4,7 @@ import {
   computeDueDate,
   computePot,
   contributionPerTurn,
+  periodContribution,
   roundDeadline,
   roundOpenDate,
 } from '@/lib/tontine';
@@ -42,7 +43,7 @@ export function lateAfter(round: Round): Date {
  */
 export function roundTotal(group: Group, round: Round, userId: string): number {
   const shareCount = activeMemberships(group.id).filter((m) => m.userId === userId).length;
-  return contributionPerTurn(group) * shareCount + penaltyFor(round.id, userId);
+  return contributionPerTurn(group, round) * shareCount + penaltyFor(round.id, userId);
 }
 
 /** Déjà versé sur le tour : cotisation et pénalité des versements réussis. */
@@ -80,13 +81,13 @@ export function memberStatus(round: Round, userId: string, now: Date = new Date(
  */
 export function amountBreakdown(group: Group, round: Round, userId: string, periods?: number) {
   const shareCount = activeMemberships(group.id).filter((m) => m.userId === userId).length;
-  const perPeriod = group.contributionAmount * shareCount;
+  const perPeriod = periodContribution(group, round) * shareCount;
   const paid = db.payments.filter(
     (p) => p.roundId === round.id && p.userId === userId && p.status === 'paid',
   );
   const paidContribution = paid.reduce((sum, p) => sum + (p.contributionAmount ?? p.amount), 0);
   const paidPenalty = paid.reduce((sum, p) => sum + (p.latePenaltyAmount ?? 0), 0);
-  const rest = Math.max(0, contributionPerTurn(group) * shareCount - paidContribution);
+  const rest = Math.max(0, contributionPerTurn(group, round) * shareCount - paidContribution);
   if (periods !== undefined && (periods < 1 || periods > group.turnLength)) {
     throw new ServiceError('Nombre de jours ou de périodes invalide.');
   }
@@ -244,6 +245,11 @@ export function createRounds(group: Group): void {
   );
   const start = new Date(group.startDate);
   const pot = computePot(contributionPerTurn(group), members.length);
+  // Période de service : la part réglée de la cotisation (platformSharePercent).
+  const platformPot = computePot(
+    contributionPerTurn(group, { recipientType: 'platform' }),
+    members.length,
+  );
   const shareCountByUser = new Map<string, number>();
   for (const membership of members) {
     const shareNumber = (shareCountByUser.get(membership.userId) ?? 0) + 1;
@@ -278,7 +284,7 @@ export function createRounds(group: Group): void {
       beneficiaryMembershipIds: batch.map((membership) => membership.id),
       recipientType,
       beneficiaryShareCount: batch[0] ? shareCountByUser.get(batch[0].userId) : undefined,
-      potAmount: pot,
+      potAmount: recipientType === 'platform' ? platformPot : pot,
       status: number === 1 ? 'open' : 'upcoming',
       cycle: group.currentCycle,
     });
@@ -307,7 +313,7 @@ function recordDebts(round: Round, group: Group): void {
     );
     const amount = Math.max(
       0,
-      contributionPerTurn(group) * shares -
+      contributionPerTurn(group, round) * shares -
         paid.reduce((sum, p) => sum + (p.contributionAmount ?? p.amount), 0),
     );
     const penaltyAmount = Math.max(

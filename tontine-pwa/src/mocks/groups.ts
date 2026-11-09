@@ -330,7 +330,11 @@ export function seedGroups(now: Date = new Date()): GroupSeed {
   }
 
   return {
-    groups: [famille, bureau, amies, thiaroye, pikine],
+    // Période de service : le réglage par défaut (50 %), comme les groupes en ligne.
+    groups: [famille, bureau, amies, thiaroye, pikine].map((group) => ({
+      ...group,
+      platformSharePercent: 50,
+    })),
     memberships,
     rounds: [...familleRounds, ...amiesRounds, ...thiaroyeRounds],
     payments,

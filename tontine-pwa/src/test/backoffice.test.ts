@@ -539,11 +539,12 @@ describe('back-office du super administrateur', () => {
     await demoLogin('u-super');
     const payouts = await financeService.payouts();
     expect(payouts.find(({ round }) => round.id === rounds[0]?.round.id)?.collected).toBe(75_000);
-    expect(payouts.find(({ round }) => round.id === rounds[2]?.round.id)?.collected).toBe(60_000);
+    // Période de service : la moitié d'une cotisation (réglage par défaut).
+    expect(payouts.find(({ round }) => round.id === rounds[2]?.round.id)?.collected).toBe(30_000);
     const earnings = await financeService.earnings();
-    expect(earnings.earnedTotal).toBe(75_000);
+    expect(earnings.earnedTotal).toBe(45_000);
     await financeService.compensateAdmin(group.id, 15_000, 'Rémunération de gestion');
-    expect((await financeService.earnings()).available).toBe(60_000);
+    expect((await financeService.earnings()).available).toBe(30_000);
   }, 60_000);
 
   it('seul un groupe terminé peut être archivé', async () => {

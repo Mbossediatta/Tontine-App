@@ -35,6 +35,7 @@ export function seedSettings(): PlatformSettings {
       minContribution: 500,
       maxContribution: 500000,
       maxMembers: 50,
+      platformSharePercent: 50,
     },
     security: { otpValidityMinutes: 10, maxPinAttempts: 5, inactivityLockMinutes: 15 },
     sms: {

@@ -1,6 +1,6 @@
 // Règles de calcul d'une tontine (cagnotte, durée, calendrier).
 import { addDays, addMonths, addWeeks, getISODay, setDate } from 'date-fns';
-import type { Frequency, Group } from '@/types';
+import type { Frequency, Group, Round } from '@/types';
 
 /** Cagnotte d'un tour = cotisation × nombre de membres. */
 export function computePot(contributionAmount: number, memberCount: number): number {
@@ -60,9 +60,23 @@ export function formatCycleDuration(frequency: Frequency, rounds: number, turnLe
 
 /** Cotisation d'une part pour un tour entier : montant par période × durée du tour. */
 export function contributionPerTurn(
-  group: Pick<Group, 'contributionAmount' | 'turnLength'>,
+  group: Pick<Group, 'contributionAmount' | 'turnLength' | 'platformSharePercent'>,
+  round?: Pick<Round, 'recipientType'>,
 ): number {
-  return group.contributionAmount * Math.max(1, group.turnLength);
+  return periodContribution(group, round) * Math.max(1, group.turnLength);
+}
+
+/**
+ * Cotisation d'une période pour une part : entière entre membres, réduite pendant la
+ * période de service de la plateforme (platformSharePercent, arrondie au franc). Même
+ * calcul que private.period_contribution.
+ */
+export function periodContribution(
+  group: Pick<Group, 'contributionAmount' | 'platformSharePercent'>,
+  round?: Pick<Round, 'recipientType'>,
+): number {
+  if (round?.recipientType !== 'platform') return group.contributionAmount;
+  return Math.round((group.contributionAmount * (group.platformSharePercent ?? 100)) / 100);
 }
 
 /** `count` périodes du rythme après `start`. */

@@ -1,7 +1,13 @@
 // Lecture des groupes dans la base (tables filtrées par RLS) et construction des vues
 // GroupOverview et MemberView, avec les mêmes calculs que services/mock/views.ts.
 import { supabase } from '@/lib/supabase';
-import { computePot, contributionPerTurn, personPayout, serviceFee } from '@/lib/tontine';
+import {
+  computePot,
+  contributionPerTurn,
+  periodContribution,
+  personPayout,
+  serviceFee,
+} from '@/lib/tontine';
 import type {
   Group,
   GroupOverview,
@@ -32,6 +38,7 @@ export interface GroupRow {
   shares_per_round: number;
   membership_fee_amount: number;
   reserve_final_turn: boolean;
+  platform_share_percent: number;
   frequency: Group['frequency'];
   max_members: number;
   payment_due_day: number;
@@ -117,7 +124,7 @@ interface ProfileRow {
 }
 
 export const GROUP_COLUMNS =
-  'id, community_id, join_policy, name, description, contribution_amount, turn_length, shares_per_round, membership_fee_amount, reserve_final_turn, frequency, max_members, payment_due_day, payment_due_time, start_date, attribution_mode, late_penalty, status, invite_code, created_by, admin_id, member_status_visibility, current_cycle, archived_at';
+  'id, community_id, join_policy, name, description, contribution_amount, turn_length, shares_per_round, membership_fee_amount, reserve_final_turn, platform_share_percent, frequency, max_members, payment_due_day, payment_due_time, start_date, attribution_mode, late_penalty, status, invite_code, created_by, admin_id, member_status_visibility, current_cycle, archived_at';
 
 export function toGroup(row: GroupRow): Group {
   return {
@@ -131,6 +138,7 @@ export function toGroup(row: GroupRow): Group {
     sharesPerRound: row.shares_per_round,
     membershipFeeAmount: row.membership_fee_amount,
     reserveFinalTurn: row.reserve_final_turn,
+    platformSharePercent: row.platform_share_percent,
     frequency: row.frequency,
     maxMembers: row.max_members,
     paymentDueDay: row.payment_due_day,
@@ -506,7 +514,7 @@ export function hasPaidMembershipFee(ctx: GroupContext, groupId: string, userId:
 
 export function amountDue(ctx: GroupContext, group: Group, round: Round, userId: string): number {
   const shares = activeMemberships(ctx, group.id).filter((m) => m.userId === userId).length;
-  const total = contributionPerTurn(group) * shares + penaltyFor(ctx, round.id, userId);
+  const total = contributionPerTurn(group, round) * shares + penaltyFor(ctx, round.id, userId);
   // Versements déjà réussis sur ce tour (paiement par jours ou par périodes).
   const paid = ctx.payments
     .filter((p) => p.roundId === round.id && p.userId === userId && p.status === 'paid')
@@ -611,7 +619,8 @@ export function buildOverview(ctx: GroupContext, group: Group): GroupOverview {
     myPenalty: current && isActiveMember ? penaltyFor(ctx, current.id, viewerId) : 0,
     myServiceFee: serviceFee(due, ctx.feePercent),
     myPeriodAmount:
-      group.contributionAmount * members.filter((item) => item.userId === viewerId).length,
+      periodContribution(group, current) *
+      members.filter((item) => item.userId === viewerId).length,
     feePercent: ctx.feePercent,
     myTurn: myTurnForUser,
     orderIsSet: members.length > 0 && members.every((m) => typeof m.payoutOrder === 'number'),
@@ -718,7 +727,7 @@ export function roundExpected(ctx: GroupContext, round: Round): number {
   const penalties = ctx.penalties
     .filter((p) => p.round_id === round.id)
     .reduce((sum, p) => sum + p.amount, 0);
-  return contributionPerTurn(group) * members.length + fees + penalties;
+  return contributionPerTurn(group, round) * members.length + fees + penalties;
 }
 
 /** Encaissé sur un tour : paiements réussis (frais d'adhésion et pénalités compris). */

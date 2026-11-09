@@ -219,7 +219,7 @@ export function createSupabasePaymentService(): PaymentService {
               (payment.latePenaltyAmount ?? 0),
             0,
           ),
-          totalAmount: contributionPerTurn(group) * shareCount + penalty,
+          totalAmount: contributionPerTurn(group, round) * shareCount + penalty,
         };
       });
     },

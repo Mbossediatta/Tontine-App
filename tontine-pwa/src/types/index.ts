@@ -57,6 +57,11 @@ export interface Group {
   membershipFeeAmount?: number;
   /** Ajouter une dernière période de collecte réservée au Superadmin. */
   reserveFinalTurn?: boolean;
+  /**
+   * Période de service de la plateforme : part d'une cotisation payée par chaque membre (%),
+   * figée à la création du groupe. Absent : 100 (groupes d'avant ce réglage).
+   */
+  platformSharePercent?: number;
   frequency: Frequency;
   /** Nombre total de parts du groupe (une personne peut occuper plusieurs places). */
   maxMembers: number;
@@ -395,6 +400,8 @@ export interface PlatformSettings {
     /** Jours de tolérance après la date limite avant d'être « en retard ». */
     graceDays: number;
     defaultLatePenalty: number;
+    /** Période de service de la plateforme : part d'une cotisation (%), pour les nouveaux groupes. */
+    platformSharePercent: number;
     minContribution: number;
     maxContribution: number;
     /** Nombre maximal de parts par groupe. */

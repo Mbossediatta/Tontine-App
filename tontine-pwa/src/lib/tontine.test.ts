@@ -5,6 +5,7 @@ import {
   formatCycleDuration,
   formatPeriods,
   payoutPerShare,
+  periodContribution,
   personPayout,
   roundOpenDate,
 } from './tontine';
@@ -94,5 +95,27 @@ describe('plusieurs parts par tour', () => {
     // Deux parts du même tour pour la même personne : toute la cagnotte.
     expect(personPayout(90000, ['a', 'b'], new Set(['a', 'b']))).toBe(90000);
     expect(personPayout(90000, ['a', 'b'], new Set())).toBe(0);
+  });
+});
+
+describe('période de service de la plateforme', () => {
+  const group = { contributionAmount: 10000, turnLength: 1, platformSharePercent: 50 };
+
+  it('coûte la part réglée d’une cotisation ; les tours entre membres ne changent pas', () => {
+    expect(contributionPerTurn(group, { recipientType: 'platform' })).toBe(5000);
+    expect(contributionPerTurn(group, { recipientType: 'members' })).toBe(10000);
+    expect(contributionPerTurn(group)).toBe(10000);
+  });
+
+  it('arrondit au franc et garde 100 % pour les groupes d’avant le réglage', () => {
+    expect(
+      periodContribution(
+        { contributionAmount: 2525, platformSharePercent: 50 },
+        { recipientType: 'platform' },
+      ),
+    ).toBe(1263);
+    expect(periodContribution({ contributionAmount: 10000 }, { recipientType: 'platform' })).toBe(
+      10000,
+    );
   });
 });
