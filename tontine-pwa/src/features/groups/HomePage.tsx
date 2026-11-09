@@ -46,7 +46,8 @@ export default function HomePage() {
   const unread = useUnreadCount();
   const query = useMyGroups();
   const [joinOpen, setJoinOpen] = useState(false);
-  const isAdmin = user.globalRole === 'admin';
+  // Admin ou super admin : l'espace membre est une rubrique de leur menu (titre sobre).
+  const isAdmin = user.globalRole !== 'user';
   const month = formatMonth(new Date());
   const adminMonth = month.charAt(0).toUpperCase() + month.slice(1);
 
@@ -73,7 +74,8 @@ export default function HomePage() {
         </header>
       )}
 
-      {isAdmin ? <GroupsToJoin /> : null}
+      {/* Rejoindre en un geste un groupe qu'il gère : réservé à l'admin de groupe. */}
+      {user.globalRole === 'admin' ? <GroupsToJoin /> : null}
 
       {query.isPending ? (
         <PageSkeleton />

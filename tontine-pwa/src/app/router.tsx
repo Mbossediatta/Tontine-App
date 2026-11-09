@@ -85,7 +85,7 @@ function MemberPage({ member, other }: { member: ReactNode; other: ReactNode }) 
 
 /**
  * Accueil : les administrateurs arrivent sur leur tableau de bord (l'espace membre d'un
- * admin est sur /espace-membre ; le super admin n'en a pas).
+ * admin et du super admin est sur /espace-membre).
  */
 function HomeRoute() {
   const user = useCurrentUser();

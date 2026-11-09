@@ -94,6 +94,7 @@ const PROFILE: NavItem = { to: '/profil', label: 'Profil', labelKey: 'nav.profil
  * Libellés courts pour tenir sur une ligne ; les pages portent le titre complet
  * (« Litiges et remboursements », « Notifications et annonces »…).
  * « Mon compte » et ses notifications sont dans la barre du haut (TopBar), pas ici.
+ * En dernier, « Espace membre » : ses propres cotisations s'il est membre d'un groupe.
  */
 const SUPER_ADMIN_ITEMS: NavItem[] = [
   DASHBOARD,
@@ -133,11 +134,14 @@ const SUPER_ADMIN_ITEMS: NavItem[] = [
   { to: '/admin/audit', label: 'Journal d’audit', shortLabel: 'Audit', icon: ScrollText },
   { to: '/admin/securite', label: 'Sécurité', icon: ShieldAlert },
   { to: '/admin/parametres', label: 'Paramètres', icon: Settings },
+  // S'il cotise lui-même dans un groupe : ses cotisations et ses tours, comme un admin.
+  ADMIN_HOME,
 ];
 
 /**
  * Menu selon le rôle :
- * - super administrateur : les rubriques du back-office (compte et notifications : barre du haut) ;
+ * - super administrateur : les rubriques du back-office et son espace membre (compte et
+ *   notifications : barre du haut) ;
  * - administrateur : tableau de bord et groupes qu'il gère (compte et notifications : barre du haut) ;
  * - participant : ses tontines.
  */
