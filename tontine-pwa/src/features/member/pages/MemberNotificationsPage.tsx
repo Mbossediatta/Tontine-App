@@ -9,6 +9,7 @@ import { queryKeys, useAction } from '@/lib/query';
 import { notificationService } from '@/services';
 import type { AppNotification } from '@/types';
 import { Button } from '../ui/Button';
+import { PageGuide } from '../guide/PageGuide';
 import { Card } from '../ui/Card';
 import { EmptyState, ErrorBlock } from '../ui/EmptyState';
 import { ListSkeleton } from '../ui/Skeleton';
@@ -97,7 +98,7 @@ export default function MemberNotificationsPage() {
           description="Tu seras prévenu ici des rappels de cotisation, des paiements et des tours."
         />
       ) : (
-        <>
+        <div data-guide="notifications-list" className="flex flex-col gap-4">
           {unread.length > 0 ? (
             <section aria-label="Non lues">
               <h2 className="mb-2 text-[13px] font-semibold text-slate-600">
@@ -129,8 +130,9 @@ export default function MemberNotificationsPage() {
               ) : null}
             </section>
           ) : null}
-        </>
+        </div>
       )}
+      <PageGuide id="notifications" ready={!query.isPending} />
     </div>
   );
 }

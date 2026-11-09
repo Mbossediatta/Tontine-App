@@ -17,6 +17,7 @@ import type { NotificationPreferences } from '@/types';
 import { ChangePinSheet } from '../components/ChangePinSheet';
 import { PayoutSheet } from '../components/PayoutSheet';
 import { Button } from '../ui/Button';
+import { PageGuide } from '../guide/PageGuide';
 import { Card, PageTitle, SectionHeader } from '../ui/Card';
 import { Skeleton } from '../ui/Skeleton';
 
@@ -97,7 +98,7 @@ function LanguagePicker() {
   const { t, language } = useT();
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   return (
-    <section aria-labelledby="language">
+    <section data-guide="profile-language" aria-labelledby="language">
       <SectionHeader id="language" title="Langue · Làkk" />
       <div
         role="radiogroup"
@@ -178,7 +179,7 @@ export default function MemberProfilePage() {
         </Button>
       </section>
 
-      <section aria-labelledby="account">
+      <section data-guide="profile-account" aria-labelledby="account">
         <SectionHeader id="account" title="Compte" />
         <Card>
           <ul className="divide-y divide-slate-200">
@@ -208,7 +209,7 @@ export default function MemberProfilePage() {
 
       <LanguagePicker />
 
-      <section aria-labelledby="notifications">
+      <section data-guide="profile-notifications" aria-labelledby="notifications">
         <SectionHeader id="notifications" title="Notifications" />
         <NotificationPreferencesList />
       </section>
@@ -227,6 +228,7 @@ export default function MemberProfilePage() {
       <EditProfileDialog open={editing} onClose={() => setEditing(false)} />
       <ChangePinSheet open={changingPin} onClose={() => setChangingPin(false)} />
       <PayoutSheet open={payout} onClose={() => setPayout(false)} />
+      <PageGuide id="profile" />
     </div>
   );
 }

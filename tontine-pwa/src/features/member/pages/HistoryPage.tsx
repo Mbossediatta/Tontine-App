@@ -18,6 +18,7 @@ import { shortDate } from '../dues';
 import { AmountDisplay } from '../ui/AmountDisplay';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
+import { PageGuide } from '../guide/PageGuide';
 import { Card, PageTitle } from '../ui/Card';
 import { EmptyState, ErrorBlock } from '../ui/EmptyState';
 import { ListSkeleton, Skeleton } from '../ui/Skeleton';
@@ -251,7 +252,7 @@ export default function HistoryPage() {
       {query.isPending ? (
         <Skeleton className="h-20 rounded-xl" />
       ) : (
-        <Card className="grid grid-cols-2 divide-x divide-slate-200">
+        <Card data-guide="history-totals" className="grid grid-cols-2 divide-x divide-slate-200">
           <div className="px-4 py-3">
             <p className="text-[13px] text-slate-600">Total cotisé</p>
             <AmountDisplay value={paidOut} size="md" />
@@ -264,7 +265,7 @@ export default function HistoryPage() {
       )}
 
       {/* Filtres : groupe (liste déroulante) et période (segments). */}
-      <div className="flex flex-col gap-3">
+      <div data-guide="history-filters" className="flex flex-col gap-3">
         <label className="flex flex-col gap-1">
           <span className="text-[13px] font-semibold text-slate-700">Groupe</span>
           <select
@@ -319,7 +320,7 @@ export default function HistoryPage() {
           }
         />
       ) : (
-        <div className="flex flex-col gap-4">
+        <div data-guide="history-list" className="flex flex-col gap-4">
           {byMonth(page.visible).map(({ month, items }) => (
             <section key={month} aria-label={monthHeading(month)}>
               <h2 className="mb-2 text-[13px] font-semibold text-slate-600">
@@ -348,6 +349,7 @@ export default function HistoryPage() {
       )}
 
       <TransactionSheet item={open} onClose={() => setOpen(null)} />
+      <PageGuide id="history" ready={!query.isPending} />
     </div>
   );
 }

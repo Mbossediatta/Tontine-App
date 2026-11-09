@@ -65,6 +65,76 @@ export const fr = {
   // Choix de la langue (Profil)
   'language.title': 'Langue',
   'language.hint': 'La traduction en wolof est en cours : certains écrans restent en français.',
+
+  // Guide de découverte de l'espace membre (bouton « ? » sur chaque page)
+  'guide.help': 'Aide : expliquer cette page',
+  'guide.progress': '{current} sur {total}',
+  'guide.next': 'Suivant',
+  'guide.back': 'Retour',
+  'guide.skip': 'Passer',
+  'guide.done': 'C’est compris',
+  'guide.home.welcome.title': 'Bienvenue sur Calebasse',
+  'guide.home.welcome.text':
+    'Ce petit guide te montre l’application en quelques étapes. Appuie sur « ? » en bas de chaque page pour retrouver ses explications.',
+  'guide.home.due.title': 'Ta prochaine cotisation',
+  'guide.home.due.text':
+    'Le montant à payer et la date limite. Appuie sur « Payer maintenant » pour payer avec ton téléphone.',
+  'guide.home.groups.title': 'Tes groupes',
+  'guide.home.groups.text':
+    'Où tu en es ce mois-ci dans chaque groupe : payé, à payer ou en retard. Appuie sur un groupe pour voir son calendrier.',
+  'guide.home.turns.title': 'Ton tour',
+  'guide.home.turns.text': 'Quand tu recevras la cagnotte, et combien.',
+  'guide.home.bell.title': 'Notifications',
+  'guide.home.bell.text':
+    'Les rappels, les paiements confirmés et les messages de ton administrateur arrivent ici.',
+  'guide.nav.title': 'Le menu',
+  'guide.nav.text':
+    'Accueil, Groupes, Payer, Historique et Profil : chaque partie de l’application est à un appui.',
+  'guide.groups.list.title': 'Tes groupes',
+  'guide.groups.list.text':
+    'Tous les groupes dont tu fais partie. Appuie sur un groupe pour voir son détail.',
+  'guide.groups.open.title': 'Groupes ouverts',
+  'guide.groups.open.text':
+    'Les groupes de ta communauté que tu peux demander à rejoindre. L’administrateur valide ta demande.',
+  'guide.groups.join.title': 'Rejoindre un groupe',
+  'guide.groups.join.text':
+    'Tu as reçu un lien ou un code d’invitation ? Appuie ici pour le saisir.',
+  'guide.group.header.title': 'Ton groupe',
+  'guide.group.header.text':
+    'La cotisation, le tour en cours et ton statut. Le bouton « Payer » apparaît quand une cotisation t’attend.',
+  'guide.group.facts.title': 'Les règles du groupe',
+  'guide.group.facts.text':
+    'Le montant, le rythme, la date limite, la pénalité de retard et les administrateurs.',
+  'guide.group.calendar.title': 'Calendrier de passage',
+  'guide.group.calendar.text':
+    'Qui reçoit la cagnotte à chaque tour. Pour un tour à venir, tu peux proposer un échange à un autre membre.',
+  'guide.group.members.title': 'Les membres',
+  'guide.group.members.text': 'Les personnes qui cotisent avec toi dans ce groupe.',
+  'guide.group.claim.title': 'Un problème ?',
+  'guide.group.claim.text':
+    'Paiement non reconnu ou cagnotte pas reçue : fais une réclamation, l’équipe te répond.',
+  'guide.pay.steps.title': 'Payer en 3 étapes',
+  'guide.pay.steps.text':
+    'Choisis la cotisation, puis le moyen de paiement, puis vérifie et confirme.',
+  'guide.pay.content.title': 'Rien n’est payé sans ton accord',
+  'guide.pay.content.text':
+    'Le montant, les frais du service de paiement et le total s’affichent avant que tu confirmes.',
+  'guide.history.totals.title': 'Tes totaux',
+  'guide.history.totals.text': 'Ce que tu as cotisé, et ce que tu as reçu.',
+  'guide.history.filters.title': 'Filtrer',
+  'guide.history.filters.text': 'Choisis un groupe ou une période pour retrouver un paiement.',
+  'guide.history.list.title': 'Tes paiements',
+  'guide.history.list.text': 'Appuie sur une ligne pour voir son détail et son reçu.',
+  'guide.profile.account.title': 'Ton compte',
+  'guide.profile.account.text':
+    'Change ton code PIN et indique le numéro sur lequel tu reçois la cagnotte.',
+  'guide.profile.language.title': 'Langue',
+  'guide.profile.language.text': 'Choisis le français ou le wolof.',
+  'guide.profile.notifications.title': 'Notifications',
+  'guide.profile.notifications.text': 'Choisis les rappels que tu veux recevoir.',
+  'guide.notifications.title': 'Tes notifications',
+  'guide.notifications.text':
+    'Les nouveaux messages sont en haut. « Tout marquer lu » les range une fois que tu les as vus.',
 } as const;
 
 export type MessageKey = keyof typeof fr;

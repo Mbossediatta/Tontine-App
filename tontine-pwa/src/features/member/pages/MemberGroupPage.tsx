@@ -13,6 +13,7 @@ import { PayoutReceiptCard } from '../components/PayoutReceiptCard';
 import { duesOf, monthName, shortDate } from '../dues';
 import { AmountDisplay } from '../ui/AmountDisplay';
 import { Button } from '../ui/Button';
+import { PageGuide } from '../guide/PageGuide';
 import { Card, SectionHeader } from '../ui/Card';
 import { EmptyState, ErrorBlock } from '../ui/EmptyState';
 import { ListSkeleton, Skeleton } from '../ui/Skeleton';
@@ -249,7 +250,7 @@ export default function MemberGroupPage() {
 
   return (
     <div className="flex flex-col gap-6 motion-safe:animate-fade-in">
-      <header className="flex flex-col gap-2">
+      <header data-guide="group-header" className="flex flex-col gap-2">
         <Link
           to="/groupes"
           className="-ml-2 flex min-h-[44px] items-center gap-1 self-start rounded-lg px-2 text-[13px] font-semibold text-blue-700 hover:bg-blue-50"
@@ -293,12 +294,12 @@ export default function MemberGroupPage() {
           <PayoutReceiptCard key={view.round.id} view={view} userId={user.id} groupId={id} />
         ))}
 
-      <section aria-labelledby="facts">
+      <section data-guide="group-facts" aria-labelledby="facts">
         <SectionHeader id="facts" title="Le groupe" />
         <GroupFacts overview={overview} admins={admins} />
       </section>
 
-      <section aria-labelledby="calendar">
+      <section data-guide="group-calendar" aria-labelledby="calendar">
         <SectionHeader id="calendar" title="Calendrier de passage" />
         {rounds.isPending ? (
           <ListSkeleton rows={4} />
@@ -333,12 +334,13 @@ export default function MemberGroupPage() {
 
       <Link
         to={`/reclamation?groupe=${id}`}
+        data-guide="group-claim"
         className="text-center text-[13px] font-semibold text-blue-700 underline"
       >
         Un problème avec un paiement ou une cagnotte ? Faire une réclamation
       </Link>
 
-      <section aria-labelledby="members">
+      <section data-guide="group-members" aria-labelledby="members">
         <SectionHeader id="members" title="Membres" />
         {members.isPending ? (
           <ListSkeleton rows={4} />
@@ -348,6 +350,7 @@ export default function MemberGroupPage() {
           <MemberList members={members.data ?? []} userId={user.id} />
         )}
       </section>
+      <PageGuide id="group" ready={!rounds.isPending && !members.isPending} />
     </div>
   );
 }

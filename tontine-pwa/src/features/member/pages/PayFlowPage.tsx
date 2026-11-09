@@ -19,6 +19,7 @@ import { deadlineLabel, duesOf, periodLabel, shortDate, type Due } from '../dues
 import { AmountDisplay } from '../ui/AmountDisplay';
 import { BottomAction } from '../ui/BottomAction';
 import { Button } from '../ui/Button';
+import { PageGuide } from '../guide/PageGuide';
 import { Card, PageTitle } from '../ui/Card';
 import { EmptyState, ErrorBlock } from '../ui/EmptyState';
 import { ListSkeleton } from '../ui/Skeleton';
@@ -296,7 +297,7 @@ export default function PayFlowPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex flex-col gap-3">
+      <header data-guide="pay-steps" className="flex flex-col gap-3">
         <div className="flex min-h-[44px] items-center gap-1">
           {current > 1 && !(current === 2 && dues.length === 1) ? (
             <button
@@ -314,7 +315,11 @@ export default function PayFlowPage() {
       </header>
 
       {/* La clé change à chaque étape : l'écran glisse en douceur. */}
-      <div key={current} className="flex flex-col gap-4 motion-safe:animate-fade-in">
+      <div
+        key={current}
+        data-guide="pay-content"
+        className="flex flex-col gap-4 motion-safe:animate-fade-in"
+      >
         {current === 1 ? (
           <fieldset className="flex flex-col gap-2">
             <legend className="sr-only">Cotisation à payer</legend>
@@ -427,6 +432,7 @@ export default function PayFlowPage() {
           </Button>
         )}
       </BottomAction>
+      <PageGuide id="pay" />
     </div>
   );
 }

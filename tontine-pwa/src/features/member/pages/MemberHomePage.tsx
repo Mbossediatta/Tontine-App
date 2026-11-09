@@ -17,6 +17,7 @@ import {
   periodLabel,
   type Due,
 } from '../dues';
+import { PageGuide } from '../guide/PageGuide';
 import { AmountDisplay } from '../ui/AmountDisplay';
 import { Button } from '../ui/Button';
 import { Card, SectionHeader } from '../ui/Card';
@@ -38,6 +39,7 @@ function NextDueCard({ due, others }: { due: Due; others: number }) {
   const deadline = deadlineLabel(due.round.dueDate, new Date(), language);
   return (
     <section
+      data-guide="home-due"
       aria-labelledby="next-due"
       className="relative overflow-hidden rounded-xl bg-blue-900 px-4 pb-4 pt-4 text-white"
     >
@@ -101,7 +103,10 @@ function UpToDateCard({ groups }: { groups: GroupOverview[] }) {
     .filter((r): r is NonNullable<typeof r> => Boolean(r))
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
   return (
-    <section className="rounded-xl border border-green-200 bg-green-50 px-4 py-4">
+    <section
+      data-guide="home-due"
+      className="rounded-xl border border-green-200 bg-green-50 px-4 py-4"
+    >
       <p className="text-[15px] font-semibold text-green-800">{t('home.upToDate')}</p>
       <p className="mt-1 text-[13px] text-slate-600">
         {next
@@ -116,7 +121,7 @@ function UpToDateCard({ groups }: { groups: GroupOverview[] }) {
 function MonthStatusList({ groups }: { groups: GroupOverview[] }) {
   const { t, language } = useT();
   return (
-    <section aria-labelledby="month-status">
+    <section data-guide="home-groups" aria-labelledby="month-status">
       <SectionHeader
         id="month-status"
         title={t('home.thisMonth')}
@@ -167,7 +172,7 @@ function MyTurns({ groups, userId }: { groups: GroupOverview[]; userId: string }
     .filter((g) => g.myTurn)
     .sort((a, b) => (a.myTurn?.dueDate ?? '').localeCompare(b.myTurn?.dueDate ?? ''));
   return (
-    <section aria-labelledby="my-turns">
+    <section data-guide="home-turns" aria-labelledby="my-turns">
       <SectionHeader id="my-turns" title={t('home.myTurn')} />
       {turns.length === 0 ? (
         <p className="text-[13px] text-slate-600">{t('home.turnNotSet')}</p>
@@ -255,6 +260,7 @@ export default function MemberHomePage() {
         </div>
         <Link
           to="/notifications"
+          data-guide="home-bell"
           aria-label={
             unread > 0 ? t('home.notificationsUnread', { count: unread }) : t('home.notifications')
           }
@@ -308,6 +314,7 @@ export default function MemberHomePage() {
         Un problème ? Faire une réclamation
       </Link>
       <JoinGroupDialog open={joinOpen} onClose={() => setJoinOpen(false)} />
+      <PageGuide id="home" ready={!query.isPending} />
     </div>
   );
 }

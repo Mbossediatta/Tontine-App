@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
@@ -11,6 +11,14 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
  */
 export function BottomAction({ children }: { children: ReactNode }) {
   const desktop = useMediaQuery('(min-width: 1024px)');
+  // Signale le bouton aux éléments flottants (bouton « ? » du guide) pour qu'ils l'évitent.
+  useEffect(() => {
+    if (desktop) return;
+    document.body.dataset.bottomAction = '';
+    return () => {
+      delete document.body.dataset.bottomAction;
+    };
+  }, [desktop]);
   if (desktop) return <div>{children}</div>;
   return (
     <>

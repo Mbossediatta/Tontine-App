@@ -70,6 +70,7 @@ export function BottomNav({ items, unread }: NavProps) {
   return (
     <>
       <nav
+        data-guide="nav"
         aria-label="Navigation principale"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white lg:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
@@ -173,6 +174,7 @@ export function SideNav({
 
   return (
     <nav
+      data-guide="nav"
       aria-label="Navigation principale"
       className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-line bg-white p-4 lg:flex"
     >

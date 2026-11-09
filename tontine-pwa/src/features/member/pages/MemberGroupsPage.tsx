@@ -9,6 +9,7 @@ import { groupService } from '@/services';
 import type { GroupOverview } from '@/types';
 import { BottomAction } from '../ui/BottomAction';
 import { Button } from '../ui/Button';
+import { PageGuide } from '../guide/PageGuide';
 import { Card, PageTitle, SectionHeader } from '../ui/Card';
 import { EmptyState, ErrorBlock } from '../ui/EmptyState';
 import { ListSkeleton } from '../ui/Skeleton';
@@ -44,7 +45,7 @@ export default function MemberGroupsPage() {
           }
         />
       ) : (
-        <Card>
+        <Card data-guide="groups-list">
           <ul className="divide-y divide-slate-200">
             {groups.map(
               ({
@@ -103,6 +104,7 @@ export default function MemberGroupsPage() {
       {groups.length > 0 ? (
         <BottomAction>
           <Button
+            data-guide="groups-join"
             block
             onClick={() => setJoinOpen(true)}
             icon={<Plus className="h-5 w-5" aria-hidden="true" />}
@@ -112,6 +114,7 @@ export default function MemberGroupsPage() {
         </BottomAction>
       ) : null}
       <JoinGroupDialog open={joinOpen} onClose={() => setJoinOpen(false)} />
+      <PageGuide id="groups" ready={!query.isPending && !discoverable.isPending} />
     </div>
   );
 }
@@ -145,7 +148,11 @@ function DiscoverableGroups({
   if (query.data.length === 0) return null;
 
   return (
-    <section className="flex flex-col gap-2" aria-labelledby="community-groups-title">
+    <section
+      data-guide="groups-open"
+      className="flex flex-col gap-2"
+      aria-labelledby="community-groups-title"
+    >
       <SectionHeader id="community-groups-title" title="Groupes ouverts dans tes communautés" />
       <ul className="flex flex-col gap-2">
         {query.data.map((overview) => (
