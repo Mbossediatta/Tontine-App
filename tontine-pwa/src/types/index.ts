@@ -44,6 +44,8 @@ export interface Group {
   joinPolicy?: 'invite' | 'community';
   name: string;
   description?: string;
+  /** Photo ou logo du groupe (image compressée, « data URL ») ; facultatif. */
+  photoUrl?: string;
   /** Cotisation par part et par période du rythme (jour, semaine, quinzaine ou mois). FCFA. */
   contributionAmount: number;
   /**

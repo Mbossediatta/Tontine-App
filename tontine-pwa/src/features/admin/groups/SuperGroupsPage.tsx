@@ -3,7 +3,7 @@ import { Archive, ChevronRight, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GroupStatusBadge } from '@/components/domain';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { AsyncContent, Badge, Card, EmptyState, Select } from '@/components/ui';
+import { AsyncContent, Badge, Card, EmptyState, GroupPhoto, Select } from '@/components/ui';
 import { groupContributionLabel, fullName, plural, searchable } from '@/lib/format';
 import type { GroupOverview } from '@/types';
 import { headerLinkClass } from '../components/linkStyles';
@@ -199,12 +199,15 @@ export default function SuperGroupsPage() {
                             to={`/admin/groupes/${group.id}`}
                             className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-control px-2 py-3 transition-colors duration-150 hover:bg-blue-50 ${COLUMNS}`}
                           >
-                            <span className="min-w-0 md:order-1">
-                              <span className="block truncate font-bold text-ink">
-                                {group.name}
-                              </span>
-                              <span className="block text-small text-muted">
-                                {groupContributionLabel(group)}
+                            <span className="flex min-w-0 items-center gap-3 md:order-1">
+                              <GroupPhoto name={group.name} src={group.photoUrl} size="sm" />
+                              <span className="min-w-0">
+                                <span className="block truncate font-bold text-ink">
+                                  {group.name}
+                                </span>
+                                <span className="block text-small text-muted">
+                                  {groupContributionLabel(group)}
+                                </span>
                               </span>
                             </span>
                             <span className="flex flex-wrap justify-end gap-1 md:order-5 md:justify-start">

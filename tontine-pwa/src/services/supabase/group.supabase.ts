@@ -83,20 +83,28 @@ export function createSupabaseGroupService(): GroupService {
       return overview;
     },
 
-    async create(input) {
+    async create({ photoUrl, ...input }) {
       requireOnline();
       const id = await rpc<string>('group_create', { p: toPayload(input) });
       if (input.paymentDueTime) {
         await rpc('group_set_due_time', { p_group: id, p_time: input.paymentDueTime });
       }
+      if (photoUrl) await rpc('group_set_photo', { p_group: id, p_photo: photoUrl });
       return readGroup(id);
     },
 
     async update(groupId, input: UpdateGroupInput) {
       requireOnline();
-      await rpc('group_update', { p_group: groupId, p: toPayload(input) });
-      if (input.paymentDueTime) {
-        await rpc('group_set_due_time', { p_group: groupId, p_time: input.paymentDueTime });
+      const { photoUrl, ...rest } = input;
+      // La photo seule (réglages → « Photo du groupe ») n'appelle pas group_update.
+      if (Object.keys(rest).length > 0) {
+        await rpc('group_update', { p_group: groupId, p: toPayload(rest) });
+      }
+      if (rest.paymentDueTime) {
+        await rpc('group_set_due_time', { p_group: groupId, p_time: rest.paymentDueTime });
+      }
+      if ('photoUrl' in input) {
+        await rpc('group_set_photo', { p_group: groupId, p_photo: photoUrl ?? null });
       }
       return readGroup(groupId);
     },

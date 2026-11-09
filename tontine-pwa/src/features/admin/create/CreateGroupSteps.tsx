@@ -3,12 +3,13 @@ import { Dices, ListOrdered, LockKeyhole, UsersRound } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { AmountText } from '@/components/domain';
-import { Card, Input, Select, Textarea } from '@/components/ui';
+import { Card, GroupPhoto, Input, Select, Textarea } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { formatDate, frequencyLabel } from '@/lib/format';
 import { formatCycleDuration, formatPeriods, MAX_TURN_LENGTH } from '@/lib/tontine';
 import { useAuth } from '@/hooks/useAuth';
 import type { CreateGroupValues } from '@/lib/validators';
+import { GroupPhotoPicker } from '../components/GroupPhotoPicker';
 import { useAdminChoices, useCommunities } from '../queries';
 import {
   dueDayOptions,
@@ -124,6 +125,11 @@ export function StepInfo() {
         label="Description (facultatif)"
         error={errors.description?.message}
         {...register('description')}
+      />
+      <GroupPhotoPicker
+        name={watch('name') ?? ''}
+        value={watch('photoUrl')}
+        onChange={(photoUrl) => setValue('photoUrl', photoUrl, { shouldDirty: true })}
       />
     </div>
   );
@@ -391,7 +397,16 @@ export function StepSummary() {
   ];
   return (
     <div className="flex flex-col gap-3">
-      <Card>
+      <Card className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <GroupPhoto name={v.name} src={v.photoUrl} size="md" />
+          <div className="min-w-0">
+            <p className="truncate text-card-title text-ink">{v.name}</p>
+            <p className="text-small text-muted">
+              {v.photoUrl ? 'Photo du groupe choisie' : 'Sans photo : les initiales s’affichent'}
+            </p>
+          </div>
+        </div>
         <dl className="flex flex-col gap-2">
           {rows.map(([label, value]) => (
             <div key={label} className="flex justify-between gap-4">

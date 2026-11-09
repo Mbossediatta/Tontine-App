@@ -48,7 +48,11 @@ export default function CreateGroupPage() {
   });
   const create = useAction({
     action: (values: CreateGroupValues) =>
-      groupService.create({ ...values, startDate: new Date(values.startDate).toISOString() }),
+      groupService.create({
+        ...values,
+        photoUrl: values.photoUrl || undefined,
+        startDate: new Date(values.startDate).toISOString(),
+      }),
     success: 'Groupe créé',
     onSuccess: setCreated,
   });

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Badge, Card } from '@/components/ui';
+import { Badge, Card, GroupPhoto } from '@/components/ui';
 import { contributionLabel } from '@/lib/format';
 import type { GroupOverview } from '@/types';
 import { CycleProgress } from './CycleProgress';
@@ -19,7 +19,8 @@ export function GroupCard({ overview, to }: GroupCardProps) {
     <Link to={to} className="block rounded-card">
       <Card interactive className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <GroupPhoto name={group.name} src={group.photoUrl} />
+          <div className="min-w-0 flex-1">
             <h3 className="truncate font-sans text-card-title text-ink">{group.name}</h3>
             <p className="text-label text-muted">
               {overview.communityName ? `${overview.communityName} · ` : ''}

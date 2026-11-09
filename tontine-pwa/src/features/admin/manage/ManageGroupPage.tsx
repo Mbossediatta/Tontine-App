@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { GroupStatusBadge } from '@/components/domain';
-import { AsyncContent, Tabs, type TabItem } from '@/components/ui';
+import { AsyncContent, GroupPhoto, Tabs, type TabItem } from '@/components/ui';
 import { useGroup } from '@/features/groups/queries';
 import { useAuth } from '@/hooks/useAuth';
 import { groupContributionLabel } from '@/lib/format';
@@ -36,6 +36,14 @@ export default function ManageGroupPage() {
     <AsyncContent query={query} errorMessage="Impossible d’ouvrir ce groupe.">
       {(overview) => (
         <div className="flex flex-col gap-3">
+          {overview.group.photoUrl ? (
+            <GroupPhoto
+              name={overview.group.name}
+              src={overview.group.photoUrl}
+              size="lg"
+              className="self-start"
+            />
+          ) : null}
           <PageHeader
             plain
             title={overview.group.name}

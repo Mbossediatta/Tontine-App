@@ -2,7 +2,15 @@ import { useState } from 'react';
 import { Bell, ChevronRight, Plus, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { UnreadCount } from '@/components/layout/UnreadDot';
-import { Button, Card, CardTitle, EmptyState, ErrorState, PageSkeleton } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardTitle,
+  EmptyState,
+  ErrorState,
+  GroupPhoto,
+  PageSkeleton,
+} from '@/components/ui';
 import { ParticipateButton } from '@/features/admin/manage/ParticipateButton';
 import { canParticipate } from '@/features/admin/manage/participation';
 import { useAdminDashboard } from '@/features/admin/queries';
@@ -60,6 +68,7 @@ function MyGroupsCard({ groups }: { groups: GroupOverview[] }) {
               to={`/groupes/${group.id}`}
               className="flex min-h-touch items-center gap-3 py-3 hover:bg-blue-50"
             >
+              <GroupPhoto name={group.name} src={group.photoUrl} size="sm" />
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-bold text-ink">{group.name}</span>
                 <span className="block text-label text-muted">

@@ -6,6 +6,7 @@ export { Button, type ButtonProps } from './Button';
 export { Card, CardTitle, SectionTitle, type CardTone } from './Card';
 export { ConfirmDialog } from './ConfirmDialog';
 export { EmptyState, ErrorState } from './EmptyState';
+export { GroupPhoto } from './GroupPhoto';
 export { Input, Textarea } from './Input';
 export { Logo } from './Logo';
 export { Modal } from './Modal';

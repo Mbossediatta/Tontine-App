@@ -3,7 +3,7 @@ import { Plus, Search, Share2, UsersRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GroupStatusBadge } from '@/components/domain';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { AsyncContent, Button, Card, EmptyState, Modal } from '@/components/ui';
+import { AsyncContent, Button, Card, EmptyState, GroupPhoto, Modal } from '@/components/ui';
 import { groupContributionLabel, plural, searchable } from '@/lib/format';
 import type { GroupOverview, GroupStatus } from '@/types';
 import { InviteShare } from '../components/InviteShare';
@@ -53,7 +53,8 @@ function GroupSummary({
           className="flex h-full flex-col gap-4 transition-colors hover:ring-1 hover:ring-blue-700/30"
         >
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
+            <GroupPhoto name={group.name} src={group.photoUrl} />
+            <div className="min-w-0 flex-1">
               <h2 className="truncate font-sans text-card-title text-ink">{group.name}</h2>
               <p className="mt-1 break-words text-label text-muted">
                 {communityName ? `${communityName} · ` : ''}

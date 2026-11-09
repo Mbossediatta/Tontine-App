@@ -66,6 +66,8 @@ export const createGroupSchema = z
   .object({
     name: groupNameSchema,
     description: groupDescriptionSchema,
+    /** Photo ou logo, facultatif (image déjà compressée par GroupPhotoPicker). */
+    photoUrl: z.string().optional(),
     // Minimum et maximum : réglés par le super admin (Paramètres → Règles), vérifiés par le serveur.
     contributionAmount: requiredInt('Indiquez le montant de la cotisation').min(
       1,

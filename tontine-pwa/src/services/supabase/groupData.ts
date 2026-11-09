@@ -33,6 +33,8 @@ export interface GroupRow {
   join_policy: 'invite' | 'community';
   name: string;
   description: string | null;
+  /** Absent des lignes lues avant la migration …_photo_groupe.sql. */
+  photo_url?: string | null;
   contribution_amount: number;
   turn_length: number;
   shares_per_round: number;
@@ -124,7 +126,7 @@ interface ProfileRow {
 }
 
 export const GROUP_COLUMNS =
-  'id, community_id, join_policy, name, description, contribution_amount, turn_length, shares_per_round, membership_fee_amount, reserve_final_turn, platform_share_percent, frequency, max_members, payment_due_day, payment_due_time, start_date, attribution_mode, late_penalty, status, invite_code, created_by, admin_id, member_status_visibility, current_cycle, archived_at';
+  'id, community_id, join_policy, name, description, photo_url, contribution_amount, turn_length, shares_per_round, membership_fee_amount, reserve_final_turn, platform_share_percent, frequency, max_members, payment_due_day, payment_due_time, start_date, attribution_mode, late_penalty, status, invite_code, created_by, admin_id, member_status_visibility, current_cycle, archived_at';
 
 export function toGroup(row: GroupRow): Group {
   return {
@@ -133,6 +135,7 @@ export function toGroup(row: GroupRow): Group {
     joinPolicy: row.join_policy,
     name: row.name,
     description: row.description ?? undefined,
+    photoUrl: row.photo_url ?? undefined,
     contributionAmount: row.contribution_amount,
     turnLength: row.turn_length,
     sharesPerRound: row.shares_per_round,

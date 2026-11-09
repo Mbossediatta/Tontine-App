@@ -9,7 +9,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { AsyncContent, EmptyState, PageSkeleton } from '@/components/ui';
+import { AsyncContent, EmptyState, GroupPhoto, PageSkeleton } from '@/components/ui';
 import { GroupStatusBadge } from '@/components/domain';
 import { useRounds } from '@/features/groups/queries';
 import { useAuth } from '@/hooks/useAuth';
@@ -222,7 +222,10 @@ export function AdminHome() {
                         )}
                       >
                         <span className="flex items-start justify-between gap-2">
-                          <span className="truncate font-bold text-ink">{group.name}</span>
+                          <span className="flex min-w-0 items-center gap-2">
+                            <GroupPhoto name={group.name} src={group.photoUrl} size="sm" />
+                            <span className="truncate font-bold text-ink">{group.name}</span>
+                          </span>
                           <GroupStatusBadge status={group.status} />
                         </span>
                         <span className="text-small text-muted">

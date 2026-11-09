@@ -19,6 +19,7 @@ import {
   toOptionalNumber,
   TURN_UNIT,
 } from '../create/formUtils';
+import { GroupPhotoPicker } from '../components/GroupPhotoPicker';
 
 export function SettingsTab({ overview }: { overview: GroupOverview }) {
   const { group } = overview;
@@ -68,6 +69,12 @@ export function SettingsTab({ overview }: { overview: GroupOverview }) {
       ),
     success: 'Réglages enregistrés',
   });
+  // Photo : enregistrée dès qu'elle est choisie ou retirée, sans toucher au reste.
+  const savePhoto = useAction({
+    action: (photoUrl: string | undefined) => groupService.update(group.id, { photoUrl }),
+    success: (updated: { photoUrl?: string }) =>
+      updated.photoUrl ? 'Photo du groupe enregistrée' : 'Photo du groupe retirée',
+  });
   const regenerate = useAction({
     action: () => groupService.regenerateInviteCode(group.id),
     success: (code: string) => `Nouveau code : ${code}`,
@@ -82,6 +89,15 @@ export function SettingsTab({ overview }: { overview: GroupOverview }) {
 
   return (
     <div className="flex flex-col gap-3">
+      <Card className="flex flex-col gap-3">
+        <CardTitle>Photo du groupe</CardTitle>
+        <GroupPhotoPicker
+          name={group.name}
+          value={savePhoto.isPending ? savePhoto.variables : group.photoUrl}
+          disabled={savePhoto.isPending}
+          onChange={(photoUrl) => savePhoto.mutate(photoUrl)}
+        />
+      </Card>
       <Card>
         <form
           onSubmit={handleSubmit((values) => save.mutate(values))}

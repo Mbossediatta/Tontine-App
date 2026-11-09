@@ -197,6 +197,8 @@ export interface CreateGroupInput {
   joinPolicy?: 'invite' | 'community';
   name: string;
   description?: string;
+  /** Photo ou logo du groupe, facultatif ; absent dans une modification : inchangé. */
+  photoUrl?: string;
   contributionAmount: number;
   turnLength: number;
   sharesPerRound?: number;

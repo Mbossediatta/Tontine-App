@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { AmountText } from '@/components/domain';
 import { OnlineButton } from '@/components/layout/OnlineButton';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { AsyncContent, Card, CardTitle, EmptyState } from '@/components/ui';
+import { AsyncContent, Card, CardTitle, EmptyState, GroupPhoto } from '@/components/ui';
 import { ServiceError } from '@/lib/errors';
 import { groupContributionLabel } from '@/lib/format';
 import { useAction } from '@/lib/query';
@@ -56,12 +56,17 @@ export default function JoinPage() {
         }) => (
           <div className="flex flex-col gap-3">
             <Card className="flex flex-col gap-3">
-              <CardTitle>{group.name}</CardTitle>
-              {communityName ? (
-                <p className="text-label font-semibold text-blue-700">
-                  Communauté · {communityName}
-                </p>
-              ) : null}
+              <div className="flex items-center gap-3">
+                <GroupPhoto name={group.name} src={group.photoUrl} size="lg" />
+                <div className="min-w-0">
+                  <CardTitle>{group.name}</CardTitle>
+                  {communityName ? (
+                    <p className="text-label font-semibold text-blue-700">
+                      Communauté · {communityName}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
               {group.description ? <p className="text-muted">{group.description}</p> : null}
               <dl className="grid grid-cols-2 gap-3 text-label">
                 <div>

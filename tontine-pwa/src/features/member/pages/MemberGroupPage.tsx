@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { GroupPhoto } from '@/components/ui';
 import { useDebts, useGroup, useMembers, useRounds, useSwaps } from '@/features/groups/queries';
 import { SwapList } from '@/features/groups/SwapList';
 import { SwapRequestDialog } from '@/features/groups/SwapRequestDialog';
@@ -295,7 +296,12 @@ export default function MemberGroupPage() {
           Mes groupes
         </Link>
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <GroupPhoto
+            name={overview.group.name}
+            src={overview.group.photoUrl}
+            className="lg:h-14 lg:w-14"
+          />
+          <div className="min-w-0 flex-1">
             <h1 className="text-[18px] font-bold leading-6">{overview.group.name}</h1>
             <p className="text-[13px] text-slate-600">
               {contributionLabel(overview.group.contributionAmount, overview.group.frequency)}

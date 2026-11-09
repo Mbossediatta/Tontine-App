@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { GroupPhoto } from '@/components/ui';
 import { JoinGroupDialog } from '@/features/groups/JoinGroupDialog';
 import { useDiscoverableGroups, useMyGroups } from '@/features/groups/queries';
 import { cn } from '@/lib/cn';
@@ -33,6 +34,7 @@ function GroupRow({ overview }: { overview: GroupOverview }) {
         to={`/groupes/${group.id}`}
         className="flex min-h-[64px] items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-slate-50 active:bg-slate-100"
       >
+        <GroupPhoto name={group.name} src={group.photoUrl} size="sm" />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-semibold">{group.name}</span>
           {/* Deux lignes courtes : elles ne se coupent pas au milieu sur téléphone. */}
@@ -239,13 +241,16 @@ function OpenGroupCard({
   return (
     <li>
       <Card className="flex flex-col gap-3">
-        <div className="min-w-0">
-          <h3 className="truncate text-[15px] font-semibold">{group.name}</h3>
-          <p className="text-[13px] text-slate-600">
-            {overview.communityName ?? 'Ta communauté'} ·{' '}
-            {contributionLabel(group.contributionAmount, group.frequency)} ·{' '}
-            {plural(Math.max(0, group.maxMembers - overview.activeShareCount), 'place disponible')}
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <GroupPhoto name={group.name} src={group.photoUrl} />
+          <div className="min-w-0">
+            <h3 className="truncate text-[15px] font-semibold">{group.name}</h3>
+            <p className="text-[13px] text-slate-600">
+              {overview.communityName ?? 'Ta communauté'} ·{' '}
+              {contributionLabel(group.contributionAmount, group.frequency)} ·{' '}
+              {plural(Math.max(0, group.maxMembers - overview.activeShareCount), 'place disponible')}
+            </p>
+          </div>
         </div>
         {group.description ? (
           <p className="text-[13px] text-slate-600">{group.description}</p>

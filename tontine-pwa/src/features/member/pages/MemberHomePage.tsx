@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Bell, Plus } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { GroupPhoto } from '@/components/ui';
 import { JoinGroupDialog } from '@/features/groups/JoinGroupDialog';
 import { useMyGroups } from '@/features/groups/queries';
 import { useUnreadCount } from '@/features/notifications/queries';
@@ -139,6 +140,7 @@ function MonthStatusList({ groups }: { groups: GroupOverview[] }) {
                 to={`/groupes/${group.id}`}
                 className="flex min-h-[56px] items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-slate-50 active:bg-slate-100"
               >
+                <GroupPhoto name={group.name} src={group.photoUrl} size="sm" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[15px] font-semibold">{group.name}</span>
                   <span className="block text-[13px] text-slate-600">
