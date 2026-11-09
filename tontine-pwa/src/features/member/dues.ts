@@ -85,5 +85,7 @@ export function periodLabel(
 
 /** Ce que je recevrai à mon tour : ma part si le tour a plusieurs bénéficiaires. */
 export function myPayoutAmount(round: Round, userId: string): number {
-  return round.beneficiaryAmounts?.[userId] ?? round.potAmount;
+  // Montant réel une fois la cagnotte versée ; avant (il vaut 0 en base), la part prévue.
+  const paid = round.beneficiaryAmounts?.[userId];
+  return round.status === 'paid_out' && paid ? paid : round.potAmount;
 }

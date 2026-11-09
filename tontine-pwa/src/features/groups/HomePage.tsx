@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Plus, Users } from 'lucide-react';
+import { Bell, ChevronRight, Plus, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { UnreadCount } from '@/components/layout/UnreadDot';
 import { Button, Card, CardTitle, EmptyState, ErrorState, PageSkeleton } from '@/components/ui';
@@ -9,7 +9,9 @@ import { useAdminDashboard } from '@/features/admin/queries';
 import { PushPromptCard } from '@/features/notifications/PushPromptCard';
 import { useUnreadCount } from '@/features/notifications/queries';
 import { useCurrentUser } from '@/hooks/useAuth';
-import { formatMonth } from '@/lib/format';
+import { StatusBadge } from '@/components/domain';
+import { formatMonth, groupContributionLabel } from '@/lib/format';
+import type { GroupOverview } from '@/types';
 import { JoinGroupDialog } from './JoinGroupDialog';
 import { DueList, NextTurnCard, SummaryCard } from './HomeSections';
 import { useMyGroups } from './queries';
@@ -34,6 +36,46 @@ function GroupsToJoin() {
           <li key={group.id} className="flex items-center justify-between gap-3 py-2">
             <span className="min-w-0 truncate font-bold text-ink">{group.name}</span>
             <ParticipateButton groupId={group.id} />
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+/**
+ * Les groupes où l'on cotise, comme sur l'accueil d'un membre : un appui ouvre le groupe
+ * (cagnotte, calendrier, membres). Les groupes archivés n'y figurent pas.
+ */
+function MyGroupsCard({ groups }: { groups: GroupOverview[] }) {
+  const current = groups.filter(({ group }) => !group.archivedAt);
+  if (current.length === 0) return null;
+  return (
+    <Card className="flex flex-col gap-2">
+      <CardTitle>Mes groupes</CardTitle>
+      <ul className="flex flex-col divide-y divide-line">
+        {current.map(({ group, myStatus, currentRound, totalRounds }) => (
+          <li key={group.id}>
+            <Link
+              to={`/groupes/${group.id}`}
+              className="flex min-h-touch items-center gap-3 py-3 hover:bg-blue-50"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-bold text-ink">{group.name}</span>
+                <span className="block text-label text-muted">
+                  {groupContributionLabel(group)}
+                  {currentRound ? ` · tour ${currentRound.number} sur ${totalRounds}` : ''}
+                </span>
+              </span>
+              {myStatus ? (
+                <StatusBadge status={myStatus} />
+              ) : (
+                <span className="shrink-0 text-label text-muted">
+                  {group.status === 'draft' ? 'Pas commencé' : 'Terminé'}
+                </span>
+              )}
+              <ChevronRight className="h-5 w-5 shrink-0 text-muted" aria-hidden="true" />
+            </Link>
           </li>
         ))}
       </ul>
@@ -99,6 +141,7 @@ export default function HomePage() {
       ) : (
         <>
           <SummaryCard groups={groups} />
+          <MyGroupsCard groups={groups} />
           <DueList groups={groups} />
           <NextTurnCard groups={groups} />
           <Button

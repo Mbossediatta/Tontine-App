@@ -4,6 +4,8 @@ import {
   contributionPerTurn,
   formatCycleDuration,
   formatPeriods,
+  payoutPerShare,
+  personPayout,
   roundOpenDate,
 } from './tontine';
 
@@ -76,5 +78,21 @@ describe('calendrier', () => {
     expect(computeDueDate(new Date(2026, 2, 1), 'monthly', 5, 2)).toEqual(new Date(2026, 3, 5));
     // Tours de 3 semaines : limite le lundi de la 3e semaine.
     expect(computeDueDate(start, 'weekly', 1, 3)).toEqual(new Date(2026, 0, 19));
+  });
+});
+
+describe('plusieurs parts par tour', () => {
+  it('partage la cagnotte à parts égales', () => {
+    expect(payoutPerShare(90000, 2)).toBe(45000);
+    expect(payoutPerShare(90000, undefined)).toBe(90000);
+  });
+
+  it('donne à chacun ses parts, le reste de la division aux premières parts', () => {
+    // 10 001 FCFA pour deux parts : 5 001 pour la première, 5 000 pour la seconde.
+    expect(personPayout(10001, ['a', 'b'], new Set(['a']))).toBe(5001);
+    expect(personPayout(10001, ['a', 'b'], new Set(['b']))).toBe(5000);
+    // Deux parts du même tour pour la même personne : toute la cagnotte.
+    expect(personPayout(90000, ['a', 'b'], new Set(['a', 'b']))).toBe(90000);
+    expect(personPayout(90000, ['a', 'b'], new Set())).toBe(0);
   });
 });

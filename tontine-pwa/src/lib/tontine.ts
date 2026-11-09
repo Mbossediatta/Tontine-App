@@ -9,6 +9,33 @@ export function computePot(contributionAmount: number, memberCount: number): num
   return Math.round(contributionAmount) * Math.round(memberCount);
 }
 
+/**
+ * Plusieurs parts par tour : la cagnotte se partage à parts égales entre les parts
+ * bénéficiaires. Montant d'une part (arrondi au franc inférieur ; le reste éventuel va
+ * aux premières parts, voir personPayout).
+ */
+export function payoutPerShare(potAmount: number, sharesPerRound: number | undefined): number {
+  return Math.floor(potAmount / Math.max(1, sharesPerRound ?? 1));
+}
+
+/**
+ * Ce que reçoit une personne sur un tour, avant versement : ses parts (`mine`, ids
+ * d'adhésion) parmi celles du tour (`order`, dans l'ordre du tour). Le reste de la division
+ * revient aux premières parts, comme au versement.
+ */
+export function personPayout(
+  potAmount: number,
+  order: string[],
+  mine: ReadonlySet<string>,
+): number {
+  const share = payoutPerShare(potAmount, order.length);
+  const remainder = potAmount - share * Math.max(1, order.length);
+  return order.reduce(
+    (sum, id, index) => (mine.has(id) ? sum + share + (index < remainder ? 1 : 0) : sum),
+    0,
+  );
+}
+
 /** Durée maximale d'un tour : un an (365 jours, 52 semaines, 26 quinzaines), deux ans en mensuel. */
 export const MAX_TURN_LENGTH: Record<Frequency, number> = {
   daily: 365,

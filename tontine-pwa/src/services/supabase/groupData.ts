@@ -1,7 +1,7 @@
 // Lecture des groupes dans la base (tables filtrées par RLS) et construction des vues
 // GroupOverview et MemberView, avec les mêmes calculs que services/mock/views.ts.
 import { supabase } from '@/lib/supabase';
-import { computePot, contributionPerTurn, serviceFee } from '@/lib/tontine';
+import { computePot, contributionPerTurn, personPayout, serviceFee } from '@/lib/tontine';
 import type {
   Group,
   GroupOverview,
@@ -550,8 +550,17 @@ export function buildOverview(ctx: GroupContext, group: Group): GroupOverview {
       round.recipientType !== 'platform' &&
       (round.beneficiaryMembershipIds?.some((id) => myMembershipIds.has(id)) ?? false),
   );
+  // Ma part de la cagnotte (plusieurs parts par tour : partage à parts égales). La base
+  // ne fixe le montant de chaque bénéficiaire qu'au versement : avant, il vaut 0.
   const myTurnForUser = myTurn
-    ? { ...myTurn, potAmount: myTurn.beneficiaryAmounts?.[viewerId] ?? myTurn.potAmount }
+    ? {
+        ...myTurn,
+        potAmount: personPayout(
+          myTurn.potAmount,
+          myTurn.beneficiaryMembershipIds ?? [],
+          myMembershipIds,
+        ),
+      }
     : undefined;
   const currentBeneficiaries =
     current && current.recipientType !== 'platform'

@@ -56,7 +56,7 @@ export function RoundTimeline({ rounds, myUserId, renderAction }: RoundTimelineP
                 <p className="text-label text-muted">
                   {round.recipientType === 'platform'
                     ? 'Période réservée au Superadmin'
-                    : mine
+                    : mine && view.beneficiaryShares.length <= 1
                       ? 'Vous'
                       : view.beneficiaries.length > 1
                         ? view.beneficiaries.map(fullName).join(' · ')
@@ -65,9 +65,25 @@ export function RoundTimeline({ rounds, myUserId, renderAction }: RoundTimelineP
                     ? ` · part ${round.beneficiaryShareNumber}`
                     : ''}{' '}
                   {round.recipientType !== 'platform' || round.potAmount > 0 ? (
-                    <> · <AmountText value={round.potAmount} /></>
+                    <>
+                      {' '}
+                      · <AmountText value={round.potAmount} />
+                    </>
                   ) : null}
                 </p>
+                {/* Plusieurs bénéficiaires : ce que chacun reçoit (une personne qui a deux
+                    parts du tour reçoit deux parts). */}
+                {round.recipientType !== 'platform' && view.beneficiaryShares.length > 1 ? (
+                  <ul className="mt-1 flex flex-col gap-0.5 text-label text-ink">
+                    {view.beneficiaryShares.map((share) => (
+                      <li key={share.user.id}>
+                        {share.user.id === myUserId ? 'Vous' : fullName(share.user)}
+                        {share.shareCount > 1 ? ` (${share.shareCount} parts)` : ''} :{' '}
+                        <AmountText value={share.amount} className="font-bold" />
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
               <div className="flex flex-wrap gap-2">
                 {mine ? <StatusBadge status="my_turn" /> : null}

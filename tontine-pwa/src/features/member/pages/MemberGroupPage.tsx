@@ -6,6 +6,7 @@ import { SwapList } from '@/features/groups/SwapList';
 import { SwapRequestDialog } from '@/features/groups/SwapRequestDialog';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { cn } from '@/lib/cn';
+import { payoutPerShare } from '@/lib/tontine';
 import { contributionLabel, frequencyLabel, fullName, initials, plural } from '@/lib/format';
 import type { GroupOverview, MemberView, RoundView } from '@/types';
 import { DebtCard } from '../components/DebtCard';
@@ -38,6 +39,19 @@ function GroupFacts({ overview, admins }: { overview: GroupOverview; admins: str
       'Cagnotte par tour',
       <AmountDisplay key="p" value={overview.potAmount} className="text-green-700" />,
     ],
+    // Plusieurs parts par tour : la cagnotte se partage, chaque bénéficiaire reçoit une part.
+    ...((group.sharesPerRound ?? 1) > 1
+      ? [
+          [
+            `Chaque bénéficiaire reçoit (${group.sharesPerRound} par tour)`,
+            <AmountDisplay
+              key="s"
+              value={payoutPerShare(overview.potAmount, group.sharesPerRound)}
+              className="text-green-700"
+            />,
+          ] as [string, React.ReactNode],
+        ]
+      : []),
     [
       admins.length > 1 ? 'Administrateurs' : 'Administrateur',
       admins.join(', ') || overview.adminName,
@@ -102,6 +116,8 @@ function PayoutCalendar({
           const past = round.status === 'paid_out';
           const current = round.id === overview.currentRound?.id;
           const mine = view.beneficiaries.some((b) => b.id === userId);
+          // Ma part de la cagnotte de ce tour (plusieurs bénéficiaires : la cagnotte se partage).
+          const myShare = view.beneficiaryShares.find((share) => share.user.id === userId);
           const names =
             round.recipientType === 'platform' ? 'Plateforme' : mine ? 'Toi' : 'Un autre membre';
           const swappable = onSwap && !mine && isSwappable(overview, view);
@@ -129,7 +145,13 @@ function PayoutCalendar({
                   mine && 'font-semibold text-green-800',
                 )}
               >
-                {names}
+                <span>{names}</span>
+                {mine && myShare && round.recipientType !== 'platform' ? (
+                  <>
+                    {' · '}
+                    <AmountDisplay value={myShare.amount} />
+                  </>
+                ) : null}
               </span>
               <span className="shrink-0 text-[13px] text-slate-600">
                 {past ? (

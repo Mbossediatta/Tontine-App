@@ -1,5 +1,5 @@
 // Construction des vues renvoyées par les services simulés.
-import { computePot, contributionPerTurn, serviceFee } from '@/lib/tontine';
+import { computePot, contributionPerTurn, personPayout, serviceFee } from '@/lib/tontine';
 import type { Group, GroupOverview, MemberView, PublicUser, User } from '@/types';
 import { activeMemberships, canManage, membershipOf } from './access';
 import { db, requireUser } from './db';
@@ -59,16 +59,11 @@ export function buildOverview(group: Group, viewer: User): GroupOverview {
             ? myTurn.beneficiaryMembershipIds.includes(item.id)
             : item.userId === myTurn.beneficiaryId,
         );
-        const shareValue = Math.floor(myTurn.potAmount / Math.max(1, recipients.length));
-        const remainder = myTurn.potAmount - shareValue * recipients.length;
         const order = myTurn.beneficiaryMembershipIds ?? recipients.map((item) => item.id);
-        const amount = recipients
-          .filter((item) => item.userId === viewer.id)
-          .reduce((sum, item) => {
-            const index = order.indexOf(item.id);
-            return sum + shareValue + (index >= 0 && index < remainder ? 1 : 0);
-          }, 0);
-        return { ...myTurn, potAmount: amount };
+        const mine = new Set(
+          recipients.filter((item) => item.userId === viewer.id).map((item) => item.id),
+        );
+        return { ...myTurn, potAmount: personPayout(myTurn.potAmount, order, mine) };
       })()
     : undefined;
   const currentBeneficiaries =

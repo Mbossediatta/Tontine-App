@@ -5,7 +5,7 @@ import { AmountText } from '@/components/domain';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { AsyncContent, Tabs, type TabItem } from '@/components/ui';
 import { groupContributionLabel } from '@/lib/format';
-import { formatCycleDuration, formatPeriods } from '@/lib/tontine';
+import { formatCycleDuration, formatPeriods, payoutPerShare } from '@/lib/tontine';
 import { useGroup } from './queries';
 import { CalendarTab } from './tabs/CalendarTab';
 import { CurrentRoundTab } from './tabs/CurrentRoundTab';
@@ -55,6 +55,17 @@ export default function GroupDetailPage() {
                 ) : (
                   <>
                     Cagnotte : <AmountText value={potAmount} className="font-bold" />
+                    {(group.sharesPerRound ?? 1) > 1 ? (
+                      <>
+                        {' '}
+                        ({group.sharesPerRound} parts de{' '}
+                        <AmountText
+                          value={payoutPerShare(potAmount, group.sharesPerRound)}
+                          className="font-bold"
+                        />
+                        )
+                      </>
+                    ) : null}
                   </>
                 )}
                 {' · '}
