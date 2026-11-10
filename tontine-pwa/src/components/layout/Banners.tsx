@@ -72,7 +72,11 @@ export function UpdateBanner() {
       <span>Une nouvelle version est disponible.</span>
       <button
         type="button"
-        onClick={() => void updateServiceWorker(true)}
+        onClick={() => {
+          void updateServiceWorker(true);
+          // Filet de sécurité : si la page ne s'est pas rechargée d'elle-même, on recharge.
+          window.setTimeout(() => window.location.reload(), 3000);
+        }}
         className="inline-flex min-h-touch items-center gap-1 rounded-control bg-white px-3 font-semibold text-blue-700"
       >
         <RefreshCw className="h-4 w-4" aria-hidden="true" />

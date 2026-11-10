@@ -52,6 +52,12 @@ self.addEventListener('message', (event) => {
   }
 });
 
+// La nouvelle version prend la main tout de suite sur les pages ouvertes : sans ça, le
+// bouton « Mettre à jour » attendait un changement qui n'arrivait jamais (rien ne se passait).
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 interface PushPayload {
   title?: string;
   body?: string;
