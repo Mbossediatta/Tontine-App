@@ -47,6 +47,19 @@ export async function payTechKeys(): Promise<Keys | null> {
 }
 
 /**
+ * Clés PayTech d'une organisation (son propre compte marchand : l'argent de ses militants
+ * ne passe jamais par le compte de Calebasse) : PAYTECH_API_KEY_<SIGLE> et
+ * PAYTECH_API_SECRET_<SIGLE>, ex. PAYTECH_API_KEY_AFP. Absentes : paiement en ligne fermé
+ * (simulation en local).
+ */
+export function orgPayTechKeys(shortName: string): Keys | null {
+  const suffix = shortName.toUpperCase();
+  const apiKey = Deno.env.get(`PAYTECH_API_KEY_${suffix}`)?.trim() ?? '';
+  const apiSecret = Deno.env.get(`PAYTECH_API_SECRET_${suffix}`)?.trim() ?? '';
+  return apiKey && apiSecret ? { apiKey, apiSecret } : null;
+}
+
+/**
  * Sans clés, en local seulement : le paiement passe par la page simulée de l'appli
  * (payments-simulate), pour tester tout le circuit avant l'ouverture du compte PayTech.
  */
@@ -78,8 +91,9 @@ export interface PaymentRequest {
 /** Demande un paiement ; renvoie le jeton et l'adresse de la page PayTech. */
 export async function requestPayment(
   request: PaymentRequest,
+  ownKeys?: Keys | null,
 ): Promise<{ token: string; redirectUrl: string }> {
-  const keys = await payTechKeys();
+  const keys = ownKeys === undefined ? await payTechKeys() : ownKeys;
   if (!keys) {
     throw new AppError(
       'Le paiement en ligne n’est pas encore activé. Payez en espèces auprès de votre administrateur.',
@@ -140,8 +154,11 @@ export async function readIpn(req: Request): Promise<IpnFields> {
  * message : montant|ref_command|clé API) si elle est fournie ; sinon empreintes SHA-256
  * de nos deux clés. Comparaisons en temps constant.
  */
-export async function ipnIsAuthentic(fields: IpnFields): Promise<boolean> {
-  const keys = await payTechKeys();
+export async function ipnIsAuthentic(
+  fields: IpnFields,
+  ownKeys?: Keys | null,
+): Promise<boolean> {
+  const keys = ownKeys === undefined ? await payTechKeys() : ownKeys;
   if (!keys) return false;
   if (fields.hmac_compute) {
     const amount = fields.final_item_price || fields.item_price || '';

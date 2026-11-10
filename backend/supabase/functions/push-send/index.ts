@@ -37,7 +37,7 @@ serve(async (req) => {
   const notification = check(
     await admin()
       .from('notifications')
-      .select('user_id, type, title, body, link, profiles (notification_prefs, deleted_at)')
+      .select('user_id, type, title, body, link, app, profiles (notification_prefs, deleted_at)')
       .eq('id', notificationId)
       .maybeSingle(),
   ) as {
@@ -46,6 +46,7 @@ serve(async (req) => {
     title: string;
     body: string;
     link: string | null;
+    app: string;
     profiles: { notification_prefs: Record<string, boolean> | null; deleted_at: string | null };
   } | null;
   if (!notification || notification.profiles.deleted_at) return { sent: 0 };
@@ -58,7 +59,9 @@ serve(async (req) => {
     await admin()
       .from('push_subscriptions')
       .select('id, endpoint, p256dh, auth')
-      .eq('user_id', notification.user_id),
+      .eq('user_id', notification.user_id)
+      // Calebasse ou appli d'une organisation : seulement les téléphones où elle est installée.
+      .eq('app', notification.app),
   ) as Subscription[];
   const payload = JSON.stringify({
     title: notification.title,

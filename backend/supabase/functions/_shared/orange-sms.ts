@@ -27,10 +27,10 @@ export function isLocal(): boolean {
   return ['kong', 'localhost', '127.0.0.1', 'host.docker.internal'].includes(host);
 }
 
-async function sendWithOrange(phone: string, text: string): Promise<void> {
+async function sendWithOrange(phone: string, text: string, sender?: string): Promise<void> {
   const token = requireEnv('ORANGE_TOKEN');
   const subject = requireEnv('ORANGE_SUBJECT');
-  const signature = requireEnv('ORANGE_SIGNATURE');
+  const signature = sender ?? requireEnv('ORANGE_SIGNATURE');
   const recipient = `+221${phone}`;
   const timestamp = String(Math.floor(Date.now() / 1000));
   const key = await hmacSha1Hex(
@@ -53,13 +53,18 @@ async function sendWithOrange(phone: string, text: string): Promise<void> {
   }
 }
 
-/** Envoie un SMS au numéro (9 chiffres) et le note dans sms_log pour le suivi des coûts. */
-export async function sendSms(phone: string, text: string, kind: SmsKind, userId?: string): Promise<void> {
+/**
+ * Envoie un SMS au numéro (9 chiffres) et le note dans sms_log pour le suivi des coûts.
+ * `sender` : signature (expéditeur) d'une organisation, ex. « AFP » ; sinon ORANGE_SIGNATURE.
+ */
+export async function sendSms(
+  phone: string, text: string, kind: SmsKind, userId?: string, sender?: string,
+): Promise<void> {
   if (Deno.env.get('SMS_MODE') === 'console') {
     if (!isLocal()) throw new Error('SMS_MODE=console est réservé au développement local');
     console.log(`[SMS local] ${phone} : ${text}`);
   } else {
-    await sendWithOrange(phone, text);
+    await sendWithOrange(phone, text, sender);
   }
   const settings = check(await admin().from('platform_settings').select('sms').single()) as {
     sms: { costPerSms: number };
@@ -69,4 +74,9 @@ export async function sendSms(phone: string, text: string, kind: SmsKind, userId
       phone, kind, cost: settings.sms.costPerSms ?? 0, user_id: userId ?? null,
     }),
   );
+}
+
+/** Signature SMS d'une organisation : ORANGE_SIGNATURE_<SIGLE> (ex. ORANGE_SIGNATURE_AFP). */
+export function orgSender(shortName: string): string | undefined {
+  return Deno.env.get(`ORANGE_SIGNATURE_${shortName.toUpperCase()}`) || undefined;
 }
