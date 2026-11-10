@@ -84,7 +84,7 @@ export default function OrganizationsPage() {
                       <div className="flex min-w-0 items-center gap-3">
                         <OrgLogo
                           name={organization.shortName}
-                          src={organization.logoUrl}
+                          src={organization.logoUrl ?? undefined}
                           size="lg"
                         />
                         <div className="min-w-0">
