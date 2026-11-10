@@ -268,6 +268,8 @@ export type AuditAction =
   | 'pin_reset'
   | 'member_blocked'
   | 'member_unblocked'
+  | 'member_updated'
+  | 'member_deleted'
   | 'phone_changed'
   | 'member_created'
   | 'payout_blocked'

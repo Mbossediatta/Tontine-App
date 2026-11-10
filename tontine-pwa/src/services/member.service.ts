@@ -13,4 +13,8 @@ export interface MemberService {
   resetPin(userId: string): Promise<void>;
   /** Change le numéro après vérification du code SMS reçu sur le nouveau numéro. */
   changePhone(userId: string, newPhone: string, code: string): Promise<void>;
+  /** Super admin : corriger le prénom et le nom. */
+  update(userId: string, firstName: string, lastName: string): Promise<void>;
+  /** Super admin : supprimer (anonymiser) le compte, avec un motif. */
+  remove(userId: string, reason: string): Promise<void>;
 }

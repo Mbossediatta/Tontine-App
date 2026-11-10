@@ -138,6 +138,34 @@ export const mockMemberService: MemberService = {
     persist();
   },
 
+  async update(userId, firstName, lastName) {
+    const actor = await superAdminAction();
+    const user = requireMember(userId);
+    const first = firstName.trim();
+    const last = lastName.trim();
+    if (first.length < 2 || last.length < 2 || first.length > 40 || last.length > 40) {
+      throw new ServiceError('Prénom et nom : entre 2 et 40 caractères chacun.');
+    }
+    const before = fullName(user);
+    user.firstName = first;
+    user.lastName = last;
+    recordAudit(actor, 'member_updated', `a renommé ${before} en ${first} ${last}`);
+    persist();
+  },
+
+  async remove(userId, reason) {
+    const actor = await superAdminAction();
+    const user = requireMember(userId);
+    if (reason.trim().length < 3) throw new ServiceError('Indiquez le motif de la suppression.');
+    const before = fullName(user);
+    user.firstName = 'Compte';
+    user.lastName = 'supprimé';
+    user.isSuspended = true;
+    user.deletedAt = new Date().toISOString();
+    recordAudit(actor, 'member_deleted', `a supprimé le compte de ${before} : ${reason.trim()}`);
+    persist();
+  },
+
   async unblock(userId) {
     const actor = await superAdminAction();
     const user = requireMember(userId);

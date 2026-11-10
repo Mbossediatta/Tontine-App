@@ -45,6 +45,8 @@ export const auditActions: Record<AuditAction, { label: string; category: AuditC
   member_created: { label: 'Membre ajouté', category: 'members' },
   member_blocked: { label: 'Membre bloqué', category: 'members' },
   member_unblocked: { label: 'Membre débloqué', category: 'members' },
+  member_updated: { label: 'Membre modifié', category: 'members' },
+  member_deleted: { label: 'Compte supprimé', category: 'members' },
   phone_changed: { label: 'Numéro changé', category: 'members' },
   pin_reset: { label: 'PIN réinitialisé', category: 'members' },
   settings_updated: { label: 'Paramètres modifiés', category: 'platform' },

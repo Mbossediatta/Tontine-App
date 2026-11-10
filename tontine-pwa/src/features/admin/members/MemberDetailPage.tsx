@@ -1,5 +1,14 @@
 import { useState, type ReactNode } from 'react';
-import { ChevronRight, KeyRound, Lock, LockOpen, Phone, ShieldCheck } from 'lucide-react';
+import {
+  ChevronRight,
+  KeyRound,
+  Lock,
+  LockOpen,
+  Pencil,
+  Phone,
+  ShieldCheck,
+  Trash2,
+} from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { AmountText, GroupStatusBadge, StatusBadge } from '@/components/domain';
 import { OnlineButton } from '@/components/layout/OnlineButton';
@@ -21,6 +30,7 @@ import { headerLinkClass } from '../components/linkStyles';
 import { StatCard } from '../components/StatCard';
 import { useMemberProfile } from '../queries';
 import { ChangePhoneDialog } from './ChangePhoneDialog';
+import { DeleteMemberDialog, EditMemberDialog } from './MemberEditDialogs';
 
 const ROLE_LABELS: Record<GroupRole, string> = {
   owner: 'Propriétaire',
@@ -87,6 +97,8 @@ export default function MemberDetailPage() {
   const query = useMemberProfile(id);
   const [confirm, setConfirm] = useState<ConfirmKind | null>(null);
   const [changingPhone, setChangingPhone] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [showAllPayments, setShowAllPayments] = useState(false);
 
   const run = useAction({
@@ -289,6 +301,14 @@ export default function MemberDetailPage() {
                 <OnlineButton
                   variant="outline"
                   className="w-full justify-start"
+                  onClick={() => setEditing(true)}
+                  icon={<Pencil className="h-5 w-5" aria-hidden="true" />}
+                >
+                  Modifier le nom
+                </OnlineButton>
+                <OnlineButton
+                  variant="outline"
+                  className="w-full justify-start"
                   onClick={() => setChangingPhone(true)}
                   icon={<Phone className="h-5 w-5" aria-hidden="true" />}
                 >
@@ -330,6 +350,14 @@ export default function MemberDetailPage() {
                     Voir sa fiche administrateur
                   </Link>
                 ) : null}
+                <OnlineButton
+                  variant="ghost"
+                  className="w-full justify-start text-danger"
+                  onClick={() => setDeleting(true)}
+                  icon={<Trash2 className="h-5 w-5" aria-hidden="true" />}
+                >
+                  Supprimer le compte
+                </OnlineButton>
               </Card>
             </div>
 
@@ -338,6 +366,8 @@ export default function MemberDetailPage() {
               open={changingPhone}
               onClose={() => setChangingPhone(false)}
             />
+            <EditMemberDialog user={user} open={editing} onClose={() => setEditing(false)} />
+            <DeleteMemberDialog user={user} open={deleting} onClose={() => setDeleting(false)} />
             <ConfirmDialog
               open={confirm !== null}
               onClose={() => setConfirm(null)}

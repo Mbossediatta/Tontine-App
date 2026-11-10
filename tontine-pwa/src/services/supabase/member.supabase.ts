@@ -166,6 +166,14 @@ export function createSupabaseMemberService(): MemberService {
       requireOnline();
       await rpc('member_block', { p_user: userId });
     },
+    async update(userId, firstName, lastName) {
+      requireOnline();
+      await rpc('member_update', { p_user: userId, p_first_name: firstName, p_last_name: lastName });
+    },
+    async remove(userId, reason) {
+      requireOnline();
+      await rpc('member_delete', { p_user: userId, p_reason: reason });
+    },
 
     async unblock(userId) {
       requireOnline();
