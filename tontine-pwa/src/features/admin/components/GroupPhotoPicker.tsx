@@ -8,6 +8,8 @@ interface GroupPhotoPickerProps {
   name: string;
   value?: string;
   onChange: (photoUrl: string | undefined) => void;
+  label?: string;
+  help?: string;
   disabled?: boolean;
 }
 
@@ -15,7 +17,14 @@ interface GroupPhotoPickerProps {
  * Photo ou logo du groupe, facultatif. Sur téléphone, « Choisir une photo » propose aussi
  * l'appareil photo. L'image est recadrée au carré et compressée (comme la photo de profil).
  */
-export function GroupPhotoPicker({ name, value, onChange, disabled }: GroupPhotoPickerProps) {
+export function GroupPhotoPicker({
+  name,
+  value,
+  onChange,
+  disabled,
+  label = 'Photo ou logo du groupe (facultatif)',
+  help = 'Visible par les membres du groupe et partout où le groupe apparaît sur la plateforme.',
+}: GroupPhotoPickerProps) {
   const onFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
@@ -29,7 +38,7 @@ export function GroupPhotoPicker({ name, value, onChange, disabled }: GroupPhoto
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-label font-bold text-ink">Photo ou logo du groupe (facultatif)</span>
+      <span className="text-label font-bold text-ink">{label}</span>
       <div className="flex items-center gap-4">
         <GroupPhoto name={name.trim() || '?'} src={value} size="lg" />
         <div className="flex flex-wrap gap-2">
@@ -63,9 +72,7 @@ export function GroupPhotoPicker({ name, value, onChange, disabled }: GroupPhoto
           ) : null}
         </div>
       </div>
-      <span className="text-small text-muted">
-        Visible par les membres du groupe et partout où le groupe apparaît sur la plateforme.
-      </span>
+      <span className="text-small text-muted">{help}</span>
     </div>
   );
 }

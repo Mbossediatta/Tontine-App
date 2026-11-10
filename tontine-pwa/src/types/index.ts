@@ -441,3 +441,4 @@ export interface PlatformSecrets {
 }
 
 export * from './views';
+export * from './organization';

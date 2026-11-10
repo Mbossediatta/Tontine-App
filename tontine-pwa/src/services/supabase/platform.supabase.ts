@@ -51,6 +51,9 @@ interface NotificationRow {
   created_at: string;
 }
 
+/** Notifications de cette appli seulement (même compte possible dans Calebasse et l'AFP). */
+const NOTIFICATION_APP = 'calebasse';
+
 export function createSupabaseNotificationService(): NotificationService {
   return {
     async list(): Promise<AppNotification[]> {
@@ -58,6 +61,7 @@ export function createSupabaseNotificationService(): NotificationService {
         .from('notifications')
         .select('id, user_id, type, title, body, link, read, created_at')
         .eq('user_id', await sessionUserId())
+        .eq('app', NOTIFICATION_APP)
         .order('created_at', { ascending: false })
         .limit(200);
       return rows<NotificationRow>(result).map((row) => ({
@@ -82,6 +86,7 @@ export function createSupabaseNotificationService(): NotificationService {
           .from('notifications')
           .update({ read: true })
           .eq('user_id', await sessionUserId())
+          .eq('app', NOTIFICATION_APP)
           .eq('read', false),
       );
     },
@@ -102,6 +107,7 @@ export function createSupabaseNotificationService(): NotificationService {
           endpoint: subscription.endpoint,
           p256dh: keys.p256dh,
           auth: keys.auth,
+          app: NOTIFICATION_APP,
         }),
       );
     },

@@ -7,4 +7,6 @@ export const env = {
   autoPayout: import.meta.env.VITE_AUTO_PAYOUT === 'true',
   /** Connexion par le backend (code SMS réel, PIN vérifié par le serveur). */
   realAuth: import.meta.env.VITE_AUTH_MODE === 'supabase',
+  /** Adresse de l'appli des organisations (AFP…) : liens d'entrée donnés par le super admin. */
+  orgAppUrl: (import.meta.env.VITE_ORG_APP_URL as string | undefined) ?? 'http://localhost:5174',
 } as const;

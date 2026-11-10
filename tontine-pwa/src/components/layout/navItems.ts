@@ -3,6 +3,7 @@ import {
   ChartColumn,
   CreditCard,
   HandCoins,
+  Landmark,
   History,
   Home,
   LayoutDashboard,
@@ -120,6 +121,8 @@ const SUPER_ADMIN_ITEMS: NavItem[] = [
     primary: true,
   },
   { to: '/admin/versements', label: 'Versements', icon: HandCoins },
+  // Espaces institutionnels (AFP…) : chacun a sa propre appli ; ici, les chiffres globaux.
+  { to: '/admin/organisations', label: 'Organisations', icon: Landmark },
   { to: '/admin/litiges', label: 'Litiges', icon: Scale },
   {
     to: '/admin/annonces',

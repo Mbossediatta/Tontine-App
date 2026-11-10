@@ -9,6 +9,7 @@ import type { GroupService } from './group.service';
 import type { MemberService } from './member.service';
 import type { MembershipService } from './membership.service';
 import type { NotificationService } from './notification.service';
+import type { OrganizationService } from './organization.service';
 import type { PaymentService } from './payment.service';
 import type { ReportService } from './report.service';
 import type { RoundService } from './round.service';
@@ -47,6 +48,7 @@ import {
   createSupabaseFinanceService,
 } from './supabase/finance.supabase';
 import { createSupabaseMemberService } from './supabase/member.supabase';
+import { createSupabaseOrganizationService } from './supabase/organization.supabase';
 import {
   createSupabaseNotificationService,
   createSupabaseReportService,
@@ -113,9 +115,26 @@ export type {
   MemberService,
   MembershipService,
   NotificationService,
+  OrganizationService,
   PaymentService,
   ReportService,
   RoundService,
   SettingsService,
   SwapService,
 };
+
+/**
+ * Organisations (AFP…) : uniquement avec le serveur. En simulation locale, la liste est
+ * vide et toute modification est refusée.
+ */
+const offlineOrganizations = new Proxy({} as OrganizationService, {
+  get: (_target, method) => {
+    if (method === 'list') return () => Promise.resolve([]);
+    if (method === 'collectedByOrganization') return () => Promise.resolve({});
+    return () =>
+      Promise.reject(new Error('Les organisations ne sont disponibles qu’avec le serveur.'));
+  },
+});
+export const organizationService: OrganizationService = env.realAuth
+  ? createSupabaseOrganizationService()
+  : offlineOrganizations;
