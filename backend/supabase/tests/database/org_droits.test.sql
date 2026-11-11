@@ -29,8 +29,11 @@ select public.organization_set_role((select id from ids where k = 'org'), '77000
 -- Par défaut : les droits d'avant.
 select is(jsonb_array_length(public.org_permissions('odr') -> 'actions'), 11,
   'eleven configurable actions are listed');
+reset role;
 select is(private.org_roles_for((select id from ids where k = 'org'), 'expense_pay'),
   array['finance_admin']::public.org_role[], 'by default only the financial admin pays expenses');
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000f2"}', true);
 
 -- Garde-fous.
 select throws_ok(
