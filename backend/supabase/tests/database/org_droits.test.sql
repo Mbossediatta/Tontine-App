@@ -27,8 +27,8 @@ select public.organization_set_role((select id from ids where k = 'org'), '77000
 select public.organization_set_role((select id from ids where k = 'org'), '770000964', 'finance_admin', true);
 
 -- Par défaut : les droits d'avant.
-select is(jsonb_array_length(public.org_permissions('odr') -> 'actions'), 10,
-  'ten configurable actions are listed');
+select is(jsonb_array_length(public.org_permissions('odr') -> 'actions'), 11,
+  'eleven configurable actions are listed');
 select is(private.org_roles_for((select id from ids where k = 'org'), 'expense_pay'),
   array['finance_admin']::public.org_role[], 'by default only the financial admin pays expenses');
 
