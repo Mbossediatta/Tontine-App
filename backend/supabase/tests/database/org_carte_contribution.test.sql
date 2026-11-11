@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(10);
+select plan(12);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000c7', 'card-super@users.calebasse.invalid'),
@@ -59,6 +59,7 @@ where user_id = '00000000-0000-0000-0000-0000000000c9';
 -- Contribution libre au fonds commun.
 insert into ids (k, id) select 'intent', (public.svc_org_contribution_prepare(
   '00000000-0000-0000-0000-0000000000c9', 'oca', 3000, 'orange_money') ->> 'intentId')::uuid;
+select public.svc_org_payment_set_token((select id from ids where k = 'intent'), 'TOK-C1');
 select throws_ok(
   $$ select public.svc_org_contribution_prepare('00000000-0000-0000-0000-0000000000c9', 'oca', 50, 'wave') $$,
   '22023', null, 'a contribution below 100 FCFA is refused');
@@ -74,6 +75,19 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 set local role authenticated;
 select is((public.my_org_contributions('oca') -> 0 ->> 'amount')::int, 3000,
   'the member sees her contribution in her history');
+reset role;
+
+-- Mode test PayTech : le paiement réussit chez PayTech mais n'est jamais comptabilisé.
+insert into ids (k, id) select 'intent_test', (public.svc_org_contribution_prepare(
+  '00000000-0000-0000-0000-0000000000c9', 'oca', 5000, 'wave') ->> 'intentId')::uuid;
+select public.svc_org_payment_set_token((select id from ids where k = 'intent_test'), 'TOK-T1', true);
+select is(
+  public.svc_org_payment_confirm((select id from ids where k = 'intent_test'),
+    (select amount + service_fee from public.org_payment_intents where id = (select id from ids where k = 'intent_test')),
+    'TOK-T1', null),
+  'test', 'a PayTech test-mode payment is acknowledged as a test');
+select is(private.account_balance((select id from ids where k = 'org'), 'common')::int, 3000,
+  'a test-mode payment is never counted');
 
 select * from finish();
 rollback;

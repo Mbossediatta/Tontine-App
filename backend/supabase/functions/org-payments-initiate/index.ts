@@ -62,13 +62,16 @@ serve(async (req) => {
   const ipnUrl = Deno.env.get('ORG_PAYTECH_IPN_URL') ??
     `${requireEnv('SUPABASE_URL').replace(/\/$/, '')}/functions/v1/org-payments-ipn`;
   const label = `${prepared.shortName} – ${prepared.fundName} (${prepared.structureName})`.slice(0, 120);
+  // Mode test : PayTech ne débite que 100 à 150 FCFA, le paiement ne sera donc jamais
+  // comptabilisé (voir svc_org_payment_confirm).
+  const env = payTechEnv(prepared.mode);
   const { token, redirectUrl } = await requestPayment(
     {
       itemName: label,
       itemPrice: prepared.total,
       refCommand: prepared.intentId,
       commandName: label,
-      env: payTechEnv(prepared.mode),
+      env,
       ipnUrl,
       successUrl: `${appUrl}/paiement/retour?intent=${intent}`,
       cancelUrl: `${appUrl}/paiement/retour?intent=${intent}&annule=1`,
@@ -77,6 +80,12 @@ serve(async (req) => {
     },
     keys,
   );
-  check(await admin().rpc('svc_org_payment_set_token', { p_intent: prepared.intentId, p_token: token }));
+  check(
+    await admin().rpc('svc_org_payment_set_token', {
+      p_intent: prepared.intentId,
+      p_token: token,
+      p_test: env === 'test',
+    }),
+  );
   return { intentId: prepared.intentId, checkoutUrl: redirectUrl };
 });

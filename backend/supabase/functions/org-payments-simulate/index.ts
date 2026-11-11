@@ -25,11 +25,21 @@ serve(async (req) => {
     );
   }
   if (body.success === true) {
+    // Comme PayTech : un jeton est d'abord attribué au paiement, puis la confirmation
+    // doit porter ce même jeton. La simulation vaut un paiement réel (pas un test).
+    const token = `SIM-${crypto.randomUUID()}`;
+    check(
+      await admin().rpc('svc_org_payment_set_token', {
+        p_intent: intentId,
+        p_token: token,
+        p_test: false,
+      }),
+    );
     const result = check(
       await admin().rpc('svc_org_payment_confirm', {
         p_intent: intentId,
         p_charged: intent.amount + intent.serviceFee,
-        p_provider_ref: `SIM-${crypto.randomUUID()}`,
+        p_provider_ref: token,
         p_phone: profile.phone,
       }),
     ) as string;
