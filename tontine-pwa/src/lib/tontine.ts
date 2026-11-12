@@ -19,6 +19,28 @@ export function payoutPerShare(potAmount: number, sharesPerRound: number | undef
 }
 
 /**
+ * Les parts du groupe doivent tomber juste en lots de `sharesPerRound` : sinon le dernier
+ * tour a moins de bénéficiaires et chacun y touche une cagnotte plus grosse que les autres,
+ * pour la même cotisation. Renvoie le message d'erreur, ou null si tout va bien.
+ * Même règle côté serveur (private.check_even_shares).
+ */
+export function unevenSharesMessage(
+  maxMembers: number,
+  sharesPerRound: number | undefined,
+): string | null {
+  const perRound = Math.max(1, sharesPerRound ?? 1);
+  if (!Number.isFinite(maxMembers) || maxMembers < perRound) return null;
+  if (maxMembers % perRound === 0) return null;
+  const lower = Math.floor(maxMembers / perRound) * perRound;
+  const upper = lower + perRound;
+  return (
+    `Avec ${perRound} parts par tour, le nombre total de parts doit être un multiple de ` +
+    `${perRound} (${lower} ou ${upper}) : sinon le dernier tour aurait moins de ` +
+    'bénéficiaires et chacun y recevrait plus que les autres pour la même cotisation.'
+  );
+}
+
+/**
  * Ce que reçoit une personne sur un tour, avant versement : ses parts (`mine`, ids
  * d'adhésion) parmi celles du tour (`order`, dans l'ordre du tour). Le reste de la division
  * revient aux premières parts, comme au versement.

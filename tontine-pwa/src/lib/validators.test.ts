@@ -25,6 +25,22 @@ const validGroup: CreateGroupValues = {
   joinPolicy: 'invite',
 };
 
+describe('createGroupSchema : parts en lots complets', () => {
+  it('refuse 5 parts avec 2 parts par tour', () => {
+    const result = createGroupSchema.safeParse({ ...validGroup, maxMembers: 5, sharesPerRound: 2 });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.find((i) => i.path[0] === 'maxMembers')?.message).toContain(
+      'multiple de 2 (4 ou 6)',
+    );
+  });
+
+  it('accepte 6 parts avec 2 parts par tour', () => {
+    expect(
+      createGroupSchema.safeParse({ ...validGroup, maxMembers: 6, sharesPerRound: 2 }).success,
+    ).toBe(true);
+  });
+});
+
 describe('phoneSchema', () => {
   it('accepte 9 chiffres commençant par 7', () => {
     for (const phone of ['771234567', '781234567', '761234567', '701234567']) {
