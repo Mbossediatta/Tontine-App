@@ -1,6 +1,7 @@
 import { startOfDay } from 'date-fns';
 import { ServiceError } from '@/lib/errors';
 import { formatAmount, fullName } from '@/lib/format';
+import { unevenSharesMessage } from '@/lib/tontine';
 import type { Group } from '@/types';
 import type { GroupService } from '../group.service';
 import {
@@ -71,6 +72,10 @@ function assertWithinLimits(input: {
     throw new ServiceError(
       'Les parts payées par tour ne peuvent pas dépasser les parts du groupe.',
     );
+  }
+  if (input.maxMembers !== undefined && 'sharesPerRound' in input) {
+    const uneven = unevenSharesMessage(input.maxMembers, input.sharesPerRound);
+    if (uneven) throw new ServiceError(uneven);
   }
 }
 
@@ -234,6 +239,13 @@ export const mockGroupService: GroupService = {
         'Les règles financières et le nombre total de parts sont verrouillés après le démarrage.',
       );
     }
+    if (input.maxMembers !== undefined || input.sharesPerRound !== undefined) {
+      const uneven = unevenSharesMessage(
+        input.maxMembers ?? group.maxMembers,
+        input.sharesPerRound ?? group.sharesPerRound,
+      );
+      if (uneven) throw new ServiceError(uneven);
+    }
     if (input.maxMembers !== undefined && input.maxMembers < activeMemberships(groupId).length) {
       throw new ServiceError('Le groupe compte déjà plus de parts que ce nombre.');
     }
@@ -276,6 +288,8 @@ export const mockGroupService: GroupService = {
         'Toutes les parts doivent être attribuées avant de démarrer le groupe.',
       );
     }
+    const uneven = unevenSharesMessage(group.maxMembers, group.sharesPerRound);
+    if (uneven) throw new ServiceError(uneven);
     if (members.some((m) => m.payoutOrder === undefined)) {
       throw new ServiceError('Fixez d’abord l’ordre des bénéficiaires.');
     }

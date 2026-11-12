@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isWeakPin } from './checks';
-import { MAX_TURN_LENGTH, formatPeriods, maxDueDay } from './tontine';
+import { MAX_TURN_LENGTH, formatPeriods, maxDueDay, unevenSharesMessage } from './tontine';
 import type { Frequency } from '@/types';
 
 // Vérifications simples déplacées dans lib/checks (sans Zod) ; reprises ici pour
@@ -106,6 +106,7 @@ export const createGroupSchema = z
         message: 'Le nombre de parts par tour ne peut pas dépasser les parts du groupe.',
       });
     }
+    checkEvenShares(value, ctx);
     if (value.collectMembershipFee && value.membershipFeeAmount < 1) {
       ctx.addIssue({
         code: 'custom',
@@ -116,6 +117,15 @@ export const createGroupSchema = z
     checkTurnLength(value, ctx);
   });
 export type CreateGroupValues = z.infer<typeof createGroupSchema>;
+
+/** Parts du groupe en lots complets de parts par tour (sinon dernier tour avantagé). */
+function checkEvenShares(
+  value: { maxMembers: number; sharesPerRound: number },
+  ctx: z.RefinementCtx,
+): void {
+  const message = unevenSharesMessage(value.maxMembers, value.sharesPerRound);
+  if (message) ctx.addIssue({ code: 'custom', path: ['maxMembers'], message });
+}
 
 /** Durée d'un tour dans la limite de son rythme (un an, deux ans en mensuel) et jour limite. */
 function checkTurnLength(
@@ -187,7 +197,10 @@ export const groupSettingsSchema = z
       .min(0, 'Montant invalide')
       .optional(),
   })
-  .superRefine(checkTurnLength);
+  .superRefine((value, ctx) => {
+    checkEvenShares(value, ctx);
+    checkTurnLength(value, ctx);
+  });
 export type GroupSettingsValues = z.infer<typeof groupSettingsSchema>;
 
 export const addByPhoneSchema = z.object({
