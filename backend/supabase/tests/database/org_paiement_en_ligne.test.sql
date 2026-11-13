@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(15);
+select plan(16);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000d1', 'pay-super@users.calebasse.invalid'),
@@ -71,12 +71,19 @@ select is(
 
 insert into ids select 'intent', (public.svc_org_payment_prepare('00000000-0000-0000-0000-0000000000d4',
   (select id from ids where k = 'adhesion'), 5000, 'wave') ->> 'intentId')::uuid;
+-- Jeton reçu de PayTech à la création du paiement.
+select public.svc_org_payment_set_token((select id from ids where k = 'intent'), 'TOK-1');
 select is(
   (select count(*)::int from public.org_payments p where p.user_id = '00000000-0000-0000-0000-0000000000d4'),
   0, 'a payment only started is never counted as received');
 select is(
   public.svc_org_payment_confirm((select id from ids where k = 'intent'), 4000, 'TOK-1', null),
   'mismatch', 'a confirmation with the wrong amount is refused');
+select is(
+  public.svc_org_payment_confirm((select id from ids where k = 'intent'),
+    (select amount + service_fee from public.org_payment_intents where id = (select id from ids where k = 'intent')),
+    'TOK-AUTRE', null),
+  'mismatch', 'a genuine notification of another PayTech payment cannot confirm this one');
 select is(
   public.svc_org_payment_confirm((select id from ids where k = 'intent'),
     (select amount + service_fee from public.org_payment_intents where id = (select id from ids where k = 'intent')),

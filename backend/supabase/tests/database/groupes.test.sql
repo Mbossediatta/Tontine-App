@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(41);
+select plan(43);
 
 -- Comptes : super admin, deux admins, trois participants.
 insert into auth.users (id, email) values
@@ -216,6 +216,17 @@ select is(
      'group_community_changed')
      and actor_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000a2')),
   7, 'creations, update and supervision are in the audit log');
+
+
+select is(
+  (select count(*)::int from public.audit_log
+   where action = 'join_requested' and actor_id = '00000000-0000-0000-0000-0000000000b1'),
+  1, 'a participant''s request to join is in the audit log, once');
+select is(
+  (select count(*)::int from public.audit_log
+   where action = 'join_requested'
+     and actor_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000a2')),
+  0, 'a group creator enrolled as owner is not logged as joining');
 
 select * from finish();
 rollback;

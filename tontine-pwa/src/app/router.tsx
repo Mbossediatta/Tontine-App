@@ -76,6 +76,7 @@ const SettingsPage = lazy(() =>
   import('@/features/admin/platform/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
 const OrganizationsPage = lazy(() => import('@/features/admin/organizations/OrganizationsPage'));
+const OrgMembersPage = lazy(() => import('@/features/admin/organizations/OrgMembersPage'));
 const DemoUiPage = lazy(() => import('./DemoUiPage'));
 const NotFoundPage = lazy(() => import('./NotFoundPage'));
 
@@ -177,6 +178,7 @@ export const routes: RouteObject[] = [
               { path: '/admin/transactions', element: <TransactionsPage /> },
               { path: '/admin/versements', element: <PayoutsPage /> },
               { path: '/admin/organisations', element: <OrganizationsPage /> },
+              { path: '/admin/organisations/:id/militants', element: <OrgMembersPage /> },
               { path: '/admin/litiges', element: <DisputesPage /> },
               { path: '/admin/annonces', element: <AnnouncementsPage /> },
               { path: '/admin/rapports', element: <ReportsPage /> },

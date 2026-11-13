@@ -1,6 +1,6 @@
 // Change le PIN de la personne connectée : le PIN actuel est exigé (essais comptés).
 import { assertPinFormat, hashPin } from '../_shared/crypto.ts';
-import { admin, caller, check } from '../_shared/db.ts';
+import { admin, caller, check, recordAudit } from '../_shared/db.ts';
 import { AppError, clientIp, readJson, serve, stringField } from '../_shared/http.ts';
 import { checkPin } from '../_shared/pin.ts';
 
@@ -13,5 +13,6 @@ serve(async (req) => {
   if (currentPin === newPin) throw new AppError('Choisissez un code différent de l’actuel.');
   assertPinFormat(newPin);
   check(await admin().rpc('svc_pin_save', { p_user: profile.id, p_pin_hash: await hashPin(profile.id, newPin) }));
+  await recordAudit({ actorId: profile.id, action: 'pin_changed', summary: 'a changé son PIN' });
   return { ok: true };
 });
