@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(22);
+select plan(26);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000c7', 'card-super@users.calebasse.invalid'),
@@ -160,6 +160,36 @@ select is(jsonb_array_length(public.my_member_card('oca') -> 'structures'), 2,
   'once its membership fee is paid, the structure appears on the card');
 select is(public.my_member_card('oca') -> 'pendingStructures', '[]'::jsonb,
   'nothing is left waiting');
+
+
+-- Journal d'audit : les gestes des membres y figurent aussi.
+reset role;
+select is((select count(*)::int from public.audit_log
+  where actor_id = '00000000-0000-0000-0000-0000000000c9' and action = 'online_payment'), 1,
+  'a member''s online payment is in the audit log (the test-mode one is not)');
+select is((select count(*)::int from public.audit_log
+  where actor_id = '00000000-0000-0000-0000-0000000000c9' and action = 'join_requested'), 0,
+  'a member added by an admin is not logged as a request of her own');
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c8"}', true);
+insert into ids (k, id) select 'struct3', public.structure_save((select id from ids where k = 'org'),
+  null, 'Mouvement des cadres', 'mouvement', null, null, null, null);
+reset role;
+insert into ids (k, t) select 'code3', invite_code from public.org_structures
+where id = (select id from ids where k = 'struct3');
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c9"}', true);
+select public.structure_join((select t from ids where k = 'code3'), 'Dakar', 'Dakar', null, null);
+reset role;
+select is((select summary from public.audit_log
+  where actor_id = '00000000-0000-0000-0000-0000000000c9' and action = 'join_requested'),
+  'a demandé à rejoindre « Mouvement des cadres » (OCA)',
+  'a member''s own request to join a structure is in the audit log');
+
+select is((select summary from public.audit_log
+  where actor_id = '00000000-0000-0000-0000-0000000000c9' and action = 'member_updated'),
+  'a remplacé sa carte de membre (OCA)',
+  'a member replacing her card is in the audit log');
 
 select * from finish();
 rollback;

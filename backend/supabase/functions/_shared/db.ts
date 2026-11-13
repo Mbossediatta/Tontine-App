@@ -146,8 +146,9 @@ export async function openSession(profile: Profile, ip: string | null) {
     ({ data, error } = await client.auth.signInWithPassword(credentials));
   }
   if (error || !data.session) throw new Error(`Ouverture de session impossible : ${error?.message ?? ''}`);
+  // Journal : connexion de tout compte, membres compris.
+  await recordAudit({ actorId: profile.id, action: 'login', summary: 's’est connecté' });
   if (profile.global_role !== 'user') {
-    await recordAudit({ actorId: profile.id, action: 'login', summary: 's’est connecté' });
     await recordSecurityEvent({
       kind: 'admin_login', severity: 'info', detail: 'Connexion d’un administrateur', userId: profile.id, ip,
     });

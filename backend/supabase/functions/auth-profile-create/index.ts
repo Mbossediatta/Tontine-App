@@ -1,6 +1,8 @@
 // Numéro prouvé par SMS et sans compte : crée le compte (le PIN reste à créer).
 import { readProof } from '../_shared/crypto.ts';
-import { admin, createAuthUser, profileByPhone, recordSecurityEvent } from '../_shared/db.ts';
+import {
+  admin, createAuthUser, profileByPhone, recordAudit, recordSecurityEvent,
+} from '../_shared/db.ts';
 import { AppError, clientIp, readJson, serve, stringField } from '../_shared/http.ts';
 
 const NAME = /^[\p{L}\p{M}' .-]{2,40}$/u;
@@ -34,5 +36,6 @@ serve(async (req) => {
     if (error.code === '23505') throw new AppError('Un compte existe déjà avec ce numéro.', 'conflict');
     throw new Error(error.message);
   }
+  await recordAudit({ actorId: id, action: 'signed_up', summary: 'a créé son compte' });
   return { ok: true };
 });
