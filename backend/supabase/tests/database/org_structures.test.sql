@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(22);
 
 -- Super admin, admin général AFP, responsable du département, militante, autre compte.
 insert into auth.users (id, email) values
@@ -140,6 +140,9 @@ select is(
 select ok(
   not (public.organizations_list() -> 0 ? 'members'),
   'the super admin list holds no member file');
+select is(
+  (public.organization_members_page((select id from ids where k = 'org')) ->> 'total')::int, 3,
+  'the super admin can open the member file of an organization');
 
 reset role;
 select is(

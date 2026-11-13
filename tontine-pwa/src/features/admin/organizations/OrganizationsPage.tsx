@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Landmark, Pencil, Plus, UserMinus, UserPlus } from 'lucide-react';
+import { Pencil, Plus, UserMinus, UserPlus, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { OnlineButton } from '@/components/layout/OnlineButton';
 import { PageHeader } from '@/components/layout/PageHeader';
 import {
@@ -28,8 +29,8 @@ import {
 
 /**
  * Rubrique « Organisations » du super admin : créer l'espace d'une institution (AFP…),
- * nommer son administrateur général. Le super admin ne voit que les chiffres globaux :
- * les structures et le fichier des militants sont gérés par l'organisation elle-même.
+ * nommer son administrateur général. Les structures et les cotisations sont gérées par
+ * l'organisation ; le super admin peut consulter le fichier des militants (lecture seule).
  */
 export default function OrganizationsPage() {
   const organizations = useOrganizations();
@@ -175,10 +176,13 @@ export default function OrganizationsPage() {
                         </ul>
                       )}
                     </section>
-                    <p className="text-small text-muted">
-                      <Landmark className="mr-1 inline h-4 w-4" aria-hidden="true" />
-                      Le détail (structures, militants, cotisations) est réservé à l’organisation.
-                    </p>
+                    <Link
+                      to={`/admin/organisations/${organization.id}/militants`}
+                      className="inline-flex min-h-touch items-center gap-2 self-start rounded-control px-2 text-label font-semibold text-blue-700 hover:bg-blue-50"
+                    >
+                      <Users className="h-4 w-4" aria-hidden="true" />
+                      Voir les militants
+                    </Link>
                   </Card>
                 </li>
               ))}
