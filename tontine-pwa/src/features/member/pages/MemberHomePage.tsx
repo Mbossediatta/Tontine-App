@@ -146,9 +146,11 @@ function MonthStatusList({ groups }: { groups: GroupOverview[] }) {
                   <span className="block text-[13px] text-slate-600">
                     {communityName ? `${communityName} · ` : ''}
                     {contributionLabelIn(language, group.contributionAmount, group.frequency)}
-                    {currentRound
-                      ? ` · ${t('home.round', { number: currentRound.number, total: totalRounds })}`
-                      : ''}
+                    {group.kind === 'denthie'
+                      ? ' · Denthie'
+                      : currentRound
+                        ? ` · ${t('home.round', { number: currentRound.number, total: totalRounds })}`
+                        : ''}
                   </span>
                 </span>
                 {myStatus ? (

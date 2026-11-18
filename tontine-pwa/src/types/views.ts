@@ -1,4 +1,5 @@
 // Vues composées renvoyées par les services (données prêtes à afficher).
+import type { DenthieSavings } from '@/lib/denthie';
 import type {
   DisputeKind,
   Debt,
@@ -17,6 +18,7 @@ import type {
   SmsRecord,
   Frequency,
   Group,
+  GroupKind,
   GroupRole,
   Membership,
   MembershipStatus,
@@ -82,6 +84,13 @@ export interface GroupOverview {
   /** Mon tour de bénéficiaire, s'il n'est pas encore reversé. */
   myTurn?: Round;
   orderIsSet: boolean;
+  /**
+   * Denthie seulement : épargne du cycle en cours. Un gestionnaire voit celle de chacun ;
+   * un membre ne voit que la sienne (byUser et total ne portent alors que sur lui).
+   */
+  savings?: DenthieSavings;
+  /** Denthie : mon épargne dans le cycle en cours. */
+  mySaved?: number;
 }
 
 export interface CommunityOverview extends Community {
@@ -193,6 +202,8 @@ export interface JoinPreview {
 }
 
 export interface CreateGroupInput {
+  /** Tontine par défaut. */
+  kind?: GroupKind;
   communityId?: string;
   joinPolicy?: 'invite' | 'community';
   name: string;
@@ -217,7 +228,7 @@ export interface CreateGroupInput {
   adminId?: string;
 }
 
-export type UpdateGroupInput = Partial<Omit<CreateGroupInput, 'communityId' | 'adminId'>>;
+export type UpdateGroupInput = Partial<Omit<CreateGroupInput, 'communityId' | 'adminId' | 'kind'>>;
 
 export interface SaveCommunityInput {
   id?: string;

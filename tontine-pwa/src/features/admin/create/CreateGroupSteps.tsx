@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Dices, ListOrdered, LockKeyhole, UsersRound } from 'lucide-react';
+import { Dices, ListOrdered, LockKeyhole, PiggyBank, Repeat, UsersRound } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { AmountText } from '@/components/domain';
@@ -117,7 +117,7 @@ export function StepInfo() {
       <AdminField communityId={communityId} />
       <Input
         label="Nom du groupe"
-        placeholder="Ex. Tontine Famille"
+        placeholder={watch('kind') === 'denthie' ? 'Ex. Denthie Famille' : 'Ex. Tontine Famille'}
         error={errors.name?.message}
         {...register('name')}
       />
@@ -132,6 +132,72 @@ export function StepInfo() {
         onChange={(photoUrl) => setValue('photoUrl', photoUrl, { shouldDirty: true })}
       />
     </div>
+  );
+}
+
+const KINDS = [
+  {
+    id: 'tontine',
+    title: 'Tontine',
+    text: 'À chaque tour, un membre (ou plusieurs) reçoit la cagnotte, jusqu’à ce que tout le monde l’ait reçue.',
+    icon: Repeat,
+  },
+  {
+    id: 'denthie',
+    title: 'Denthie (garderie)',
+    text: 'Chacun cotise à chaque période, l’argent est gardé, puis à la fin chacun récupère ce qu’il a versé.',
+    icon: PiggyBank,
+  },
+] as const;
+
+/**
+ * Tontine ou Denthie. Passer au Denthie fixe ses règles : pas de durée de tour ni d'ordre
+ * des bénéficiaires, pas de période de service ; pénalité de 250 FCFA par défaut.
+ */
+export function KindField() {
+  const { register, setValue, getValues, watch } = useFormContext<CreateGroupValues>();
+  const value = watch('kind');
+  const registration = register('kind');
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="mb-1 text-label font-bold text-ink">Type de groupe</legend>
+      {KINDS.map(({ id, title, text, icon: Icon }) => (
+        <label
+          key={id}
+          className={cn(
+            'flex cursor-pointer gap-4 rounded-card border-2 bg-white p-4 focus-within:ring-2 focus-within:ring-blue-700',
+            value === id ? 'border-blue-700 bg-blue-100' : 'border-line',
+          )}
+        >
+          <input
+            type="radio"
+            value={id}
+            className="sr-only"
+            {...registration}
+            onChange={(event) => {
+              void registration.onChange(event);
+              if (id === 'denthie') {
+                setValue('turnLength', 1);
+                setValue('sharesPerRound', 1);
+                setValue('reserveFinalTurn', false);
+                setValue('attributionMode', 'manual');
+                if (getValues('frequency') === 'daily') setValue('frequency', 'monthly');
+                if (getValues('latePenalty') === undefined) setValue('latePenalty', 250);
+              } else {
+                setValue('turnLength', 10);
+                setValue('reserveFinalTurn', true);
+                setValue('attributionMode', 'random');
+              }
+            }}
+          />
+          <Icon className="h-7 w-7 shrink-0 text-blue-700" aria-hidden="true" />
+          <span>
+            <span className="block font-semibold text-ink">{title}</span>
+            <span className="text-label text-muted">{text}</span>
+          </span>
+        </label>
+      ))}
+    </fieldset>
   );
 }
 
@@ -176,8 +242,40 @@ export function JoinPolicyField() {
   );
 }
 
-/** Aperçu en direct : cagnotte par tour et durée du cycle. */
+/** Denthie : ce qu'une part épargne, et un exemple sur six périodes. */
+function DenthiePreview() {
+  const { watch } = useFormContext<CreateGroupValues>();
+  const [amount, members, frequency, feeAmount, collectFee] = watch([
+    'contributionAmount',
+    'maxMembers',
+    'frequency',
+    'membershipFeeAmount',
+    'collectMembershipFee',
+  ]);
+  const perPeriod = amount ?? 0;
+  return (
+    <Card tone="pot" className="text-ink" aria-live="polite">
+      Chaque part épargne <AmountText value={perPeriod} className="font-bold" />{' '}
+      {PER_PERIOD[frequency]}. Par exemple, après {formatPeriods(frequency, 6)}, une part aura
+      épargné <AmountText value={perPeriod * 6} className="font-bold" /> et la caisse contiendra{' '}
+      <AmountText value={perPeriod * 6 * (members ?? 0)} className="font-bold" />. La durée n’est
+      pas fixée : vous choisirez la date de répartition plus tard, et les membres seront prévenus.{' '}
+      {collectFee && feeAmount ? (
+        <>
+          Frais d’adhésion : {feeAmount} FCFA par personne (donnent accès au carnet électronique).
+        </>
+      ) : null}
+    </Card>
+  );
+}
+
+/** Aperçu en direct : cagnotte par tour et durée du cycle (ou épargne d'un Denthie). */
 export function LivePreview() {
+  const { watch } = useFormContext<CreateGroupValues>();
+  return watch('kind') === 'denthie' ? <DenthiePreview /> : <TontinePreview />;
+}
+
+function TontinePreview() {
   const { watch } = useFormContext<CreateGroupValues>();
   const [amount, members, frequency, turnLength, sharesPerRound, reserveFinalTurn, feeAmount] =
     watch([
@@ -211,6 +309,7 @@ export function StepRules() {
   } = useFormContext<CreateGroupValues>();
   const numeric = { setValueAs: toOptionalNumber };
   const frequency = watch('frequency');
+  const denthie = watch('kind') === 'denthie';
   return (
     <div className="flex flex-col gap-3">
       <Select
@@ -228,23 +327,29 @@ export function StepRules() {
         error={errors.contributionAmount?.message}
         {...register('contributionAmount', numeric)}
       />
-      <Input
-        label={`Durée d’un tour (en ${TURN_UNIT[frequency]})`}
-        type="number"
-        inputMode="numeric"
-        min={1}
-        max={MAX_TURN_LENGTH[frequency]}
-        hint={
-          frequency === 'monthly'
-            ? 'Par exemple 1 mois, 3 mois, ou 12 mois pour un an.'
-            : `Jusqu’à ${formatPeriods(frequency, MAX_TURN_LENGTH[frequency])}.`
-        }
-        error={errors.turnLength?.message}
-        {...register('turnLength', numeric)}
-      />
+      {denthie ? null : (
+        <Input
+          label={`Durée d’un tour (en ${TURN_UNIT[frequency]})`}
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={MAX_TURN_LENGTH[frequency]}
+          hint={
+            frequency === 'monthly'
+              ? 'Par exemple 1 mois, 3 mois, ou 12 mois pour un an.'
+              : `Jusqu’à ${formatPeriods(frequency, MAX_TURN_LENGTH[frequency])}.`
+          }
+          error={errors.turnLength?.message}
+          {...register('turnLength', numeric)}
+        />
+      )}
       {frequency === 'daily' ? null : (
         <Select
-          label="Jour limite de paiement (dans la dernière période du tour)"
+          label={
+            denthie
+              ? 'Jour limite de paiement de chaque période'
+              : 'Jour limite de paiement (dans la dernière période du tour)'
+          }
           options={dueDayOptions(frequency)}
           error={errors.paymentDueDay?.message}
           {...register('paymentDueDay', numeric)}
@@ -257,22 +362,28 @@ export function StepRules() {
         error={errors.paymentDueTime?.message}
         {...register('paymentDueTime')}
       />
+      {denthie ? null : (
+        <Input
+          label="Parts bénéficiaires payées par tour"
+          type="number"
+          min={1}
+          max={50}
+          hint="La cagnotte de la période est partagée entre les parts sélectionnées."
+          error={errors.sharesPerRound?.message}
+          {...register('sharesPerRound', numeric)}
+        />
+      )}
       <Input
-        label="Parts bénéficiaires payées par tour"
-        type="number"
-        min={1}
-        max={50}
-        hint="La cagnotte de la période est partagée entre les parts sélectionnées."
-        error={errors.sharesPerRound?.message}
-        {...register('sharesPerRound', numeric)}
-      />
-      <Input
-        label="Nombre total de parts"
+        label={denthie ? 'Nombre maximal de parts' : 'Nombre total de parts'}
         type="number"
         inputMode="numeric"
         min={2}
         max={50}
-        hint="Entre 2 et 50 parts. Une personne peut détenir plusieurs parts; au moins deux personnes sont nécessaires."
+        hint={
+          denthie
+            ? 'Entre 2 et 50. Une personne peut prendre plusieurs parts : elle cotise et récupère d’autant plus. Au démarrage, la liste est close : personne ne rejoint en cours de route.'
+            : 'Entre 2 et 50 parts. Une personne peut détenir plusieurs parts; au moins deux personnes sont nécessaires.'
+        }
         error={errors.maxMembers?.message}
         {...register('maxMembers', numeric)}
       />
@@ -283,28 +394,37 @@ export function StepRules() {
         {...register('startDate')}
       />
       <Input
-        label="Pénalité de retard en FCFA (facultatif)"
+        label={denthie ? 'Pénalité de retard en FCFA' : 'Pénalité de retard en FCFA (facultatif)'}
         type="number"
         inputMode="numeric"
         min={0}
+        hint={
+          denthie
+            ? 'Une seule fois par période non payée à l’heure limite (250 FCFA proposés). Non réglée, elle est retenue à la répartition.'
+            : undefined
+        }
         error={errors.latePenalty?.message}
         {...register('latePenalty', numeric)}
       />
-      <label className="flex items-start gap-3 rounded-control border border-line bg-white p-3">
-        <input type="checkbox" className="mt-1" {...register('reserveFinalTurn')} />
-        <span>
-          <strong className="block text-ink">Réserver la dernière période au Superadmin</strong>
-          <span className="text-label text-muted">
-            Les cotisations de cette période seront attribuées au Superadmin.
+      {denthie ? null : (
+        <label className="flex items-start gap-3 rounded-control border border-line bg-white p-3">
+          <input type="checkbox" className="mt-1" {...register('reserveFinalTurn')} />
+          <span>
+            <strong className="block text-ink">Réserver la dernière période au Superadmin</strong>
+            <span className="text-label text-muted">
+              Les cotisations de cette période seront attribuées au Superadmin.
+            </span>
           </span>
-        </span>
-      </label>
+        </label>
+      )}
       <label className="flex items-start gap-3 rounded-control border border-line bg-white p-3">
         <input type="checkbox" className="mt-1" {...register('collectMembershipFee')} />
         <span>
           <strong className="block text-ink">Activer les frais d’adhésion</strong>
           <span className="text-label text-muted">
-            Frais fixes dus une seule fois par personne, lors de son premier paiement.
+            {denthie
+              ? 'Frais fixes dus une seule fois par personne, lors de son premier paiement. Ils donnent accès au carnet électronique (tous ses versements, au nom du membre, avec le logo du groupe).'
+              : 'Frais fixes dus une seule fois par personne, lors de son premier paiement.'}
           </span>
         </span>
       </label>
@@ -365,36 +485,64 @@ export function StepAttribution() {
   );
 }
 
-export function StepSummary() {
-  const { getValues } = useFormContext<CreateGroupValues>();
-  const admins = useAdminChoices();
-  const v = getValues();
-  const admin = admins.data?.find((a) => a.id === v.adminId);
-  const rows: Array<[string, ReactNode]> = [
+/** Récapitulatif d'un Denthie : ni durée de tour, ni ordre, ni période de service. */
+function denthieRows(v: CreateGroupValues, adminName?: string): Array<[string, ReactNode]> {
+  return [
+    ['Type', 'Denthie (garderie)'],
     ['Nom', v.name],
-    ...(admin ? [['Administrateur', admin.name] as [string, ReactNode]] : []),
+    ...(adminName ? [['Administrateur', adminName] as [string, ReactNode]] : []),
     ['Description', v.description || '—'],
     ['Cotisation', <AmountText key="a" value={v.contributionAmount} />],
     ['Rythme', frequencyLabel(v.frequency)],
     ['Cotisation par', `${PER_PERIOD[v.frequency].replace('par ', '')} et par part`],
-    ['Durée d’un tour', formatPeriods(v.frequency, v.turnLength)],
-    ['Parts payées par tour', v.sharesPerRound],
-    ['Parts du groupe', v.maxMembers],
+    ['Parts au plus', v.maxMembers],
     ['Démarrage', v.startDate ? formatDate(v.startDate) : '—'],
+    ['Date de répartition', 'À fixer plus tard'],
     ['Heure limite', v.paymentDueTime ? v.paymentDueTime.replace(':', 'h') : '—'],
     ['Pénalité de retard', v.latePenalty ? <AmountText key="p" value={v.latePenalty} /> : 'Aucune'],
     [
       'Frais d’adhésion',
       v.collectMembershipFee ? `${v.membershipFeeAmount} FCFA / personne` : 'Désactivés',
     ],
-    [
-      'Période de service de la plateforme',
-      v.reserveFinalTurn
-        ? 'Oui : une période en fin de cycle, où chaque membre paie une partie de sa cotisation (part réglée par la plateforme)'
-        : 'Non',
-    ],
-    ['Attribution', v.attributionMode === 'random' ? 'Tirage au sort' : 'Ordre manuel'],
   ];
+}
+
+export function StepSummary() {
+  const { getValues } = useFormContext<CreateGroupValues>();
+  const admins = useAdminChoices();
+  const v = getValues();
+  const admin = admins.data?.find((a) => a.id === v.adminId);
+  const rows: Array<[string, ReactNode]> =
+    v.kind === 'denthie'
+      ? denthieRows(v, admin?.name)
+      : [
+          ['Nom', v.name],
+          ...(admin ? [['Administrateur', admin.name] as [string, ReactNode]] : []),
+          ['Description', v.description || '—'],
+          ['Cotisation', <AmountText key="a" value={v.contributionAmount} />],
+          ['Rythme', frequencyLabel(v.frequency)],
+          ['Cotisation par', `${PER_PERIOD[v.frequency].replace('par ', '')} et par part`],
+          ['Durée d’un tour', formatPeriods(v.frequency, v.turnLength)],
+          ['Parts payées par tour', v.sharesPerRound],
+          ['Parts du groupe', v.maxMembers],
+          ['Démarrage', v.startDate ? formatDate(v.startDate) : '—'],
+          ['Heure limite', v.paymentDueTime ? v.paymentDueTime.replace(':', 'h') : '—'],
+          [
+            'Pénalité de retard',
+            v.latePenalty ? <AmountText key="p" value={v.latePenalty} /> : 'Aucune',
+          ],
+          [
+            'Frais d’adhésion',
+            v.collectMembershipFee ? `${v.membershipFeeAmount} FCFA / personne` : 'Désactivés',
+          ],
+          [
+            'Période de service de la plateforme',
+            v.reserveFinalTurn
+              ? 'Oui : une période en fin de cycle, où chaque membre paie une partie de sa cotisation (part réglée par la plateforme)'
+              : 'Non',
+          ],
+          ['Attribution', v.attributionMode === 'random' ? 'Tirage au sort' : 'Ordre manuel'],
+        ];
   return (
     <div className="flex flex-col gap-3">
       <Card className="flex flex-col gap-3">

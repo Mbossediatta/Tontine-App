@@ -34,7 +34,12 @@ export function PayoutReceiptCard({
   return (
     <Card className="flex flex-col gap-2 border-green-300 bg-green-50 px-4 py-3">
       <p className="text-[15px] font-semibold text-green-900">
-        Ta cagnotte du tour {round.number} : <AmountDisplay value={amount} />
+        {round.purpose === 'distribution'
+          ? 'Ta part de la répartition'
+          : round.purpose === 'withdrawal'
+            ? 'Ton retrait d’urgence'
+            : `Ta cagnotte du tour ${round.number}`}{' '}
+        : <AmountDisplay value={amount} />
       </p>
       {transfer ? (
         <>

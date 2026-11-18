@@ -88,6 +88,8 @@ function payoutRows(ctx: GroupContext, nameOf: (id: string | undefined, f: strin
   const result: PayoutRow[] = ctx.rounds.flatMap((round) => {
     const group = groups.get(round.groupId);
     if (!group || group.archivedAt) return [];
+    // Denthie : ses périodes ne se versent pas ; seuls la répartition et les retraits le sont.
+    if (group.kind === 'denthie' && (round.purpose ?? 'turn') === 'turn') return [];
     const beneficiaries = activeMemberships(ctx, group.id)
       .filter((item) => round.beneficiaryMembershipIds?.includes(item.id))
       .map((item) => person(ctx, item.userId, true));
@@ -101,8 +103,11 @@ function payoutRows(ctx: GroupContext, nameOf: (id: string | undefined, f: strin
         beneficiary: unique[0] ?? PLATFORM,
         beneficiaries: unique,
         stage: stageOf(round),
-        collected: roundCollected(ctx, round),
-        expected: roundExpected(ctx, round),
+        // Denthie : la répartition (ou le retrait) verse l'épargne déjà gardée dans la caisse.
+        collected:
+          round.purpose && round.purpose !== 'turn' ? round.potAmount : roundCollected(ctx, round),
+        expected:
+          round.purpose && round.purpose !== 'turn' ? round.potAmount : roundExpected(ctx, round),
         validatedByName: round.payoutValidatedBy
           ? nameOf(round.payoutValidatedBy, 'Compte supprimé')
           : undefined,

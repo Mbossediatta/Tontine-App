@@ -28,4 +28,15 @@ export interface GroupService {
   requestJoinOpen(groupId: string): Promise<void>;
   /** Envoie une annonce (notification) à tous les membres ; renvoie le nombre de destinataires. */
   announce(groupId: string, message: string): Promise<number>;
+  /** Denthie : fixe la date de répartition (« yyyy-MM-dd »), ou la retire (null). */
+  setEndDate(groupId: string, endDate: string | null): Promise<void>;
+  /**
+   * Denthie : lance la répartition (à partir de la date prévue). À partir de 300 000 FCFA,
+   * un admin ne fait qu'une demande (« pending_approval ») : le super admin valide.
+   */
+  distribute(groupId: string): Promise<'paid' | 'pending_approval'>;
+  /** Denthie : le membre connecté demande un retrait d'urgence. */
+  requestWithdrawal(groupId: string, reason: string): Promise<void>;
+  /** Denthie : l'admin accorde le retrait d'urgence ; la personne reçoit son épargne et sort. */
+  withdraw(groupId: string, userId: string, reason: string): Promise<void>;
 }

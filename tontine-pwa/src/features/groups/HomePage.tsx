@@ -73,7 +73,11 @@ function MyGroupsCard({ groups }: { groups: GroupOverview[] }) {
                 <span className="block truncate font-bold text-ink">{group.name}</span>
                 <span className="block text-label text-muted">
                   {groupContributionLabel(group)}
-                  {currentRound ? ` · tour ${currentRound.number} sur ${totalRounds}` : ''}
+                  {group.kind === 'denthie'
+                    ? ' · Denthie'
+                    : currentRound
+                      ? ` · tour ${currentRound.number} sur ${totalRounds}`
+                      : ''}
                 </span>
               </span>
               {myStatus ? (

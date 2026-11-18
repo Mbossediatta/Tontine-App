@@ -25,6 +25,7 @@ import {
   paidCount,
 } from './lifecycle';
 import { buildMemberViews, toPublicUser } from './views';
+import { distribute as distributeDenthie } from './denthie';
 
 /** Seconde validation par le super admin à partir de ce montant (FCFA). */
 const PAYOUT_APPROVAL_THRESHOLD = 300_000;
@@ -215,6 +216,17 @@ export const mockRoundService: RoundService = {
     const group = requireGroup(round.groupId);
     const actor = currentUser();
     assertCanManage(group, actor);
+    if (group.kind === 'denthie') {
+      // Validation de la répartition par le super admin ; rien à verser sur une période.
+      if (round.purpose !== 'distribution') {
+        throw new ServiceError(
+          'Dans un Denthie, l’argent reste dans la caisse jusqu’à la répartition.',
+        );
+      }
+      const result = distributeDenthie(group, actor);
+      persist();
+      return result;
+    }
     if (round.recipientType === 'platform') assertSuperAdmin(actor);
     else
       assertNotOwnMoney(

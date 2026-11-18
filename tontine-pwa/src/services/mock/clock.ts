@@ -5,11 +5,14 @@ import { ServiceError } from '@/lib/errors';
 import { assertCanManage, requireGroup, requireRound } from './access';
 import { currentUser, delay, persist } from './db';
 import { applyPendingConfirmations } from './gateway';
+import { denthieTick } from './denthie';
 import { applyLatePenalties } from './lifecycle';
 
 export function synchronize(now: number = Date.now()): void {
   applyPendingConfirmations(now);
-  if (applyLatePenalties(new Date(now))) persist();
+  const penalties = applyLatePenalties(new Date(now));
+  // Denthie : périodes échues closes, période suivante ouverte (tâche planifiée du serveur).
+  if (denthieTick(new Date(now)) || penalties) persist();
 }
 
 /** Démonstration : fait comme si la date limite du tour était passée (pénalités d'office). */

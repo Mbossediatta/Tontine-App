@@ -3,6 +3,7 @@ import { AmountText, PayButton, RoundProgress, StatusBadge } from '@/components/
 import { Avatar, Card, EmptyState } from '@/components/ui';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { formatDate, formatRelative, fullName } from '@/lib/format';
+import { isDenthie } from '@/lib/denthie';
 import type { GroupOverview } from '@/types';
 
 export function CurrentRoundTab({ overview }: { overview: GroupOverview }) {
@@ -26,7 +27,9 @@ export function CurrentRoundTab({ overview }: { overview: GroupOverview }) {
       />
     );
   }
+  const denthie = isDenthie(group);
   if (!currentRound) {
+    if (denthie) return null;
     return (
       <EmptyState
         title="Cycle terminé"
@@ -44,9 +47,11 @@ export function CurrentRoundTab({ overview }: { overview: GroupOverview }) {
     <div className="flex flex-col gap-3">
       <Card className="flex flex-col gap-3">
         <h2 className="text-section text-blue-900">
-          Période {currentRound.number} sur {overview.totalRounds}
+          {denthie
+            ? `Période ${overview.savings?.currentPeriod ?? ''} · jusqu’au ${formatDate(currentRound.dueDate)}`
+            : `Période ${currentRound.number} sur ${overview.totalRounds}`}
         </h2>
-        {platformPeriod ? (
+        {denthie ? null : platformPeriod ? (
           <div className="rounded-control bg-blue-50 p-3 text-label text-muted">
             Période de cotisation de la plateforme.
           </div>
@@ -96,8 +101,14 @@ export function CurrentRoundTab({ overview }: { overview: GroupOverview }) {
         ) : null}
         {currentRound.status === 'ready_for_payout' && !platformPeriod ? (
           <p className="rounded-control bg-green-100 p-3 text-label text-green-700">
-            Tout le monde a payé : la cagnotte de <AmountText value={currentRound.potAmount} /> va
-            être reversée.
+            {denthie ? (
+              'Tout le monde a cotisé pour cette période : l’argent reste dans la caisse jusqu’à la répartition.'
+            ) : (
+              <>
+                Tout le monde a payé : la cagnotte de <AmountText value={currentRound.potAmount} />{' '}
+                va être reversée.
+              </>
+            )}
           </p>
         ) : null}
       </Card>

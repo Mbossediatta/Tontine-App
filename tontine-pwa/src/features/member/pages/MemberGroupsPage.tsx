@@ -44,7 +44,11 @@ function GroupRow({ overview }: { overview: GroupOverview }) {
           </span>
           <span className="block text-[13px] text-slate-600">
             {plural(activeMemberCount, 'membre')}
-            {currentRound ? ` · Tour ${currentRound.number} sur ${totalRounds}` : ''}
+            {group.kind === 'denthie'
+              ? ' · Denthie'
+              : currentRound
+                ? ` · Tour ${currentRound.number} sur ${totalRounds}`
+                : ''}
           </span>
         </span>
         {myMembershipStatus === 'pending' ? (
@@ -248,7 +252,10 @@ function OpenGroupCard({
             <p className="text-[13px] text-slate-600">
               {overview.communityName ?? 'Ta communauté'} ·{' '}
               {contributionLabel(group.contributionAmount, group.frequency)} ·{' '}
-              {plural(Math.max(0, group.maxMembers - overview.activeShareCount), 'place disponible')}
+              {plural(
+                Math.max(0, group.maxMembers - overview.activeShareCount),
+                'place disponible',
+              )}
             </p>
           </div>
         </div>

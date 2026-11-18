@@ -22,6 +22,7 @@ import { StatCard } from '../components/StatCard';
 import { useAdminDashboard } from '../queries';
 import { ContributionsCard } from './ContributionsCard';
 import { NextPayoutCard } from './NextPayoutCard';
+import { DenthieHomeCard } from '../manage/DenthieAdmin';
 import { PayoutOrderCard } from './PayoutOrderCard';
 import { QuickActionsCard } from './QuickActionsCard';
 import { TodoCard } from './TodoCard';
@@ -50,9 +51,14 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 function GroupWorkspace({ overview }: { overview: GroupOverview }) {
   const rounds = useRounds(overview.group.id);
   const current = rounds.data?.find((r) => r.round.id === overview.currentRound?.id);
+  const denthie = overview.group.kind === 'denthie';
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:grid-rows-[auto_auto_auto_1fr] xl:items-start">
-      {current ? (
+      {denthie ? (
+        <div className="xl:col-start-2 xl:row-start-1">
+          <DenthieHomeCard overview={overview} />
+        </div>
+      ) : current ? (
         <div className="xl:col-start-2 xl:row-start-1">
           <NextPayoutCard overview={overview} round={current} />
         </div>
@@ -60,7 +66,7 @@ function GroupWorkspace({ overview }: { overview: GroupOverview }) {
       <div className="xl:col-start-1 xl:row-span-4 xl:row-start-1">
         <ContributionsCard overview={overview} />
       </div>
-      {rounds.data && rounds.data.length > 0 ? (
+      {!denthie && rounds.data && rounds.data.length > 0 ? (
         <div className="xl:col-start-2 xl:row-start-2">
           <PayoutOrderCard
             groupId={overview.group.id}

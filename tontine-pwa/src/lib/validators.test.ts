@@ -8,6 +8,7 @@ import {
 } from './validators';
 
 const validGroup: CreateGroupValues = {
+  kind: 'tontine',
   name: 'Tontine Famille',
   description: '',
   contributionAmount: 4500,

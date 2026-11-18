@@ -162,6 +162,26 @@ export function createSupabaseGroupService(): GroupService {
       requireOnline();
       return rpc<number>('group_announce', { p_group: groupId, p_message: message });
     },
+
+    async setEndDate(groupId, endDate) {
+      requireOnline();
+      await rpc('denthie_set_end_date', { p_group: groupId, p_date: endDate });
+    },
+
+    async distribute(groupId) {
+      requireOnline();
+      return rpc<'paid' | 'pending_approval'>('denthie_distribute', { p_group: groupId });
+    },
+
+    async requestWithdrawal(groupId, reason) {
+      requireOnline();
+      await rpc('denthie_withdraw_request', { p_group: groupId, p_reason: reason });
+    },
+
+    async withdraw(groupId, userId, reason) {
+      requireOnline();
+      await rpc('denthie_withdraw', { p_group: groupId, p_user: userId, p_reason: reason });
+    },
   };
 }
 

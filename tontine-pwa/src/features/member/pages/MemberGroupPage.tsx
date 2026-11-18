@@ -8,9 +8,18 @@ import { SwapRequestDialog } from '@/features/groups/SwapRequestDialog';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { cn } from '@/lib/cn';
 import { contributionPerTurn, payoutPerShare } from '@/lib/tontine';
-import { contributionLabel, frequencyLabel, fullName, initials, plural } from '@/lib/format';
+import {
+  contributionLabel,
+  formatDate,
+  frequencyLabel,
+  fullName,
+  initials,
+  plural,
+} from '@/lib/format';
 import type { GroupOverview, MemberView, RoundView } from '@/types';
 import { DebtCard } from '../components/DebtCard';
+import { DenthieSavingsCard } from '../components/DenthieSavingsCard';
+import { isDenthie } from '@/lib/denthie';
 import { PayoutReceiptCard } from '../components/PayoutReceiptCard';
 import { duesOf, monthName, shortDate } from '../dues';
 import { AmountDisplay } from '../ui/AmountDisplay';
@@ -24,54 +33,58 @@ import { StatusPill } from '../ui/StatusPill';
 /** Fiche du groupe en tableau compact : libellé à gauche, valeur à droite. */
 function GroupFacts({ overview, admins }: { overview: GroupOverview; admins: string[] }) {
   const { group } = overview;
-  const rows: Array<[string, React.ReactNode]> = [
-    ...(overview.communityName
-      ? [['Communauté', overview.communityName] as [string, React.ReactNode]]
-      : []),
-    ['Cotisation', <AmountDisplay key="c" value={group.contributionAmount} />],
-    ['Fréquence', frequencyLabel(group.frequency)],
-    [
-      'Membres',
-      overview.activeShareCount > overview.activeMemberCount
-        ? `${overview.activeMemberCount} (${overview.activeShareCount} parts)`
-        : String(overview.activeMemberCount),
-    ],
-    [
-      'Cagnotte par tour',
-      <AmountDisplay key="p" value={overview.potAmount} className="text-green-700" />,
-    ],
-    // Plusieurs parts par tour : la cagnotte se partage, chaque bénéficiaire reçoit une part.
-    ...((group.sharesPerRound ?? 1) > 1
-      ? [
-          [
-            `Chaque bénéficiaire reçoit (${group.sharesPerRound} par tour)`,
-            <AmountDisplay
-              key="s"
-              value={payoutPerShare(overview.potAmount, group.sharesPerRound)}
-              className="text-green-700"
-            />,
-          ] as [string, React.ReactNode],
-        ]
-      : []),
-    // Période de service de la plateforme : ce que chacun y paie (part d'une cotisation).
-    ...(group.reserveFinalTurn
-      ? [
-          [
-            'Période de service Calebasse',
-            <span key="svc">
-              <AmountDisplay value={contributionPerTurn(group, { recipientType: 'platform' })} />
-              <span className="block text-[13px] font-normal text-slate-600">
-                {group.platformSharePercent ?? 100} % d’une cotisation, en fin de cycle
-              </span>
-            </span>,
-          ] as [string, React.ReactNode],
-        ]
-      : []),
-    [
-      admins.length > 1 ? 'Administrateurs' : 'Administrateur',
-      admins.join(', ') || overview.adminName,
-    ],
-  ];
+  const rows: Array<[string, React.ReactNode]> = isDenthie(group)
+    ? denthieFacts(overview, admins)
+    : [
+        ...(overview.communityName
+          ? [['Communauté', overview.communityName] as [string, React.ReactNode]]
+          : []),
+        ['Cotisation', <AmountDisplay key="c" value={group.contributionAmount} />],
+        ['Fréquence', frequencyLabel(group.frequency)],
+        [
+          'Membres',
+          overview.activeShareCount > overview.activeMemberCount
+            ? `${overview.activeMemberCount} (${overview.activeShareCount} parts)`
+            : String(overview.activeMemberCount),
+        ],
+        [
+          'Cagnotte par tour',
+          <AmountDisplay key="p" value={overview.potAmount} className="text-green-700" />,
+        ],
+        // Plusieurs parts par tour : la cagnotte se partage, chaque bénéficiaire reçoit une part.
+        ...((group.sharesPerRound ?? 1) > 1
+          ? [
+              [
+                `Chaque bénéficiaire reçoit (${group.sharesPerRound} par tour)`,
+                <AmountDisplay
+                  key="s"
+                  value={payoutPerShare(overview.potAmount, group.sharesPerRound)}
+                  className="text-green-700"
+                />,
+              ] as [string, React.ReactNode],
+            ]
+          : []),
+        // Période de service de la plateforme : ce que chacun y paie (part d'une cotisation).
+        ...(group.reserveFinalTurn
+          ? [
+              [
+                'Période de service Calebasse',
+                <span key="svc">
+                  <AmountDisplay
+                    value={contributionPerTurn(group, { recipientType: 'platform' })}
+                  />
+                  <span className="block text-[13px] font-normal text-slate-600">
+                    {group.platformSharePercent ?? 100} % d’une cotisation, en fin de cycle
+                  </span>
+                </span>,
+              ] as [string, React.ReactNode],
+            ]
+          : []),
+        [
+          admins.length > 1 ? 'Administrateurs' : 'Administrateur',
+          admins.join(', ') || overview.adminName,
+        ],
+      ];
   return (
     <Card>
       <dl className="divide-y divide-slate-200">
@@ -87,6 +100,33 @@ function GroupFacts({ overview, admins }: { overview: GroupOverview; admins: str
       </dl>
     </Card>
   );
+}
+
+/** Fiche d'un Denthie : pas de cagnotte par tour ni de période de service. */
+function denthieFacts(overview: GroupOverview, admins: string[]): Array<[string, React.ReactNode]> {
+  const { group } = overview;
+  return [
+    ['Type', 'Denthie (épargne répartie à la fin)'],
+    ...(overview.communityName
+      ? [['Communauté', overview.communityName] as [string, React.ReactNode]]
+      : []),
+    ['Cotisation', <AmountDisplay key="c" value={group.contributionAmount} />],
+    ['Fréquence', frequencyLabel(group.frequency)],
+    ['Membres', String(overview.activeMemberCount)],
+    ['Répartition', group.endDate ? formatDate(group.endDate) : 'Date à fixer'],
+    ...(group.latePenalty
+      ? [
+          ['Pénalité de retard', <AmountDisplay key="p" value={group.latePenalty} />] as [
+            string,
+            React.ReactNode,
+          ],
+        ]
+      : []),
+    [
+      admins.length > 1 ? 'Administrateurs' : 'Administrateur',
+      admins.join(', ') || overview.adminName,
+    ],
+  ];
 }
 
 /** Libellé de la période d'un tour : le mois pour une tontine mensuelle, sinon la date. */
@@ -272,6 +312,7 @@ export default function MemberGroupPage() {
   if (group.isError || !group.data) return <ErrorBlock onRetry={() => void group.refetch()} />;
 
   const overview = group.data;
+  const denthie = isDenthie(overview.group);
   const due = duesOf([overview])[0];
   const admins = (members.data ?? [])
     .filter(
@@ -305,9 +346,11 @@ export default function MemberGroupPage() {
             <h1 className="text-[18px] font-bold leading-6">{overview.group.name}</h1>
             <p className="text-[13px] text-slate-600">
               {contributionLabel(overview.group.contributionAmount, overview.group.frequency)}
-              {overview.currentRound
-                ? ` · tour ${overview.currentRound.number} sur ${overview.totalRounds}`
-                : ''}
+              {denthie
+                ? ` · Denthie${overview.savings?.currentPeriod ? ` · période ${overview.savings.currentPeriod}` : ''}`
+                : overview.currentRound
+                  ? ` · tour ${overview.currentRound.number} sur ${overview.totalRounds}`
+                  : ''}
             </p>
           </div>
           {overview.myStatus ? <StatusPill status={overview.myStatus} /> : null}
@@ -342,44 +385,48 @@ export default function MemberGroupPage() {
               <PayoutReceiptCard key={view.round.id} view={view} userId={user.id} groupId={id} />
             ))}
 
+          {denthie ? <DenthieSavingsCard overview={overview} /> : null}
+
           <section data-guide="group-facts" aria-labelledby="facts">
             <SectionHeader id="facts" title="Le groupe" />
             <GroupFacts overview={overview} admins={admins} />
           </section>
         </div>
         <div className="flex flex-col gap-6">
-          <section data-guide="group-calendar" aria-labelledby="calendar">
-            <SectionHeader id="calendar" title="Calendrier de passage" />
-            {rounds.isPending ? (
-              <ListSkeleton rows={4} />
-            ) : rounds.isError ? (
-              <ErrorBlock onRetry={() => void rounds.refetch()} />
-            ) : (rounds.data ?? []).length === 0 ? (
-              <EmptyState
-                title="Calendrier pas encore fixé"
-                description="L’ordre de passage sera établi au démarrage du groupe."
-              />
-            ) : (
-              <>
-                <SwapList swaps={swaps.data ?? []} myUserId={user.id} mode="member" />
-                <PayoutCalendar
-                  overview={overview}
-                  rounds={rounds.data ?? []}
-                  userId={user.id}
-                  onSwap={myRounds.length > 0 ? setSwapTarget : undefined}
+          {denthie ? null : (
+            <section data-guide="group-calendar" aria-labelledby="calendar">
+              <SectionHeader id="calendar" title="Calendrier de passage" />
+              {rounds.isPending ? (
+                <ListSkeleton rows={4} />
+              ) : rounds.isError ? (
+                <ErrorBlock onRetry={() => void rounds.refetch()} />
+              ) : (rounds.data ?? []).length === 0 ? (
+                <EmptyState
+                  title="Calendrier pas encore fixé"
+                  description="L’ordre de passage sera établi au démarrage du groupe."
                 />
-              </>
-            )}
-            {swapTarget ? (
-              <SwapRequestDialog
-                key={swapTarget.round.id}
-                target={swapTarget}
-                myRounds={myRounds}
-                myUserId={user.id}
-                onClose={() => setSwapTarget(null)}
-              />
-            ) : null}
-          </section>
+              ) : (
+                <>
+                  <SwapList swaps={swaps.data ?? []} myUserId={user.id} mode="member" />
+                  <PayoutCalendar
+                    overview={overview}
+                    rounds={rounds.data ?? []}
+                    userId={user.id}
+                    onSwap={myRounds.length > 0 ? setSwapTarget : undefined}
+                  />
+                </>
+              )}
+              {swapTarget ? (
+                <SwapRequestDialog
+                  key={swapTarget.round.id}
+                  target={swapTarget}
+                  myRounds={myRounds}
+                  myUserId={user.id}
+                  onClose={() => setSwapTarget(null)}
+                />
+              ) : null}
+            </section>
+          )}
 
           <Link
             to={`/reclamation?groupe=${id}`}
