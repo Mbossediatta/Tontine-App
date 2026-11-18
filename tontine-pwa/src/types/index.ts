@@ -5,6 +5,16 @@ export type Frequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
 /** `suspended` : groupe gelé par le super administrateur (plus aucun paiement ni versement). */
 export type GroupStatus = 'draft' | 'active' | 'finished' | 'suspended';
 export type AttributionMode = 'random' | 'manual';
+/**
+ * Type de groupe, choisi à la création : tontine (un bénéficiaire par tour) ou Denthie
+ * (« garderie » : l'épargne est gardée puis répartie entre tous à la fin).
+ */
+export type GroupKind = 'tontine' | 'denthie';
+/**
+ * Rôle d'un tour : tour de tontine ou période d'un Denthie (`turn`), répartition finale d'un
+ * Denthie (`distribution`), retrait d'urgence d'un membre (`withdrawal`).
+ */
+export type RoundPurpose = 'turn' | 'distribution' | 'withdrawal';
 export type MembershipStatus = 'pending' | 'active' | 'removed';
 export type RoundStatus = 'upcoming' | 'open' | 'ready_for_payout' | 'paid_out';
 export type PaymentStatus = 'pending' | 'paid' | 'late' | 'failed' | 'refunded';
@@ -42,6 +52,10 @@ export interface Group {
   communityId?: string;
   /** Groupes ouverts à la découverte par les membres de la communauté. */
   joinPolicy?: 'invite' | 'community';
+  /** Absent : tontine (groupes d'avant le Denthie). */
+  kind?: GroupKind;
+  /** Denthie : date de répartition (ISO), fixée par l'admin après la création. */
+  endDate?: string;
   name: string;
   description?: string;
   /** Photo ou logo du groupe (image compressée, « data URL ») ; facultatif. */
@@ -113,6 +127,8 @@ export interface Round {
   beneficiaryMembershipIds?: string[];
   /** `platform` désigne la période finale réservée au Superadmin. */
   recipientType?: 'members' | 'platform';
+  /** Absent : `turn`. */
+  purpose?: RoundPurpose;
   /** Montant reçu par personne pour un tour à plusieurs bénéficiaires. */
   beneficiaryAmounts?: Record<string, number>;
   /** Position de la part de ce bénéficiaire parmi ses parts, pour distinguer ses tours. */
@@ -311,7 +327,10 @@ export type AuditAction =
   | 'org_financing_decided'
   | 'org_financing_paid'
   | 'org_money_account_saved'
-  | 'org_reconciliation_recorded';
+  | 'org_reconciliation_recorded'
+  | 'denthie_distribution'
+  | 'denthie_withdrawal'
+  | 'withdrawal_requested';
 
 /** Entrée du journal d'audit : qui a fait quoi, quand, et sur quel groupe. */
 /**

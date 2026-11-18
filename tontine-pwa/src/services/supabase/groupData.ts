@@ -23,6 +23,7 @@ import type {
   PayoutMethod,
   PayoutTransfer,
 } from '@/types';
+import { denthieSavings, isDenthie } from '@/lib/denthie';
 import { rows, rpc, sessionUserId } from './rpc';
 
 // --- Lignes de la base ---------------------------------------------------------
@@ -31,6 +32,9 @@ export interface GroupRow {
   id: string;
   community_id: string | null;
   join_policy: 'invite' | 'community';
+  /** Absents des lignes lues avant la migration …_denthie.sql. */
+  kind?: Group['kind'];
+  end_date?: string | null;
   name: string;
   description: string | null;
   /** Absent des lignes lues avant la migration …_photo_groupe.sql. */
@@ -75,6 +79,7 @@ interface RoundRow {
   open_date: string;
   due_date: string;
   recipient_type: 'members' | 'platform';
+  purpose?: Round['purpose'];
   pot_amount: number;
   status: Round['status'];
   paid_out_at: string | null;
@@ -126,13 +131,15 @@ interface ProfileRow {
 }
 
 export const GROUP_COLUMNS =
-  'id, community_id, join_policy, name, description, photo_url, contribution_amount, turn_length, shares_per_round, membership_fee_amount, reserve_final_turn, platform_share_percent, frequency, max_members, payment_due_day, payment_due_time, start_date, attribution_mode, late_penalty, status, invite_code, created_by, admin_id, member_status_visibility, current_cycle, archived_at';
+  'id, community_id, join_policy, kind, end_date, name, description, photo_url, contribution_amount, turn_length, shares_per_round, membership_fee_amount, reserve_final_turn, platform_share_percent, frequency, max_members, payment_due_day, payment_due_time, start_date, attribution_mode, late_penalty, status, invite_code, created_by, admin_id, member_status_visibility, current_cycle, archived_at';
 
 export function toGroup(row: GroupRow): Group {
   return {
     id: row.id,
     communityId: row.community_id ?? undefined,
     joinPolicy: row.join_policy,
+    kind: row.kind ?? 'tontine',
+    endDate: row.end_date ? new Date(`${row.end_date.slice(0, 10)}T00:00:00Z`).toISOString() : undefined,
     name: row.name,
     description: row.description ?? undefined,
     photoUrl: row.photo_url ?? undefined,
@@ -199,6 +206,7 @@ function toRound(row: RoundRow, memberships: Membership[]): Round {
     beneficiaryId: first?.userId ?? '',
     beneficiaryMembershipIds: beneficiaryIds,
     recipientType: row.recipient_type,
+    purpose: row.purpose ?? 'turn',
     beneficiaryAmounts: Object.fromEntries(amounts),
     potAmount: row.pot_amount,
     status: row.status,
@@ -383,7 +391,7 @@ async function loadContextNow(groupRows: GroupRow[], me: Viewer): Promise<GroupC
       ? client
           .from('rounds')
           .select(
-            'id, group_id, cycle, number, open_date, due_date, recipient_type, pot_amount, status, paid_out_at, payout_validated_by, payout_blocked_at, payout_block_reason, payout_requested_at, round_beneficiaries (membership_id, amount, sent_at, sent_method, sent_ref, received_at)',
+            'id, group_id, cycle, number, open_date, due_date, recipient_type, purpose, pot_amount, status, paid_out_at, payout_validated_by, payout_blocked_at, payout_block_reason, payout_requested_at, round_beneficiaries (membership_id, amount, sent_at, sent_method, sent_ref, received_at)',
           )
           .in('group_id', ids)
           .order('number')
@@ -627,7 +635,22 @@ export function buildOverview(ctx: GroupContext, group: Group): GroupOverview {
     feePercent: ctx.feePercent,
     myTurn: myTurnForUser,
     orderIsSet: members.length > 0 && members.every((m) => typeof m.payoutOrder === 'number'),
+    ...denthieFields(group, rounds, ctx.payments, viewerId, manager),
   };
+}
+
+/** Épargne d'un Denthie : celle de chacun pour un gestionnaire, la mienne pour un membre. */
+function denthieFields(
+  group: Group,
+  rounds: Round[],
+  payments: Payment[],
+  viewerId: string,
+  manager: boolean,
+): Pick<GroupOverview, 'savings' | 'mySaved'> {
+  if (!isDenthie(group)) return {};
+  const visible = manager ? payments : payments.filter((p) => p.userId === viewerId);
+  const savings = denthieSavings(rounds, visible);
+  return { savings, mySaved: savings.byUser[viewerId] ?? 0 };
 }
 
 export function buildMemberViews(ctx: GroupContext, group: Group): MemberView[] {

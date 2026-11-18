@@ -180,7 +180,11 @@ export const mockAdminService: AdminService = {
       lateMembers += late.length;
       lateAmount += late.reduce((sum, l) => sum + l.amount, 0);
       // On garde le versement dont la date limite est la plus proche.
-      if (!nextPayout || new Date(round.dueDate) < new Date(nextPayout.date)) {
+      // Denthie : rien n'est versé en cours de route.
+      if (
+        group.kind !== 'denthie' &&
+        (!nextPayout || new Date(round.dueDate) < new Date(nextPayout.date))
+      ) {
         nextPayout = {
           date: round.dueDate,
           groupId: group.id,

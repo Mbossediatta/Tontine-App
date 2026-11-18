@@ -64,6 +64,8 @@ export const groupDescriptionSchema = z
 
 export const createGroupSchema = z
   .object({
+    /** Tontine (un bénéficiaire par tour) ou Denthie (épargne répartie à la fin). */
+    kind: z.enum(['tontine', 'denthie']),
     name: groupNameSchema,
     description: groupDescriptionSchema,
     /** Photo ou logo, facultatif (image déjà compressée par GroupPhotoPicker). */
@@ -155,7 +157,7 @@ function checkTurnLength(
 
 /** Champs validés à chaque étape de l'assistant de création. */
 export const CREATE_GROUP_STEPS = [
-  ['name', 'description', 'adminId', 'communityId'],
+  ['kind', 'name', 'description', 'adminId', 'communityId'],
   [
     'contributionAmount',
     'frequency',

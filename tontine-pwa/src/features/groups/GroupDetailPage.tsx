@@ -6,6 +6,8 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { AsyncContent, Tabs, type TabItem } from '@/components/ui';
 import { groupContributionLabel } from '@/lib/format';
 import { formatCycleDuration, formatPeriods, payoutPerShare } from '@/lib/tontine';
+import { DenthieSavingsCard } from '@/features/member/components/DenthieSavingsCard';
+import { isDenthie } from '@/lib/denthie';
 import { useGroup } from './queries';
 import { CalendarTab } from './tabs/CalendarTab';
 import { CurrentRoundTab } from './tabs/CurrentRoundTab';
@@ -31,12 +33,19 @@ export default function GroupDetailPage() {
       {(overview) => {
         const { group, myRole, potAmount, totalRounds } = overview;
         const isManager = myRole === 'owner' || myRole === 'co_admin';
+        const denthie = isDenthie(group);
+        // Denthie : pas de calendrier de passage ; le premier onglet montre l'épargne.
+        const tabs = denthie
+          ? TABS.filter((t) => t.id !== 'calendrier').map((t) =>
+              t.id === 'tour' ? { ...t, label: 'Épargne' } : t,
+            )
+          : TABS;
         return (
           <div className="flex flex-col gap-3">
             <PageHeader
               title={group.name}
               backTo="/groupes"
-              subtitle={`${overview.communityName ? `${overview.communityName} · ` : ''}${groupContributionLabel(group)} · tour de ${formatPeriods(group.frequency, group.turnLength)}`}
+              subtitle={`${overview.communityName ? `${overview.communityName} · ` : ''}${groupContributionLabel(group)} · ${denthie ? 'Denthie' : `tour de ${formatPeriods(group.frequency, group.turnLength)}`}`}
               actions={
                 isManager ? (
                   <Link
@@ -50,7 +59,11 @@ export default function GroupDetailPage() {
               }
             >
               <p className="text-body text-white">
-                {overview.currentRound?.recipientType === 'platform' && !overview.canManage ? (
+                {denthie ? (
+                  <>
+                    Mon épargne : <AmountText value={overview.mySaved ?? 0} className="font-bold" />
+                  </>
+                ) : overview.currentRound?.recipientType === 'platform' && !overview.canManage ? (
                   'Période de collecte en cours'
                 ) : (
                   <>
@@ -68,13 +81,24 @@ export default function GroupDetailPage() {
                     ) : null}
                   </>
                 )}
-                {' · '}
-                {`${totalRounds} tours, soit ${formatCycleDuration(group.frequency, totalRounds, group.turnLength)}`}
+                {denthie ? null : (
+                  <>
+                    {' · '}
+                    {`${totalRounds} tours, soit ${formatCycleDuration(group.frequency, totalRounds, group.turnLength)}`}
+                  </>
+                )}
               </p>
             </PageHeader>
-            <Tabs items={TABS} value={tab} onChange={setTab} label="Sections du groupe" />
+            <Tabs items={tabs} value={tab} onChange={setTab} label="Sections du groupe" />
             <div role="tabpanel" className="animate-fade-in" key={tab}>
-              {tab === 'tour' ? <CurrentRoundTab overview={overview} /> : null}
+              {tab === 'tour' ? (
+                <div className="flex flex-col gap-3">
+                  {denthie && group.status !== 'draft' ? (
+                    <DenthieSavingsCard overview={overview} />
+                  ) : null}
+                  <CurrentRoundTab overview={overview} />
+                </div>
+              ) : null}
               {tab === 'calendrier' ? (
                 <CalendarTab groupId={group.id} cycleActive={group.status === 'active'} />
               ) : null}

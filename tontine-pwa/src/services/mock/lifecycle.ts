@@ -218,6 +218,15 @@ export function refreshRound(round: Round): void {
   if (members.length > 0 && paidCount(round) === members.length) {
     round.status = 'ready_for_payout';
     const group = requireGroup(round.groupId);
+    if (group.kind === 'denthie') {
+      notifyManagers(
+        group.id,
+        'period_complete',
+        'Période complète',
+        `${group.name} : tous les membres ont cotisé pour la période du ${new Date(round.openDate).toLocaleDateString('fr-FR')}.`,
+      );
+      return;
+    }
     if (round.recipientType === 'platform') {
       for (const superAdmin of db.users.filter((user) => user.globalRole === 'super_admin')) {
         notify(

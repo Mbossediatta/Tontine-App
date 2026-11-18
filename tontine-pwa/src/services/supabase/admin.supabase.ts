@@ -812,7 +812,8 @@ async function dashboard(): Promise<AdminDashboard> {
   let nextPayout: AdminDashboard['nextPayout'];
   for (const group of active) {
     const round = currentRoundOf(ctx, group);
-    if (!round) continue;
+    // Denthie : rien n'est versé en cours de route.
+    if (!round || group.kind === 'denthie') continue;
     if (!nextPayout || new Date(round.dueDate) < new Date(nextPayout.date)) {
       const beneficiaryIds = activeMemberships(ctx, group.id)
         .filter((item) => round.beneficiaryMembershipIds?.includes(item.id))

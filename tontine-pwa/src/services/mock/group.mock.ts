@@ -28,6 +28,7 @@ import {
 } from './db';
 import { recordAudit } from './audit';
 import { synchronize } from './clock';
+import { distribute, requestWithdrawal, setEndDate, startDenthie, withdraw } from './denthie';
 import { createRounds, notify, notifyManagers } from './lifecycle';
 import { inspectInput } from './security';
 import { buildOverview } from './views';
@@ -129,7 +130,19 @@ export const mockGroupService: GroupService = {
     return buildOverview(group, user);
   },
 
-  async create(input) {
+  async create(raw) {
+    // Denthie : règles fixes (comme public.group_create), avant toute vérification.
+    const input =
+      raw.kind === 'denthie'
+        ? {
+            ...raw,
+            turnLength: 1,
+            sharesPerRound: 1,
+            reserveFinalTurn: false,
+            attributionMode: 'manual' as const,
+            latePenalty: raw.latePenalty ?? 250,
+          }
+        : raw;
     requireOnline();
     await delay();
     const user = currentUser();
@@ -157,6 +170,7 @@ export const mockGroupService: GroupService = {
       throw new ServiceError('Vous n’êtes pas administrateur de cette communauté.');
     }
     const { collectMembershipFee, ...groupInput } = input;
+    const denthie = input.kind === 'denthie';
     const group: Group = {
       // `adminId` (plus bas) remplace celui saisi : seul le choix vérifié compte.
       ...groupInput,
@@ -169,6 +183,7 @@ export const mockGroupService: GroupService = {
       sharesPerRound: input.sharesPerRound ?? 1,
       membershipFeeAmount: collectMembershipFee ? (input.membershipFeeAmount ?? 0) : 0,
       reserveFinalTurn: input.reserveFinalTurn ?? true,
+      kind: denthie ? 'denthie' : 'tontine',
       // Période de service : le réglage du moment, figé pour la vie du groupe.
       platformSharePercent: db.settings.rules.platformSharePercent ?? 50,
       status: 'draft',
@@ -260,6 +275,9 @@ export const mockGroupService: GroupService = {
         : 0;
     }
     Object.assign(group, changes);
+    if (group.kind === 'denthie') {
+      Object.assign(group, { turnLength: 1, sharesPerRound: 1, reserveFinalTurn: false });
+    }
     recordAudit(
       user,
       'group_updated',
@@ -280,6 +298,11 @@ export const mockGroupService: GroupService = {
     assertCanManage(group, user);
     const members = activeMemberships(groupId);
     if (group.status !== 'draft') throw new ServiceError('Le cycle a déjà démarré.');
+    if (group.kind === 'denthie') {
+      startDenthie(group, user);
+      persist();
+      return { ...group };
+    }
     if (new Set(members.map((membership) => membership.userId)).size < 2) {
       throw new ServiceError('Un groupe doit avoir au moins deux personnes distinctes.');
     }
@@ -336,6 +359,8 @@ export const mockGroupService: GroupService = {
     group.currentCycle += 1;
     group.status = 'draft';
     group.startDate = startDate;
+    // Denthie : la date de répartition du nouveau cycle reste à fixer.
+    group.endDate = undefined;
     const members = activeMemberships(groupId);
     if (!keepOrder) members.forEach((m) => (m.payoutOrder = undefined));
     const notified = new Set<string>();
@@ -479,5 +504,44 @@ export const mockGroupService: GroupService = {
     }
     persist();
     return recipients.size;
+  },
+
+  async setEndDate(groupId, endDate) {
+    requireOnline();
+    await delay();
+    const user = currentUser();
+    const group = requireGroup(groupId);
+    assertCanManage(group, user);
+    setEndDate(group, user, endDate);
+    persist();
+  },
+
+  async distribute(groupId) {
+    requireOnline();
+    await delay();
+    const user = currentUser();
+    const group = requireGroup(groupId);
+    assertCanManage(group, user);
+    const result = distribute(group, user);
+    persist();
+    return result;
+  },
+
+  async requestWithdrawal(groupId, reason) {
+    requireOnline();
+    await delay();
+    const user = currentUser();
+    requestWithdrawal(requireGroup(groupId), user, reason);
+    persist();
+  },
+
+  async withdraw(groupId, userId, reason) {
+    requireOnline();
+    await delay();
+    const user = currentUser();
+    const group = requireGroup(groupId);
+    assertCanManage(group, user);
+    withdraw(group, user, userId, reason);
+    persist();
   },
 };

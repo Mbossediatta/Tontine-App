@@ -27,6 +27,7 @@ export function SettingsTab({ overview }: { overview: GroupOverview }) {
   const navigate = useNavigate();
   const [confirm, setConfirm] = useState<'code' | 'delete' | null>(null);
   const locked = group.status !== 'draft';
+  const denthie = group.kind === 'denthie';
   const hasHistory = group.currentCycle > 1;
   const isOwner = overview.myRole === 'owner' || user.globalRole === 'super_admin';
   const {
@@ -131,15 +132,17 @@ export function SettingsTab({ overview }: { overview: GroupOverview }) {
             disabled={locked}
             {...register('frequency')}
           />
-          <Input
-            label={`Durée d’un tour (en ${TURN_UNIT[frequency]})`}
-            type="number"
-            min={1}
-            max={MAX_TURN_LENGTH[frequency]}
-            disabled={locked}
-            error={errors.turnLength?.message}
-            {...register('turnLength', numeric)}
-          />
+          {denthie ? null : (
+            <Input
+              label={`Durée d’un tour (en ${TURN_UNIT[frequency]})`}
+              type="number"
+              min={1}
+              max={MAX_TURN_LENGTH[frequency]}
+              disabled={locked}
+              error={errors.turnLength?.message}
+              {...register('turnLength', numeric)}
+            />
+          )}
           {frequency === 'daily' ? null : (
             <Select
               label="Jour limite de paiement (dans la dernière période du tour)"
@@ -157,15 +160,17 @@ export function SettingsTab({ overview }: { overview: GroupOverview }) {
             error={errors.paymentDueTime?.message}
             {...register('paymentDueTime')}
           />
-          <Input
-            label="Parts bénéficiaires payées par tour"
-            type="number"
-            min={1}
-            max={50}
-            disabled={locked}
-            error={errors.sharesPerRound?.message}
-            {...register('sharesPerRound', numeric)}
-          />
+          {denthie ? null : (
+            <Input
+              label="Parts bénéficiaires payées par tour"
+              type="number"
+              min={1}
+              max={50}
+              disabled={locked}
+              error={errors.sharesPerRound?.message}
+              {...register('sharesPerRound', numeric)}
+            />
+          )}
           <Input
             label="Nombre total de parts"
             type="number"
@@ -173,10 +178,12 @@ export function SettingsTab({ overview }: { overview: GroupOverview }) {
             error={errors.maxMembers?.message}
             {...register('maxMembers', numeric)}
           />
-          <label className="flex items-center gap-3 text-label">
-            <input type="checkbox" disabled={locked} {...register('reserveFinalTurn')} />
-            Réserver la dernière période au Superadmin
-          </label>
+          {denthie ? null : (
+            <label className="flex items-center gap-3 text-label">
+              <input type="checkbox" disabled={locked} {...register('reserveFinalTurn')} />
+              Réserver la dernière période au Superadmin
+            </label>
+          )}
           <label className="flex items-center gap-3 text-label">
             <input type="checkbox" disabled={locked} {...register('collectMembershipFee')} />
             Activer les frais d’adhésion

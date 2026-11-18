@@ -11,17 +11,33 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAction } from '@/lib/query';
 import { CREATE_GROUP_STEPS, createGroupSchema, type CreateGroupValues } from '@/lib/validators';
 import { groupService } from '@/services';
-import type { Group } from '@/types';
+import type { Group, GroupKind } from '@/types';
 import { InviteShare } from '../components/InviteShare';
 import {
   JoinPolicyField,
+  KindField,
   StepAttribution,
   StepInfo,
   StepRules,
   StepSummary,
 } from './CreateGroupSteps';
 
-const STEP_LABELS = ['Informations', 'Règles', 'Attribution', 'Récapitulatif'] as const;
+type StepId = 'info' | 'rules' | 'attribution' | 'summary';
+
+/** Étapes de l'assistant ; un Denthie n'a pas d'ordre de bénéficiaires (pas d'attribution). */
+const STEPS: Record<GroupKind, ReadonlyArray<{ id: StepId; label: string; fields: number }>> = {
+  tontine: [
+    { id: 'info', label: 'Informations', fields: 0 },
+    { id: 'rules', label: 'Règles', fields: 1 },
+    { id: 'attribution', label: 'Attribution', fields: 2 },
+    { id: 'summary', label: 'Récapitulatif', fields: 3 },
+  ],
+  denthie: [
+    { id: 'info', label: 'Informations', fields: 0 },
+    { id: 'rules', label: 'Règles', fields: 1 },
+    { id: 'summary', label: 'Récapitulatif', fields: 3 },
+  ],
+};
 
 export default function CreateGroupPage() {
   const { isSuperAdmin, user } = useAuth();
@@ -31,6 +47,7 @@ export default function CreateGroupPage() {
     resolver: zodResolver(createGroupSchema),
     mode: 'onTouched',
     defaultValues: {
+      kind: 'tontine',
       name: '',
       description: '',
       frequency: 'daily',
@@ -53,7 +70,7 @@ export default function CreateGroupPage() {
         photoUrl: values.photoUrl || undefined,
         startDate: new Date(values.startDate).toISOString(),
       }),
-    success: 'Groupe créé',
+    success: (group) => (group.kind === 'denthie' ? 'Denthie créé' : 'Groupe créé'),
     onSuccess: setCreated,
   });
 
@@ -71,11 +88,15 @@ export default function CreateGroupPage() {
     return true;
   };
 
+  const steps = STEPS[form.watch('kind')];
+  const current = steps[Math.min(step, steps.length - 1)] ?? steps[0];
+  const last = step >= steps.length - 1;
+
   const next = async () => {
-    const fields = CREATE_GROUP_STEPS[step];
+    const fields = current ? CREATE_GROUP_STEPS[current.fields] : undefined;
     const valid = fields && fields.length > 0 ? await form.trigger([...fields]) : true;
     if (step === 0 && (communityMissing() || adminMissing())) return;
-    if (valid) setStep((s) => Math.min(s + 1, STEP_LABELS.length - 1));
+    if (valid) setStep((s) => Math.min(s + 1, steps.length - 1));
   };
 
   if (created) {
@@ -83,7 +104,7 @@ export default function CreateGroupPage() {
     const canOpen = isSuperAdmin || created.adminId === user?.id;
     return (
       <div className="flex flex-col gap-3">
-        <PageHeader title="Groupe créé" plain />
+        <PageHeader title={created.kind === 'denthie' ? 'Denthie créé' : 'Groupe créé'} plain />
         <Card tone="positive" className="flex items-center gap-3 text-green-700">
           <CheckCircle2 className="h-6 w-6" aria-hidden="true" />
           <p>
@@ -115,7 +136,7 @@ export default function CreateGroupPage() {
         noValidate
         className="flex flex-col gap-6"
         onSubmit={(event) => {
-          if (step < STEP_LABELS.length - 1) {
+          if (!last) {
             event.preventDefault();
             void next();
             return;
@@ -123,29 +144,30 @@ export default function CreateGroupPage() {
           void form.handleSubmit((values) => create.mutate(values))(event);
         }}
       >
-        <Stepper steps={STEP_LABELS} current={step} />
-        {step === 0 ? (
+        <Stepper steps={steps.map((item) => item.label)} current={step} />
+        {current?.id === 'info' ? (
           <div className="flex flex-col gap-4">
+            <KindField />
             <StepInfo />
             <JoinPolicyField />
           </div>
         ) : null}
-        {step === 1 ? <StepRules /> : null}
-        {step === 2 ? <StepAttribution /> : null}
-        {step === 3 ? <StepSummary /> : null}
+        {current?.id === 'rules' ? <StepRules /> : null}
+        {current?.id === 'attribution' ? <StepAttribution /> : null}
+        {current?.id === 'summary' ? <StepSummary /> : null}
         <div className="sticky bottom-24 flex gap-3 bg-blue-50 py-2 lg:static">
           {step > 0 ? (
             <Button variant="secondary" className="flex-1" onClick={() => setStep((s) => s - 1)}>
               Précédent
             </Button>
           ) : null}
-          {step < STEP_LABELS.length - 1 ? (
+          {!last ? (
             <Button className="flex-1" onClick={() => void next()}>
               Suivant
             </Button>
           ) : (
             <OnlineButton type="submit" className="flex-1" loading={create.isPending}>
-              Créer le groupe
+              {form.watch('kind') === 'denthie' ? 'Créer le Denthie' : 'Créer le groupe'}
             </OnlineButton>
           )}
         </div>

@@ -19,6 +19,21 @@ import {
   penaltyFor,
 } from './lifecycle';
 import { roundCollected } from './metrics';
+import { denthieSavings, isDenthie } from '@/lib/denthie';
+import type { Round } from '@/types';
+
+/** Épargne d'un Denthie : celle de chacun pour un gestionnaire, la mienne pour un membre. */
+function denthieFields(
+  group: Group,
+  rounds: Round[],
+  viewerId: string,
+  manager: boolean,
+): Pick<GroupOverview, 'savings' | 'mySaved'> {
+  if (!isDenthie(group)) return {};
+  const payments = db.payments.filter((p) => manager || p.userId === viewerId);
+  const savings = denthieSavings(rounds, payments);
+  return { savings, mySaved: savings.byUser[viewerId] ?? 0 };
+}
 
 export function toPublicUser(user: User, withPhone: boolean): PublicUser {
   if (user.deletedAt) {
@@ -115,7 +130,7 @@ export function buildOverview(group: Group, viewer: User): GroupOverview {
         : current,
     currentBeneficiary:
       currentBeneficiaries[0] ??
-      (current && current.recipientType !== 'platform'
+      (current && current.recipientType !== 'platform' && current.beneficiaryId
         ? toPublicUser(requireUser(current.beneficiaryId), canManage(group, viewer))
         : undefined),
     currentBeneficiaries,
@@ -139,6 +154,7 @@ export function buildOverview(group: Group, viewer: User): GroupOverview {
     feePercent: db.settings.payment.feePercent,
     myTurn: myTurnForUser,
     orderIsSet: members.length > 0 && members.every((m) => typeof m.payoutOrder === 'number'),
+    ...denthieFields(group, rounds, viewer.id, canManageGroup),
   };
 }
 

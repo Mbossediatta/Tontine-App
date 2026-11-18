@@ -35,7 +35,7 @@ export function GroupCard({ overview, to }: GroupCardProps) {
             <GroupStatusBadge status={group.status} />
           )}
         </div>
-        {group.status === 'active' && currentRound ? (
+        {group.status === 'active' && currentRound && group.kind !== 'denthie' ? (
           <CycleProgress current={currentRound.number} total={totalRounds} />
         ) : null}
         {isManager ? (

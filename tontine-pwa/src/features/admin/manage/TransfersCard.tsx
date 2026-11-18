@@ -35,7 +35,12 @@ function TransferRow({ view, user, amount }: PendingTransfer) {
     <li className="flex flex-col gap-2 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-bold text-ink">
-          {fullName(user)} · tour {view.round.number}
+          {fullName(user)} ·{' '}
+          {view.round.purpose === 'distribution'
+            ? 'répartition'
+            : view.round.purpose === 'withdrawal'
+              ? 'retrait d’urgence'
+              : `tour ${view.round.number}`}
         </span>
         <AmountText value={amount} className="font-bold text-green-700" />
       </div>

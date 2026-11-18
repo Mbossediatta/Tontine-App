@@ -27,6 +27,7 @@ const HistoryPage = lazy(() => import('@/features/member/pages/HistoryPage'));
 const ClaimsPage = lazy(() => import('@/features/member/pages/ClaimsPage'));
 const JoinPage = lazy(() => import('@/features/groups/JoinPage'));
 const PayPage = lazy(() => import('@/features/payments/PayPage'));
+const DenthieBookPage = lazy(() => import('@/features/member/pages/DenthieBookPage'));
 const SimulationPage = lazy(() => import('@/features/payments/SimulationPage'));
 const PaymentSuccessPage = lazy(() =>
   import('@/features/payments/PaymentResultPages').then((m) => ({ default: m.PaymentSuccessPage })),
@@ -134,6 +135,8 @@ export const routes: RouteObject[] = [
                 element: <MemberPage member={<MemberGroupPage />} other={<GroupDetailPage />} />,
               },
               { path: 'payer', element: <PayPage /> },
+              // Denthie : carnet électronique du membre.
+              { path: 'carnet', element: <DenthieBookPage /> },
             ],
           },
           { path: '/payer', element: <PayFlowPage /> },
