@@ -242,7 +242,7 @@ export function JoinPolicyField() {
   );
 }
 
-/** Denthie : ce qu'une part épargne, et un exemple sur six périodes. */
+/** Denthie : ce qu'un membre épargne, et un exemple sur six périodes. */
 function DenthiePreview() {
   const { watch } = useFormContext<CreateGroupValues>();
   const [amount, members, frequency, feeAmount, collectFee] = watch([
@@ -255,8 +255,8 @@ function DenthiePreview() {
   const perPeriod = amount ?? 0;
   return (
     <Card tone="pot" className="text-ink" aria-live="polite">
-      Chaque part épargne <AmountText value={perPeriod} className="font-bold" />{' '}
-      {PER_PERIOD[frequency]}. Par exemple, après {formatPeriods(frequency, 6)}, une part aura
+      Chaque membre épargne <AmountText value={perPeriod} className="font-bold" />{' '}
+      {PER_PERIOD[frequency]}. Par exemple, après {formatPeriods(frequency, 6)}, un membre aura
       épargné <AmountText value={perPeriod * 6} className="font-bold" /> et la caisse contiendra{' '}
       <AmountText value={perPeriod * 6 * (members ?? 0)} className="font-bold" />. La durée n’est
       pas fixée : vous choisirez la date de répartition plus tard, et les membres seront prévenus.{' '}
@@ -374,14 +374,14 @@ export function StepRules() {
         />
       )}
       <Input
-        label={denthie ? 'Nombre maximal de parts' : 'Nombre total de parts'}
+        label={denthie ? 'Nombre maximal de membres' : 'Nombre total de parts'}
         type="number"
         inputMode="numeric"
         min={2}
         max={50}
         hint={
           denthie
-            ? 'Entre 2 et 50. Une personne peut prendre plusieurs parts : elle cotise et récupère d’autant plus. Au démarrage, la liste est close : personne ne rejoint en cours de route.'
+            ? 'Entre 2 et 50. Chaque membre a une seule épargne. Au démarrage, la liste est close : personne ne rejoint en cours de route.'
             : 'Entre 2 et 50 parts. Une personne peut détenir plusieurs parts; au moins deux personnes sont nécessaires.'
         }
         error={errors.maxMembers?.message}
@@ -494,10 +494,10 @@ function denthieRows(v: CreateGroupValues, adminName?: string): Array<[string, R
     ['Description', v.description || '—'],
     ['Cotisation', <AmountText key="a" value={v.contributionAmount} />],
     ['Rythme', frequencyLabel(v.frequency)],
-    ['Cotisation par', `${PER_PERIOD[v.frequency].replace('par ', '')} et par part`],
-    ['Parts au plus', v.maxMembers],
+    ['Cotisation par membre', PER_PERIOD[v.frequency]],
+    ['Membres au plus', v.maxMembers],
     ['Démarrage', v.startDate ? formatDate(v.startDate) : '—'],
-    ['Date de répartition', 'À fixer plus tard'],
+    ['Durée', 'À fixer plus tard (date de répartition)'],
     ['Heure limite', v.paymentDueTime ? v.paymentDueTime.replace(':', 'h') : '—'],
     ['Pénalité de retard', v.latePenalty ? <AmountText key="p" value={v.latePenalty} /> : 'Aucune'],
     [

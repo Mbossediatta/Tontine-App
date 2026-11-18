@@ -6,7 +6,7 @@ import { Link, useParams } from 'react-router-dom';
 import { BrandLogo, GroupPhoto } from '@/components/ui';
 import { useGroup, useMyHistory, useRounds } from '@/features/groups/queries';
 import { useCurrentUser } from '@/hooks/useAuth';
-import { bookUnlocked, isDenthie, isPeriod } from '@/lib/denthie';
+import { bookUnlocked, denthieDurationLabel, isDenthie, isPeriod } from '@/lib/denthie';
 import {
   formatDate,
   formatPhone,
@@ -85,7 +85,6 @@ export default function DenthieBookPage() {
     }),
     { saved: 0, penalties: 0, fees: 0 },
   );
-  const shares = Math.max(1, Math.round(overview.myPeriodAmount / group.contributionAmount) || 1);
   const facts: Array<[string, React.ReactNode]> = [
     ...(overview.communityName ? [['Communauté', overview.communityName] as [string, string]] : []),
     ['Administrateur', overview.adminName],
@@ -93,6 +92,7 @@ export default function DenthieBookPage() {
     ['Rythme', frequencyLabel(group.frequency)],
     ['Démarrage', formatDate(group.startDate)],
     ['Répartition', group.endDate ? formatDate(group.endDate) : 'Date à fixer'],
+    ['Durée', denthieDurationLabel(group)],
   ];
 
   return (
@@ -116,9 +116,7 @@ export default function DenthieBookPage() {
         <div className="rounded-lg bg-blue-50 px-4 py-3">
           <p className="text-[13px] text-slate-600">Titulaire</p>
           <p className="text-[18px] font-bold text-slate-900">{fullName(user)}</p>
-          <p className="text-[13px] text-slate-600">
-            {formatPhone(user.phone)} · {shares} part{shares > 1 ? 's' : ''}
-          </p>
+          <p className="text-[13px] text-slate-600">{formatPhone(user.phone)}</p>
         </div>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
           {facts.map(([label, value]) => (

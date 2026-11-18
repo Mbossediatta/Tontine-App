@@ -103,7 +103,14 @@ function TransferRow({ view, user, amount }: PendingTransfer) {
  * Cagnottes validées dont l'argent reste à envoyer (ou dont le bénéficiaire n'a pas encore
  * confirmé la réception). L'envoi se fait par Wave ou Orange Money, puis on note la référence.
  */
-export function TransfersCard({ rounds }: { rounds: RoundView[] }) {
+export function TransfersCard({
+  rounds,
+  denthie = false,
+}: {
+  rounds: RoundView[];
+  /** Denthie : on envoie à chacun son épargne (répartition ou retrait d'urgence). */
+  denthie?: boolean;
+}) {
   const pending: PendingTransfer[] = rounds
     .filter((view) => view.round.status === 'paid_out' && view.round.recipientType !== 'platform')
     .flatMap((view) =>
@@ -118,10 +125,11 @@ export function TransfersCard({ rounds }: { rounds: RoundView[] }) {
 
   return (
     <Card className="flex flex-col gap-2">
-      <CardTitle>Cagnottes à envoyer</CardTitle>
+      <CardTitle>{denthie ? 'Épargnes à envoyer' : 'Cagnottes à envoyer'}</CardTitle>
       <p className="text-label text-muted">
-        Envoyez l’argent par Wave ou Orange Money au numéro du bénéficiaire, puis notez la référence
-        de la transaction. Le bénéficiaire confirmera la réception.
+        Envoyez l’argent par Wave ou Orange Money au numéro{' '}
+        {denthie ? 'du membre' : 'du bénéficiaire'}, puis notez la référence de la transaction.{' '}
+        {denthie ? 'Le membre' : 'Le bénéficiaire'} confirmera la réception.
       </p>
       <ul className="flex flex-col divide-y divide-line">
         {pending.map((item) => (

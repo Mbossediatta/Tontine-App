@@ -19,7 +19,7 @@ import {
 import type { GroupOverview, MemberView, RoundView } from '@/types';
 import { DebtCard } from '../components/DebtCard';
 import { DenthieSavingsCard } from '../components/DenthieSavingsCard';
-import { isDenthie } from '@/lib/denthie';
+import { denthieDurationLabel, isDenthie } from '@/lib/denthie';
 import { PayoutReceiptCard } from '../components/PayoutReceiptCard';
 import { duesOf, monthName, shortDate } from '../dues';
 import { AmountDisplay } from '../ui/AmountDisplay';
@@ -114,6 +114,7 @@ function denthieFacts(overview: GroupOverview, admins: string[]): Array<[string,
     ['Fréquence', frequencyLabel(group.frequency)],
     ['Membres', String(overview.activeMemberCount)],
     ['Répartition', group.endDate ? formatDate(group.endDate) : 'Date à fixer'],
+    ['Durée', denthieDurationLabel(group)],
     ...(group.latePenalty
       ? [
           ['Pénalité de retard', <AmountDisplay key="p" value={group.latePenalty} />] as [

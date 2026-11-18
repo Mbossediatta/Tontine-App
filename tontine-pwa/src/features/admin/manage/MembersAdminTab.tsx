@@ -21,6 +21,7 @@ export function MembersAdminTab({ overview }: { overview: GroupOverview }) {
   const [toRemove, setToRemove] = useState<MemberView | null>(null);
   const isOwner = overview.myRole === 'owner' || user.globalRole === 'super_admin';
   const isDraft = group.status === 'draft';
+  const denthie = group.kind === 'denthie';
 
   const remove = useAction({
     action: (membershipId: string) => membershipService.remove(membershipId),
@@ -37,7 +38,11 @@ export function MembersAdminTab({ overview }: { overview: GroupOverview }) {
           isDraft && m.membership.role !== 'owner' && (m.membership.role !== 'co_admin' || isOwner);
         return (
           <div className="flex flex-col gap-3">
-            <PendingRequests requests={pending} full={active.length >= group.maxMembers} />
+            <PendingRequests
+              requests={pending}
+              full={active.length >= group.maxMembers}
+              denthie={denthie}
+            />
             {isDraft &&
             user.globalRole === 'admin' &&
             !active.some((member) => member.user.id === user.id) &&
@@ -45,9 +50,9 @@ export function MembersAdminTab({ overview }: { overview: GroupOverview }) {
               <Card className="flex flex-col gap-3">
                 <CardTitle>Participer vous aussi</CardTitle>
                 <p className="text-label text-muted">
-                  Vous gérez ce groupe sans y cotiser. Vous pouvez y prendre une part comme les
-                  autres membres : vous cotiserez à chaque tour et recevrez la cagnotte à votre
-                  tour.
+                  {denthie
+                    ? 'Vous gérez ce Denthie sans y cotiser. Vous pouvez y épargner comme les autres membres : vous cotiserez à chaque période et récupérerez votre épargne à la fin.'
+                    : 'Vous gérez ce groupe sans y cotiser. Vous pouvez y prendre une part comme les autres membres : vous cotiserez à chaque tour et recevrez la cagnotte à votre tour.'}
                 </p>
                 <ParticipateButton groupId={group.id} block />
               </Card>
@@ -56,22 +61,26 @@ export function MembersAdminTab({ overview }: { overview: GroupOverview }) {
               <AddMemberForm
                 groupId={group.id}
                 maxShares={Math.max(0, group.maxMembers - active.length)}
+                denthie={denthie}
               />
             ) : null}
             <Card padded={false} className="px-4">
               <CardTitle className="pt-4">
-                Parts attribuées{' '}
+                {denthie ? 'Membres' : 'Parts attribuées'}{' '}
                 <span className="tabular-nums text-muted">
                   ({active.length} / {group.maxMembers})
                 </span>
               </CardTitle>
               <p className="text-label text-muted">
-                {new Set(active.map((member) => member.user.id)).size} personne(s) · chaque part
-                verse une cotisation et donne droit à un tour.
+                {denthie
+                  ? 'Chaque membre verse sa cotisation à chaque période et récupère son épargne à la fin.'
+                  : `${new Set(active.map((member) => member.user.id)).size} personne(s) · chaque part verse une cotisation et donne droit à un tour.`}
               </p>
               {!isDraft ? (
                 <p className="text-label text-muted">
-                  Le cycle a démarré : les membres ne peuvent plus être retirés.
+                  {denthie
+                    ? 'Le Denthie a démarré : la liste des membres est close.'
+                    : 'Le cycle a démarré : les membres ne peuvent plus être retirés.'}
                 </p>
               ) : null}
               <ul className="divide-y divide-line">
@@ -89,7 +98,7 @@ export function MembersAdminTab({ overview }: { overview: GroupOverview }) {
                           onClick={() => setToRemove(member)}
                           icon={<UserMinus className="h-4 w-4" aria-hidden="true" />}
                         >
-                          Retirer la part
+                          {denthie ? 'Retirer' : 'Retirer la part'}
                         </OnlineButton>
                       ) : null
                     }
@@ -104,11 +113,13 @@ export function MembersAdminTab({ overview }: { overview: GroupOverview }) {
               onConfirm={() => toRemove && remove.mutate(toRemove.membership.id)}
               loading={remove.isPending}
               tone="danger"
-              title="Retirer cette part ?"
-              confirmLabel="Retirer la part"
+              title={denthie ? 'Retirer ce membre ?' : 'Retirer cette part ?'}
+              confirmLabel={denthie ? 'Retirer' : 'Retirer la part'}
             >
               {toRemove
-                ? `La part ${toRemove.shareNumber} de ${fullName(toRemove.user)} sera retirée de « ${group.name} ».`
+                ? denthie
+                  ? `${fullName(toRemove.user)} sera retiré(e) de « ${group.name} ».`
+                  : `La part ${toRemove.shareNumber} de ${fullName(toRemove.user)} sera retirée de « ${group.name} ».`
                 : null}
             </ConfirmDialog>
           </div>

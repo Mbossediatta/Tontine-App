@@ -132,6 +132,10 @@ export const mockMembershipService: MembershipService = {
     }
     const existing = membershipOf(groupId, target.id);
     const alreadyActive = existing?.status === 'active';
+    // Denthie : une seule épargne par membre (comme private.denthie_one_share).
+    if (group.kind === 'denthie' && (alreadyActive || shareCount > 1)) {
+      throw new ServiceError('Dans un Denthie, chaque membre a une seule épargne.');
+    }
     const pendingJoin = existing?.status === 'pending' ? existing : undefined;
     const sharesToCreate = alreadyActive
       ? shareCount

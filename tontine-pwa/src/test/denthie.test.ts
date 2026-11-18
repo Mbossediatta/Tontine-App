@@ -73,6 +73,29 @@ describe('Denthie', () => {
     );
   }, 20_000);
 
+  it('donne une seule épargne par membre (pas de parts)', async () => {
+    await demoLogin(MOUSSA);
+    const group = await groupService.create({
+      kind: 'denthie',
+      communityId: 'c-ouakam',
+      name: 'Denthie sans parts',
+      contributionAmount: 5000,
+      frequency: 'weekly',
+      turnLength: 1,
+      maxMembers: 5,
+      paymentDueDay: 5,
+      startDate: new Date(Date.now() + DAY).toISOString(),
+      attributionMode: 'manual',
+    });
+    await expect(membershipService.addByPhone(group.id, '772345678', 2)).rejects.toThrow(
+      /une seule épargne/,
+    );
+    await membershipService.addByPhone(group.id, '772345678', 1);
+    await expect(membershipService.addByPhone(group.id, '772345678', 1)).rejects.toThrow(
+      /une seule épargne/,
+    );
+  }, 20_000);
+
   it('enchaîne les périodes, applique la pénalité et répartit l’épargne de chacun', async () => {
     const { groupId, otherId } = await startedDenthie();
     const first = (await roundService.list(groupId))[0]?.round.id ?? '';

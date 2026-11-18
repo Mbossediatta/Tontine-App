@@ -17,7 +17,7 @@ import {
   Textarea,
 } from '@/components/ui';
 import { useMembers, useRounds } from '@/features/groups/queries';
-import { isPeriod } from '@/lib/denthie';
+import { denthieDurationLabel, isPeriod } from '@/lib/denthie';
 import { formatDate, fullName } from '@/lib/format';
 import { formatPeriods } from '@/lib/tontine';
 import { useAction } from '@/lib/query';
@@ -100,7 +100,7 @@ function DistributeCard({ overview }: { overview: GroupOverview }) {
     success: (result) =>
       result === 'pending_approval'
         ? 'Demande envoyée : le super admin doit valider cette répartition (300 000 FCFA ou plus)'
-        : 'Répartition validée : envoyez maintenant à chacun sa part',
+        : 'Répartition validée : envoyez maintenant à chacun son épargne',
     onSuccess: () => setConfirm(false),
   });
   if (group.status !== 'active' || !group.endDate) return null;
@@ -140,7 +140,7 @@ function DistributeCard({ overview }: { overview: GroupOverview }) {
         confirmLabel="Répartir"
       >
         Les périodes encore ouvertes seront closes. Chaque membre recevra son épargne par Wave ou
-        Orange Money (à envoyer ensuite dans « Épargne → Cagnottes à envoyer »). Le Denthie sera
+        Orange Money (à envoyer ensuite dans « Épargne → Épargnes à envoyer »). Le Denthie sera
         terminé.
       </ConfirmDialog>
     </Card>
@@ -172,9 +172,7 @@ export function DenthieOverviewTab({
             {GROUP_STATUS_LABELS[group.status]} · cycle {group.currentCycle}
           </Stat>
           <Stat label="Membres">
-            <span className="tabular-nums">
-              {overview.activeMemberCount} personne(s) · {activeShareCount} part(s)
-            </span>
+            <span className="tabular-nums">{overview.activeMemberCount} membre(s)</span>
           </Stat>
           <Stat label="Période en cours">
             {savings?.currentPeriod ? `Période ${savings.currentPeriod}` : '—'}
@@ -186,6 +184,7 @@ export function DenthieOverviewTab({
           <Stat label="Répartition">
             {group.endDate ? formatDate(group.endDate) : 'Date à fixer'}
           </Stat>
+          <Stat label="Durée">{denthieDurationLabel(group)}</Stat>
         </dl>
       </Card>
 
@@ -196,7 +195,7 @@ export function DenthieOverviewTab({
             <AmountText value={group.contributionAmount} className="font-semibold text-ink" /> par
             part
           </p>
-          <RoundProgress paid={overview.paidCount} total={activeShareCount} />
+          <RoundProgress paid={overview.paidCount} total={activeShareCount} denthie />
         </Card>
       ) : null}
 
@@ -266,7 +265,7 @@ function WithdrawDialog({
   const [reason, setReason] = useState('');
   const withdraw = useAction({
     action: () => groupService.withdraw(overview.group.id, person?.id ?? '', reason),
-    success: 'Retrait accordé : envoyez-lui son épargne (Cagnottes à envoyer)',
+    success: 'Retrait accordé : envoyez-lui son épargne (Épargnes à envoyer)',
     onSuccess: () => {
       setReason('');
       onClose();
@@ -348,7 +347,6 @@ export function DenthieSavingsTab({ overview }: { overview: GroupOverview }) {
                   >
                     <span className="min-w-0">
                       <span className="block font-semibold text-ink">{fullName(view.user)}</span>
-                      <span className="text-small text-muted">{view.shareCount} part(s)</span>
                     </span>
                     <span className="flex items-center gap-3">
                       <AmountText
@@ -376,7 +374,7 @@ export function DenthieSavingsTab({ overview }: { overview: GroupOverview }) {
       <AsyncContent query={rounds}>
         {(views) => (
           <>
-            <TransfersCard rounds={views} />
+            <TransfersCard rounds={views} denthie />
             <Card className="flex flex-col gap-2">
               <CardTitle>Périodes</CardTitle>
               <ol className="flex flex-col divide-y divide-line">
@@ -389,8 +387,8 @@ export function DenthieSavingsTab({ overview }: { overview: GroupOverview }) {
                       </span>
                       <span className="text-muted">
                         {view.round.status === 'paid_out'
-                          ? `Close · ${view.paidCount}/${overview.activeShareCount} parts`
-                          : `En cours · ${view.paidCount}/${overview.activeShareCount} parts`}
+                          ? `Close · ${view.paidCount}/${overview.activeShareCount} membres à jour`
+                          : `En cours · ${view.paidCount}/${overview.activeShareCount} membres à jour`}
                       </span>
                     </li>
                   ))}

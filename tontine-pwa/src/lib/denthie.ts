@@ -1,5 +1,6 @@
 // Règles d'affichage du Denthie (« garderie ») : épargne gardée puis répartie à la fin.
 // Mêmes calculs que private.denthie_saved (migration …_denthie.sql).
+import { formatPeriods, roundOpenDate } from '@/lib/tontine';
 import type { Group, GroupOverview, Payment, Round } from '@/types';
 
 /** Nom affiché du type de groupe : « Denthie » (wolof) ou « Tontine ». */
@@ -59,6 +60,33 @@ export function denthieSavings(cycleRounds: Round[], payments: Payment[]): Denth
     currentPeriod: currentIndex >= 0 ? currentIndex + 1 : undefined,
     distribution: cycleRounds.find((round) => round.purpose === 'distribution'),
   };
+}
+
+/**
+ * Durée d'un Denthie : nombre de périodes du démarrage à la date de répartition (une période
+ * commence avant cette date), ou undefined tant que la date n'est pas fixée.
+ */
+export function denthiePeriodCount(
+  group: Pick<Group, 'startDate' | 'endDate' | 'frequency'>,
+): number | undefined {
+  if (!group.endDate) return undefined;
+  const end = new Date(group.endDate);
+  let count = 0;
+  while (
+    count < 2000 &&
+    roundOpenDate(new Date(group.startDate), group.frequency, count, 1) < end
+  ) {
+    count += 1;
+  }
+  return count;
+}
+
+/** « 6 mois », « 12 semaines »… ou « à fixer » tant que la date de répartition manque. */
+export function denthieDurationLabel(
+  group: Pick<Group, 'startDate' | 'endDate' | 'frequency'>,
+): string {
+  const count = denthiePeriodCount(group);
+  return count === undefined ? 'À fixer' : formatPeriods(group.frequency, count);
 }
 
 /** Numéro de période d'un tour de Denthie (1 pour la première), parmi les périodes du cycle. */

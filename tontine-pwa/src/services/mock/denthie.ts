@@ -145,7 +145,7 @@ export function denthieTick(now: Date = new Date()): boolean {
   return changed;
 }
 
-/** Démarrage d'un Denthie : liste close, parts numérotées, première période ouverte. */
+/** Démarrage d'un Denthie : liste close, membres numérotés, première période ouverte. */
 export function startDenthie(group: Group, actor: User): void {
   const members = activeMemberships(group.id);
   if (new Set(members.map((m) => m.userId)).size < 2) {
@@ -229,7 +229,7 @@ export function setEndDate(group: Group, actor: User, endDate: string | null): v
   openPeriod(group);
 }
 
-/** Bénéficiaires d'un tour de versement : l'épargne de chacun (dettes retenues ensuite). */
+/** Bénéficiaires d'un versement : l'épargne de chacun (dettes retenues ensuite). */
 function fillPayout(group: Group, round: Round, userIds: string[]): void {
   const amounts: Record<string, number> = {};
   for (const userId of userIds) {
@@ -328,7 +328,7 @@ export function distribute(group: Group, actor: User): 'paid' | 'pending_approva
   assertNotOwnMoney(
     actor,
     members,
-    'Vous êtes bénéficiaire de ce tour : c’est l’administrateur du groupe qui valide ce versement.',
+    'Vous êtes membre de ce Denthie : c’est l’administrateur du groupe qui valide la répartition.',
   );
   if (total >= APPROVAL_THRESHOLD && !isSuperAdmin(actor)) {
     if (!round.payoutRequestedAt) {
@@ -370,7 +370,7 @@ export function distribute(group: Group, actor: User): 'paid' | 'pending_approva
     group.id,
     'denthie_distribution',
     'Répartition validée',
-    `${group.name} : envoyez maintenant à chaque membre sa part (Tours → Cagnottes à envoyer).`,
+    `${group.name} : envoyez maintenant à chaque membre son épargne (Épargne → Épargnes à envoyer).`,
   );
   recordAudit(
     actor,
@@ -489,7 +489,7 @@ export function withdraw(group: Group, actor: User, userId: string, reason: stri
       group.id,
       'denthie_withdrawal',
       'Retrait d’urgence à envoyer',
-      `${group.name} : envoyez ${formatAmount(sent)} à ${person ? fullName(person) : 'ce membre'} (Tours → Cagnottes à envoyer).`,
+      `${group.name} : envoyez ${formatAmount(sent)} à ${person ? fullName(person) : 'ce membre'} (Épargne → Épargnes à envoyer).`,
     );
   }
   recordAudit(

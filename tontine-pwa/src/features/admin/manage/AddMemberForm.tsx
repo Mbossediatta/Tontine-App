@@ -8,7 +8,16 @@ import { addByPhoneSchema, type AddByPhoneValues } from '@/lib/validators';
 import { membershipService } from '@/services';
 
 /** Ajoute une personne, ou une part supplémentaire si elle est déjà inscrite. */
-export function AddMemberForm({ groupId, maxShares }: { groupId: string; maxShares: number }) {
+export function AddMemberForm({
+  groupId,
+  maxShares,
+  denthie = false,
+}: {
+  groupId: string;
+  maxShares: number;
+  /** Denthie : une seule épargne par membre, pas de parts. */
+  denthie?: boolean;
+}) {
   const {
     control,
     handleSubmit,
@@ -22,7 +31,7 @@ export function AddMemberForm({ groupId, maxShares }: { groupId: string; maxShar
   const add = useAction({
     action: ({ phone, shareCount }: AddByPhoneValues) =>
       membershipService.addByPhone(groupId, phone, shareCount),
-    success: (count: number) => `${count} part(s) attribuée(s)`,
+    success: (count: number) => (denthie ? 'Membre ajouté' : `${count} part(s) attribuée(s)`),
     onSuccess: () => reset(),
   });
 
@@ -33,10 +42,11 @@ export function AddMemberForm({ groupId, maxShares }: { groupId: string; maxShar
         className="flex flex-col gap-3"
         noValidate
       >
-        <CardTitle>Ajouter un membre ou une part</CardTitle>
+        <CardTitle>{denthie ? 'Ajouter un membre' : 'Ajouter un membre ou une part'}</CardTitle>
         <p className="text-label text-muted">
-          Indiquez le nombre de parts à attribuer. Si la personne est déjà inscrite, ces parts
-          s’ajouteront aux siennes. Il reste {maxShares} place(s) dans ce groupe.
+          {denthie
+            ? `Saisissez le numéro du membre. Il reste ${maxShares} place(s) dans ce Denthie.`
+            : `Indiquez le nombre de parts à attribuer. Si la personne est déjà inscrite, ces parts s’ajouteront aux siennes. Il reste ${maxShares} place(s) dans ce groupe.`}
         </p>
         <Controller
           control={control}
@@ -51,17 +61,19 @@ export function AddMemberForm({ groupId, maxShares }: { groupId: string; maxShar
             />
           )}
         />
-        <Input
-          label="Nombre de parts à attribuer"
-          type="number"
-          min={1}
-          max={maxShares}
-          step={1}
-          disabled={maxShares === 0}
-          inputMode="numeric"
-          error={errors.shareCount?.message}
-          {...register('shareCount', { valueAsNumber: true })}
-        />
+        {denthie ? null : (
+          <Input
+            label="Nombre de parts à attribuer"
+            type="number"
+            min={1}
+            max={maxShares}
+            step={1}
+            disabled={maxShares === 0}
+            inputMode="numeric"
+            error={errors.shareCount?.message}
+            {...register('shareCount', { valueAsNumber: true })}
+          />
+        )}
         <OnlineButton
           type="submit"
           variant="secondary"
@@ -70,7 +82,7 @@ export function AddMemberForm({ groupId, maxShares }: { groupId: string; maxShar
           loading={add.isPending}
           icon={<UserPlus className="h-5 w-5" aria-hidden="true" />}
         >
-          Attribuer les parts
+          {denthie ? 'Ajouter le membre' : 'Attribuer les parts'}
         </OnlineButton>
       </form>
     </Card>

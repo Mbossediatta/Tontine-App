@@ -626,7 +626,7 @@ begin
   where b.round_id = d.id
   group by m.user_id;
   perform private.notify_managers(g.id, 'denthie_distribution', 'Répartition validée',
-    format('%s : envoyez maintenant à chaque membre sa part (Tours → Cagnottes à envoyer).', g.name));
+    format('%s : envoyez maintenant à chaque membre son épargne (Épargne → Épargnes à envoyer).', g.name));
   perform private.audit(uid, 'denthie_distribution',
     format('a validé la répartition de %s — %s', private.format_amount(total), g.name), g.id);
   return 'paid';
@@ -752,7 +752,7 @@ begin
     '/groupes');
   if saved > 0 then
     perform private.notify_managers(g.id, 'denthie_withdrawal', 'Retrait d’urgence à envoyer',
-      format('%s : envoyez %s à %s (Tours → Cagnottes à envoyer).', g.name,
+      format('%s : envoyez %s à %s (Épargne → Épargnes à envoyer).', g.name,
         private.format_amount(sent), private.full_name(p_user)));
   end if;
   perform private.audit(uid, 'denthie_withdrawal',

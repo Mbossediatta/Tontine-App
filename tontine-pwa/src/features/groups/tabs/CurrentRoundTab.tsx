@@ -86,7 +86,7 @@ export function CurrentRoundTab({ overview }: { overview: GroupOverview }) {
             <span className="font-normal text-muted">({formatRelative(currentRound.dueDate)})</span>
           </p>
         </div>
-        <RoundProgress paid={paidCount} total={activeShareCount} />
+        <RoundProgress paid={paidCount} total={activeShareCount} denthie={denthie} />
         {myStatus ? (
           <div className="flex items-center justify-between gap-2">
             <span className="text-label text-muted">Votre statut</span>

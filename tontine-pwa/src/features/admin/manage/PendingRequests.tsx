@@ -9,10 +9,11 @@ import type { MemberView } from '@/types';
 interface PendingRequestsProps {
   requests: MemberView[];
   full: boolean;
+  denthie?: boolean;
 }
 
 /** Demandes d'adhésion en attente : Accepter / Refuser. */
-export function PendingRequests({ requests, full }: PendingRequestsProps) {
+export function PendingRequests({ requests, full, denthie = false }: PendingRequestsProps) {
   const accept = useAction({
     action: (id: string) => membershipService.accept(id),
     success: 'Demande acceptée',
@@ -28,7 +29,9 @@ export function PendingRequests({ requests, full }: PendingRequestsProps) {
       <CardTitle>Demandes en attente ({requests.length})</CardTitle>
       {full ? (
         <p className="text-label text-muted">
-          Toutes les parts sont attribuées : retirez une part pour accepter.
+          {denthie
+            ? 'Le Denthie est complet : retirez un membre pour accepter.'
+            : 'Toutes les parts sont attribuées : retirez une part pour accepter.'}
         </p>
       ) : null}
       <ul className="divide-y divide-line">
