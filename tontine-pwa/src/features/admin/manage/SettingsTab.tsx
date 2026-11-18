@@ -120,14 +120,18 @@ export function SettingsTab({ overview }: { overview: GroupOverview }) {
             </p>
           ) : null}
           <Input
-            label={`Cotisation ${PER_PERIOD[frequency]} et par part (FCFA)`}
+            label={
+              denthie
+                ? `Montant à verser ${PER_PERIOD[frequency]} par chaque membre (FCFA)`
+                : `Cotisation ${PER_PERIOD[frequency]} et par part (FCFA)`
+            }
             type="number"
             disabled={locked}
             error={errors.contributionAmount?.message}
             {...register('contributionAmount', numeric)}
           />
           <Select
-            label="Rythme de cotisation"
+            label={denthie ? 'Les membres versent' : 'Rythme de cotisation'}
             options={FREQUENCY_OPTIONS}
             disabled={locked}
             {...register('frequency')}
@@ -145,7 +149,11 @@ export function SettingsTab({ overview }: { overview: GroupOverview }) {
           )}
           {frequency === 'daily' ? null : (
             <Select
-              label="Jour limite de paiement (dans la dernière période du tour)"
+              label={
+                denthie
+                  ? 'Jour limite du versement'
+                  : 'Jour limite de paiement (dans la dernière période du tour)'
+              }
               options={dueDayOptions(frequency)}
               disabled={locked}
               error={errors.paymentDueDay?.message}
@@ -172,7 +180,7 @@ export function SettingsTab({ overview }: { overview: GroupOverview }) {
             />
           )}
           <Input
-            label="Nombre total de parts"
+            label={denthie ? 'Nombre maximal de membres' : 'Nombre total de parts'}
             type="number"
             disabled={locked}
             error={errors.maxMembers?.message}
@@ -206,7 +214,11 @@ export function SettingsTab({ overview }: { overview: GroupOverview }) {
             {...register('startDate')}
           />
           <Input
-            label="Pénalité de retard en FCFA (facultatif)"
+            label={
+              denthie
+                ? 'Pénalité pour un versement manqué (FCFA)'
+                : 'Pénalité de retard en FCFA (facultatif)'
+            }
             type="number"
             hint="Ajoutée d’office au montant dû dès que la date limite est dépassée."
             disabled={locked}

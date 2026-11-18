@@ -34,7 +34,7 @@ const STEPS: Record<GroupKind, ReadonlyArray<{ id: StepId; label: string; fields
   ],
   denthie: [
     { id: 'info', label: 'Informations', fields: 0 },
-    { id: 'rules', label: 'Règles', fields: 1 },
+    { id: 'rules', label: 'Épargne', fields: 1 },
     { id: 'summary', label: 'Récapitulatif', fields: 3 },
   ],
 };

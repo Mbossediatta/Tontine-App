@@ -256,10 +256,10 @@ function DenthiePreview() {
   return (
     <Card tone="pot" className="text-ink" aria-live="polite">
       Chaque membre épargne <AmountText value={perPeriod} className="font-bold" />{' '}
-      {PER_PERIOD[frequency]}. Par exemple, après {formatPeriods(frequency, 6)}, un membre aura
-      épargné <AmountText value={perPeriod * 6} className="font-bold" /> et la caisse contiendra{' '}
-      <AmountText value={perPeriod * 6 * (members ?? 0)} className="font-bold" />. La durée n’est
-      pas fixée : vous choisirez la date de répartition plus tard, et les membres seront prévenus.{' '}
+      {PER_PERIOD[frequency]}. Par exemple, après {formatPeriods(frequency, 6)}, il aura mis de côté{' '}
+      <AmountText value={perPeriod * 6} className="font-bold" /> et les récupère à la répartition ;
+      avec {members ?? 0} membres, la caisse garde{' '}
+      <AmountText value={perPeriod * 6 * (members ?? 0)} className="font-bold" />.{' '}
       {collectFee && feeAmount ? (
         <>
           Frais d’adhésion : {feeAmount} FCFA par personne (donnent accès au carnet électronique).
@@ -301,6 +301,112 @@ function TontinePreview() {
   );
 }
 
+/** Rythme des versements d'un Denthie, en mots d'épargne. */
+const SAVING_FREQUENCIES = [
+  { value: 'daily', label: 'Chaque jour' },
+  { value: 'weekly', label: 'Chaque semaine' },
+  { value: 'biweekly', label: 'Toutes les deux semaines' },
+  { value: 'monthly', label: 'Chaque mois' },
+];
+
+/**
+ * Étape « Épargne » d'un Denthie : ce que chaque membre met de côté et quand. Pas de tours,
+ * pas de parts : à la fin, chacun récupère ce qu'il a versé.
+ */
+function DenthieSavingRules() {
+  const {
+    register,
+    watch,
+    formState: { errors },
+  } = useFormContext<CreateGroupValues>();
+  const numeric = { setValueAs: toOptionalNumber };
+  const frequency = watch('frequency');
+  return (
+    <div className="flex flex-col gap-3">
+      <Card tone="info" className="text-label text-ink">
+        Chaque membre verse le même montant à chaque période. L’argent est gardé, personne ne le
+        touche en cours de route ; à la fin, chacun récupère ce qu’il a versé.
+      </Card>
+      <Select
+        label="Les membres versent"
+        options={SAVING_FREQUENCIES}
+        error={errors.frequency?.message}
+        {...register('frequency')}
+      />
+      <Input
+        label={`Montant à verser ${PER_PERIOD[frequency]} par chaque membre (FCFA)`}
+        type="number"
+        inputMode="numeric"
+        min={500}
+        step={500}
+        error={errors.contributionAmount?.message}
+        {...register('contributionAmount', numeric)}
+      />
+      {frequency === 'daily' ? null : (
+        <Select
+          label="Jour limite du versement"
+          options={dueDayOptions(frequency)}
+          error={errors.paymentDueDay?.message}
+          {...register('paymentDueDay', numeric)}
+        />
+      )}
+      <Input
+        label="Heure limite du versement (heure de Dakar)"
+        type="time"
+        hint="Après cette heure, le jour limite, le membre qui n’a pas versé est en retard."
+        error={errors.paymentDueTime?.message}
+        {...register('paymentDueTime')}
+      />
+      <Input
+        label="Date du premier versement (démarrage)"
+        type="date"
+        hint="La durée n’est pas fixée maintenant : vous choisirez la date de répartition plus tard, et les membres seront prévenus."
+        error={errors.startDate?.message}
+        {...register('startDate')}
+      />
+      <Input
+        label="Nombre maximal de membres"
+        type="number"
+        inputMode="numeric"
+        min={2}
+        max={50}
+        hint="Entre 2 et 50. Au démarrage, la liste est close : personne ne rejoint en cours de route."
+        error={errors.maxMembers?.message}
+        {...register('maxMembers', numeric)}
+      />
+      <Input
+        label="Pénalité pour un versement manqué (FCFA)"
+        type="number"
+        inputMode="numeric"
+        min={0}
+        hint="Une seule fois par période manquée (250 FCFA proposés). Non réglée, elle est retenue à la répartition."
+        error={errors.latePenalty?.message}
+        {...register('latePenalty', numeric)}
+      />
+      <label className="flex items-start gap-3 rounded-control border border-line bg-white p-3">
+        <input type="checkbox" className="mt-1" {...register('collectMembershipFee')} />
+        <span>
+          <strong className="block text-ink">Frais d’adhésion</strong>
+          <span className="text-label text-muted">
+            Payés une seule fois, avec le premier versement. Ils ouvrent le carnet électronique du
+            membre (tous ses versements, à son nom, avec le logo du groupe).
+          </span>
+        </span>
+      </label>
+      {watch('collectMembershipFee') ? (
+        <Input
+          label="Frais d’adhésion par membre (FCFA)"
+          type="number"
+          min={1}
+          error={errors.membershipFeeAmount?.message}
+          {...register('membershipFeeAmount', numeric)}
+        />
+      ) : null}
+      <LivePreview />
+    </div>
+  );
+}
+
 export function StepRules() {
   const {
     register,
@@ -310,6 +416,7 @@ export function StepRules() {
   const numeric = { setValueAs: toOptionalNumber };
   const frequency = watch('frequency');
   const denthie = watch('kind') === 'denthie';
+  if (denthie) return <DenthieSavingRules />;
   return (
     <div className="flex flex-col gap-3">
       <Select
