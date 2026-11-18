@@ -12,7 +12,7 @@ import { Card } from '../ui/Card';
  * Mes impayés dans ce groupe (cagnotte versée sans ma cotisation) : je les rembourse en ligne,
  * sinon ils sont retenus sur ma cagnotte à mon tour.
  */
-export function DebtCard({ debts }: { debts: DebtView[] }) {
+export function DebtCard({ debts, denthie = false }: { debts: DebtView[]; denthie?: boolean }) {
   const [paying, setPaying] = useState<string | null>(null);
   if (debts.length === 0) return null;
 
@@ -32,16 +32,20 @@ export function DebtCard({ debts }: { debts: DebtView[] }) {
   return (
     <Card className="flex flex-col gap-3 border-amber-300 bg-amber-50 px-4 py-3">
       <div>
-        <p className="text-[15px] font-semibold text-amber-900">Impayés à rembourser</p>
+        <p className="text-[15px] font-semibold text-amber-900">
+          {denthie ? 'Pénalité à régler' : 'Impayés à rembourser'}
+        </p>
         <p className="text-[13px] text-amber-900">
-          Ces cagnottes ont été versées sans ta cotisation. Rembourse en ligne ; sinon ce montant
-          sera retenu sur ta cagnotte.
+          {denthie
+            ? 'Tu as manqué un versement : règle la pénalité en ligne ; sinon elle sera retenue sur ton épargne à la répartition.'
+            : 'Ces cagnottes ont été versées sans ta cotisation. Rembourse en ligne ; sinon ce montant sera retenu sur ta cagnotte.'}
         </p>
       </div>
       {debts.map(({ debt, roundNumber }) => (
         <div key={debt.id} className="flex flex-col gap-2 border-t border-amber-200 pt-2">
           <p className="text-[15px] font-semibold text-amber-900">
-            Tour {roundNumber} : <AmountDisplay value={debt.amount + debt.penaltyAmount} />
+            {denthie ? 'Pénalité de retard' : `Tour ${roundNumber}`} :{' '}
+            <AmountDisplay value={debt.amount + debt.penaltyAmount} />
           </p>
           <div className="grid grid-cols-2 gap-2">
             <Button

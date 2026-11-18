@@ -13,6 +13,7 @@ import { useCurrentUser } from '@/hooks/useAuth';
 import { cn } from '@/lib/cn';
 import { formatDateTime, fullName, paymentMethodLabel } from '@/lib/format';
 import type { MyTransaction, User } from '@/types';
+import { useMyGroups } from '@/features/groups/queries';
 import { useMyTransactions } from '../queries';
 import { shortDate } from '../dues';
 import { AmountDisplay } from '../ui/AmountDisplay';
@@ -60,7 +61,22 @@ function byMonth(items: MyTransaction[]): Array<{ month: string; items: MyTransa
 }
 
 /** Reçu d'une cotisation payée (null pour une cagnotte reçue ou un paiement non abouti). */
-function receiptOf(item: MyTransaction, user: User): PaymentReceiptData | null {
+/** Groupes Denthie de la personne : pas de tours, on y épargne. */
+function useDenthieIds(): Set<string> {
+  const groups = useMyGroups();
+  return useMemo(
+    () =>
+      new Set((groups.data ?? []).filter((g) => g.group.kind === 'denthie').map((g) => g.group.id)),
+    [groups.data],
+  );
+}
+
+/** « tour 3 » pour une tontine, rien pour un Denthie. */
+function turnText(item: MyTransaction, denthie: boolean): string {
+  return denthie ? '' : ` · tour ${item.roundNumber}`;
+}
+
+function receiptOf(item: MyTransaction, user: User, denthie = false): PaymentReceiptData | null {
   if (item.kind !== 'contribution' || item.payment.status !== 'paid') return null;
   return {
     paymentId: item.payment.id,
@@ -69,6 +85,7 @@ function receiptOf(item: MyTransaction, user: User): PaymentReceiptData | null {
     groupName: item.groupName,
     cycle: item.cycle,
     roundNumber: item.roundNumber,
+    denthie,
     amount: item.payment.amount,
     serviceFee: item.payment.serviceFeeAmount,
     method: item.payment.method,
@@ -84,10 +101,12 @@ function receiptOf(item: MyTransaction, user: User): PaymentReceiptData | null {
 function TransactionRow({
   item,
   receipt,
+  denthie,
   onOpen,
 }: {
   item: MyTransaction;
   receipt: PaymentReceiptData | null;
+  denthie: boolean;
   onOpen: () => void;
 }) {
   const payout = item.kind === 'payout';
@@ -113,8 +132,15 @@ function TransactionRow({
           {/* Le nom du groupe en titre (il était coupé après « Cotisation · »). */}
           <span className="block truncate text-[15px] font-semibold">{item.groupName}</span>
           <span className="block text-[13px] text-slate-600">
-            {payout ? 'Cagnotte reçue' : 'Cotisation'} · {shortDate(item.date)} · tour{' '}
-            {item.roundNumber}
+            {payout
+              ? denthie
+                ? 'Épargne reçue'
+                : 'Cagnotte reçue'
+              : denthie
+                ? 'Épargne versée'
+                : 'Cotisation'}{' '}
+            · {shortDate(item.date)}
+            {turnText(item, denthie)}
             {item.kind === 'contribution' ? ` · ${paymentMethodLabel(item.payment.method)}` : ''}
           </span>
         </span>
@@ -134,7 +160,7 @@ function TransactionRow({
         <button
           type="button"
           onClick={() => openPaymentReceipt(receipt)}
-          aria-label={`Voir le reçu : ${item.groupName}, tour ${item.roundNumber}`}
+          aria-label={`Voir le reçu : ${item.groupName}${denthie ? '' : `, tour ${item.roundNumber}`}`}
           className="mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-blue-700 transition-colors duration-150 hover:bg-blue-50 active:bg-blue-100"
         >
           <ReceiptText className="h-5 w-5" aria-hidden="true" />
@@ -150,10 +176,12 @@ function TransactionRow({
 /** Détail d'une ligne, avec le reçu pour une cotisation payée. */
 function TransactionSheet({ item, onClose }: { item: MyTransaction | null; onClose: () => void }) {
   const user = useCurrentUser();
+  const denthieIds = useDenthieIds();
   if (!item) return null;
-  const receipt = receiptOf(item, user);
+  const denthie = denthieIds.has(item.groupId);
+  const receipt = receiptOf(item, user, denthie);
   const rows: Array<[string, string]> = [
-    ['Groupe', `${item.groupName} · tour ${item.roundNumber}`],
+    ['Groupe', `${item.groupName}${denthie ? ' · Denthie' : turnText(item, false)}`],
     ['Date', formatDateTime(item.date)],
   ];
   if (item.kind === 'contribution') {
@@ -222,6 +250,7 @@ function TransactionSheet({ item, onClose }: { item: MyTransaction | null; onClo
 export default function HistoryPage() {
   const user = useCurrentUser();
   const query = useMyTransactions();
+  const denthieIds = useDenthieIds();
   const [groupId, setGroupId] = useState('');
   const [period, setPeriod] = useState<Period>('12m');
   const [open, setOpen] = useState<MyTransaction | null>(null);
@@ -335,7 +364,8 @@ export default function HistoryPage() {
                     <TransactionRow
                       key={item.id}
                       item={item}
-                      receipt={receiptOf(item, user)}
+                      receipt={receiptOf(item, user, denthieIds.has(item.groupId))}
+                      denthie={denthieIds.has(item.groupId)}
                       onOpen={() => setOpen(item)}
                     />
                   ))}

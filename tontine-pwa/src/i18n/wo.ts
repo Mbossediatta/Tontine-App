@@ -32,6 +32,12 @@ export const wo: Record<MessageKey, string> = {
   'freq.daily': '{amount} ci bés bu nekk, ci pàcc bu nekk',
   'period.month': 'Natt bu {month}',
   'period.round': 'Wàll {number}',
+  // Denthie — À FAIRE RELIRE
+  'period.saving': 'Denthie bu {date}',
+  'home.mySavings': 'Sama denthie',
+  'home.savedTotal': 'Li nga denc',
+  'home.distributionOn': 'Séddale bi: {date}',
+  'home.distributionToSet': 'Bisu séddale bi leeragul',
 
   // Accueil du participant
   'home.hello': 'Nanga def, {name}',

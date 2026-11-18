@@ -31,6 +31,12 @@ export const fr = {
   'freq.daily': '{amount} par jour et par part',
   'period.month': 'Cotisation de {month}',
   'period.round': 'Tour {number}',
+  // Denthie (épargne gardée puis répartie à la fin)
+  'period.saving': 'Épargne du {date}',
+  'home.mySavings': 'Mon épargne',
+  'home.savedTotal': 'Total épargné',
+  'home.distributionOn': 'Répartition le {date}',
+  'home.distributionToSet': 'Date de répartition à fixer',
 
   // Accueil du participant
   'home.hello': 'Bonjour {name}',

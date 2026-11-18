@@ -169,6 +169,46 @@ function MonthStatusList({ groups }: { groups: GroupOverview[] }) {
   );
 }
 
+/** « Mon épargne » : ce que j'ai mis de côté dans chaque Denthie, et quand je le récupère. */
+function MySavings({ groups }: { groups: GroupOverview[] }) {
+  const { t, language } = useT();
+  const total = groups.reduce((sum, overview) => sum + (overview.mySaved ?? 0), 0);
+  return (
+    <section data-guide="home-savings" aria-labelledby="my-savings">
+      <SectionHeader id="my-savings" title={t('home.mySavings')} />
+      <Card>
+        <ul className="divide-y divide-slate-200">
+          {groups.map(({ group, mySaved }) => (
+            <li key={group.id}>
+              <Link
+                to={`/groupes/${group.id}`}
+                className="flex min-h-[56px] items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-slate-50 active:bg-slate-100"
+              >
+                <GroupPhoto name={group.name} src={group.photoUrl} size="sm" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[15px] font-semibold">{group.name}</span>
+                  <span className="block text-[13px] text-slate-600">
+                    {group.endDate
+                      ? t('home.distributionOn', { date: shortDateIn(language, group.endDate) })
+                      : t('home.distributionToSet')}
+                  </span>
+                </span>
+                <AmountDisplay value={mySaved ?? 0} className="text-green-700" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+        {groups.length > 1 ? (
+          <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-4 py-3">
+            <span className="text-[13px] font-semibold text-slate-600">{t('home.savedTotal')}</span>
+            <AmountDisplay value={total} size="md" className="text-green-700" />
+          </div>
+        ) : null}
+      </Card>
+    </section>
+  );
+}
+
 /** « Mon tour » : quand je reçois la cagnotte, en ligne de temps. */
 function MyTurns({ groups, userId }: { groups: GroupOverview[]; userId: string }) {
   const { t, language } = useT();
@@ -250,6 +290,9 @@ export default function MemberHomePage() {
   );
   const hasPastGroups = groups.length < mine.length;
   const dues = duesOf(groups);
+  // Denthie : on y épargne, il n'y a pas de tour ; les tontines gardent « Mon tour ».
+  const savings = groups.filter((overview) => overview.group.kind === 'denthie');
+  const tontines = groups.filter((overview) => overview.group.kind !== 'denthie');
 
   return (
     <div className="flex flex-col gap-6 motion-safe:animate-fade-in">
@@ -311,7 +354,8 @@ export default function MemberHomePage() {
             <MonthStatusList groups={groups} />
           </div>
           <div className="flex flex-col gap-6">
-            <MyTurns groups={groups} userId={user.id} />
+            {savings.length > 0 ? <MySavings groups={savings} /> : null}
+            {tontines.length > 0 ? <MyTurns groups={tontines} userId={user.id} /> : null}
             <button
               type="button"
               onClick={() => setJoinOpen(true)}

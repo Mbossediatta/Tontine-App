@@ -370,6 +370,7 @@ export default function MemberGroupPage() {
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-8">
         <div className="flex flex-col gap-6">
           <DebtCard
+            denthie={denthie}
             debts={(debts.data ?? []).filter(
               ({ debt }) => debt.status === 'open' && debt.userId === user.id,
             )}

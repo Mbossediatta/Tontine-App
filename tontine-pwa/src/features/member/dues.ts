@@ -1,7 +1,7 @@
 // Règles d'affichage de l'espace membre : ce que je dois payer, et quand je reçois.
 import { differenceInCalendarDays, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { monthNameIn, translate, type Language } from '@/i18n';
+import { monthNameIn, shortDateIn, translate, type Language } from '@/i18n';
 import type { GroupOverview, PaymentStatus, Round } from '@/types';
 
 /** Une cotisation que je dois encore payer. */
@@ -78,9 +78,14 @@ export function periodLabel(
   round: Round,
   language: Language = 'fr',
 ): string {
-  return overview.group.frequency === 'monthly' && overview.group.turnLength === 1
-    ? translate(language, 'period.month', { month: monthNameIn(language, round.dueDate) })
-    : translate(language, 'period.round', { number: round.number });
+  if (overview.group.frequency === 'monthly' && overview.group.turnLength === 1) {
+    return translate(language, 'period.month', { month: monthNameIn(language, round.dueDate) });
+  }
+  // Denthie : pas de tours, on nomme la période par sa date limite.
+  if (overview.group.kind === 'denthie') {
+    return translate(language, 'period.saving', { date: shortDateIn(language, round.dueDate) });
+  }
+  return translate(language, 'period.round', { number: round.number });
 }
 
 /** Ce que je recevrai à mon tour : ma part si le tour a plusieurs bénéficiaires. */

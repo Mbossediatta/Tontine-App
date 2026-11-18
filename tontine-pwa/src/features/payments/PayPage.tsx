@@ -74,7 +74,8 @@ export default function PayPage() {
                 <p className="text-label text-muted">Votre cotisation</p>
                 <AmountText value={total} tone="due" size="main" />
                 <p className="text-label text-muted">
-                  {group.name} · tour {currentRound.number}
+                  {group.name} ·{' '}
+                  {group.kind === 'denthie' ? 'Denthie' : `tour ${currentRound.number}`}
                   {penalty > 0 ? (
                     <>
                       {' '}

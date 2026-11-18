@@ -114,6 +114,8 @@ export interface PaymentReceiptData {
   groupName: string;
   cycle: number;
   roundNumber: number;
+  /** Denthie : pas de tours ; le reçu parle d'épargne. */
+  denthie?: boolean;
   /** Montant destiné à la tontine (cotisation, pénalité, frais d'adhésion). */
   amount: number;
   /** Frais du service de paiement payés en plus par le membre. */
@@ -135,13 +137,15 @@ export function openPaymentReceipt(data: PaymentReceiptData): void {
 
 /** Nom du fichier du reçu : « recu-tontine-famille-tour-3.pdf ». */
 export function paymentReceiptFileName(data: PaymentReceiptData): string {
-  return `recu-${safeFileName(data.groupName)}-tour-${data.roundNumber}.pdf`;
+  return data.denthie
+    ? `recu-${safeFileName(data.groupName)}-${data.paidAt.slice(0, 10)}.pdf`
+    : `recu-${safeFileName(data.groupName)}-tour-${data.roundNumber}.pdf`;
 }
 
 /** Octets du reçu PDF d'une cotisation (pour le télécharger ou le partager). */
 export function buildPaymentReceipt(data: PaymentReceiptData): Uint8Array {
   const items = layout({
-    title: 'Reçu de cotisation',
+    title: data.denthie ? 'Reçu de versement d’épargne' : 'Reçu de cotisation',
     number: data.paymentId.toUpperCase(),
     amountLabel: 'Montant payé',
     // Ce que le membre a réellement payé : la tontine et les frais de paiement.
@@ -153,7 +157,9 @@ export function buildPaymentReceipt(data: PaymentReceiptData): Uint8Array {
       ['Membre', data.payerName],
       ['Téléphone', data.payerPhone ? formatPhone(data.payerPhone) : '—'],
       ['Groupe', data.groupName],
-      ['Tour', `Tour ${data.roundNumber} · cycle ${data.cycle}`],
+      data.denthie
+        ? ['Type', `Denthie (épargne) · cycle ${data.cycle}`]
+        : ['Tour', `Tour ${data.roundNumber} · cycle ${data.cycle}`],
       ['Date du paiement', formatDate(data.paidAt)],
       ['Moyen de paiement', paymentMethodLabel(data.method)],
       ['Référence', data.providerRef ?? '—'],
