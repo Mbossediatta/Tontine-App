@@ -116,6 +116,13 @@ describe('Denthie', () => {
     const overview = await groupService.get(groupId);
     expect(overview.savings?.byUser).toEqual({ [MOUSSA]: 20000, [otherId]: 10000 });
 
+    // Carnet : l'admin lit les versements d'un membre ; un membre ne lit pas ceux d'un autre.
+    expect(await paymentService.listMemberPayments(groupId, otherId)).toHaveLength(1);
+    await demoLogin(otherId);
+    await expect(paymentService.listMemberPayments(groupId, MOUSSA)).rejects.toThrow();
+    expect(await paymentService.listMemberPayments(groupId, otherId)).toHaveLength(1);
+    await demoLogin(MOUSSA);
+
     // La date se fixe plus tard ; la répartition attend cette date.
     await groupService.setEndDate(
       groupId,

@@ -238,6 +238,23 @@ export function createSupabasePaymentService(): PaymentService {
       return { payments, received: receivedRounds(ctx, me) };
     },
 
+    async listMemberPayments(groupId, userId) {
+      const ctx = await groupContext(groupId);
+      const group = ctx.groups[0];
+      if (!group || (userId !== ctx.viewer.id && !canManage(ctx, group))) {
+        throw new ServiceError('Réservé aux administrateurs du groupe.', 'forbidden');
+      }
+      const rounds = new Map(ctx.rounds.map((round) => [round.id, round]));
+      return ctx.payments
+        .filter((payment) => payment.userId === userId && payment.status !== 'late')
+        .map((payment) => ({
+          payment,
+          roundNumber: rounds.get(payment.roundId)?.number ?? 0,
+          cycle: rounds.get(payment.roundId)?.cycle ?? 1,
+        }))
+        .sort((a, b) => (b.payment.paidAt ?? '').localeCompare(a.payment.paidAt ?? ''));
+    },
+
     async myTransactions() {
       const viewer = await currentViewer();
       const mine = rows<{ group_id: string }>(

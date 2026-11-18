@@ -166,7 +166,11 @@ export const routes: RouteObject[] = [
           {
             path: '/admin/groupes/:id',
             element: <RequireRole groupRoles={['owner', 'co_admin']} />,
-            children: [{ index: true, element: <ManageGroupPage /> }],
+            children: [
+              { index: true, element: <ManageGroupPage /> },
+              // Denthie : carnet électronique d'un membre, vu par l'administrateur.
+              { path: 'carnet/:userId', element: <DenthieBookPage /> },
+            ],
           },
           {
             // Back-office du super administrateur (12 rubriques ; « Mon compte » = /profil).

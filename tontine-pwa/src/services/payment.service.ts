@@ -4,6 +4,7 @@ import type {
   InitiatePaymentResult,
   MyGroupHistory,
   MyTransaction,
+  PaymentHistoryItem,
   PaymentReceipt,
   RoundPaymentRow,
 } from '@/types';
@@ -11,6 +12,11 @@ import type {
 export interface PaymentService {
   listForRound(roundId: string): Promise<RoundPaymentRow[]>;
   listMine(groupId: string): Promise<MyGroupHistory>;
+  /**
+   * Paiements d'un membre dans un groupe (carnet électronique d'un Denthie) : les miens, ou
+   * ceux de n'importe quel membre pour un administrateur du groupe.
+   */
+  listMemberPayments(groupId: string, userId: string): Promise<PaymentHistoryItem[]>;
   /** Mes cotisations et cagnottes reçues dans tous mes groupes, de la plus récente à la plus ancienne. */
   myTransactions(): Promise<MyTransaction[]>;
   initiatePayment(input: InitiatePaymentInput): Promise<InitiatePaymentResult>;

@@ -47,6 +47,15 @@ export function useMyHistory(groupId: string) {
   });
 }
 
+/** Paiements d'un membre dans un groupe (carnet d'un Denthie). */
+export function useMemberPayments(groupId: string, userId: string) {
+  return useQuery({
+    queryKey: [...queryKeys.myHistory(groupId), 'membre', userId],
+    queryFn: () => paymentService.listMemberPayments(groupId, userId),
+    enabled: Boolean(userId),
+  });
+}
+
 export function useSwaps(groupId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.swaps(groupId),

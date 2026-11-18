@@ -208,6 +208,24 @@ export const mockPaymentService: PaymentService = {
     return [...contributions, ...payouts].sort((a, b) => b.date.localeCompare(a.date));
   },
 
+  async listMemberPayments(groupId, userId) {
+    await delay();
+    synchronize();
+    const user = currentUser();
+    const group = requireGroup(groupId);
+    if (userId === user.id) assertCanView(group, user);
+    else assertCanManage(group, user);
+    const roundOf = new Map(db.rounds.filter((r) => r.groupId === groupId).map((r) => [r.id, r]));
+    return db.payments
+      .filter((p) => p.userId === userId && roundOf.has(p.roundId) && p.status !== 'late')
+      .map((payment) => ({
+        payment,
+        roundNumber: roundOf.get(payment.roundId)?.number ?? 0,
+        cycle: roundOf.get(payment.roundId)?.cycle ?? 1,
+      }))
+      .sort((a, b) => (b.payment.paidAt ?? '').localeCompare(a.payment.paidAt ?? ''));
+  },
+
   async listMine(groupId) {
     await delay();
     synchronize();

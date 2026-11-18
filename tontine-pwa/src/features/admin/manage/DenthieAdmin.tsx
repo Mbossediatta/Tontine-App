@@ -2,7 +2,7 @@
 // répartition finale et retraits d'urgence. Règles : migration …_denthie.sql.
 import { useState, type ReactNode } from 'react';
 import { format } from 'date-fns';
-import { CalendarCheck, HandCoins, PiggyBank, Play } from 'lucide-react';
+import { BookOpen, CalendarCheck, HandCoins, PiggyBank, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AmountText, RoundProgress } from '@/components/domain';
 import { OnlineButton } from '@/components/layout/OnlineButton';
@@ -353,6 +353,13 @@ export function DenthieSavingsTab({ overview }: { overview: GroupOverview }) {
                         value={savings?.byUser[view.user.id] ?? 0}
                         className="font-bold tabular-nums text-ink"
                       />
+                      <Link
+                        to={`/admin/groupes/${group.id}/carnet/${view.user.id}`}
+                        className="inline-flex min-h-touch items-center gap-1 rounded-control px-2 text-label font-semibold text-blue-700 hover:bg-blue-50"
+                      >
+                        <BookOpen className="h-4 w-4" aria-hidden="true" />
+                        Carnet
+                      </Link>
                       {canWithdraw ? (
                         <Button variant="secondary" onClick={() => setWithdrawing(view.user)}>
                           Retrait d’urgence
